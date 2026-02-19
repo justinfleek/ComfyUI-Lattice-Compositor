@@ -16,7 +16,7 @@ export {
   // Client-side fallback
   blendFrames,
   createSlowMotion,
-  // API functions
+  //                                                                       // api
   getInterpolationModels,
   // Presets
   INTERPOLATION_PRESETS,

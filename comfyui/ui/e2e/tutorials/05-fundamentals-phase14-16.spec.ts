@@ -35,7 +35,7 @@ test.describe("Tutorial 01: Phases 14-16 (Steps 356-455)", () => {
     await h.newEffectLayer();
     await h.expectLayerCount(2);
 
-    // UNDO TEST
+    //                                                              // undo // test
     await h.undo();
     await h.redo();
   });
@@ -52,7 +52,7 @@ test.describe("Tutorial 01: Phases 14-16 (Steps 356-455)", () => {
     // Step 404: Remove parent
     await h.setParent(0, null);
 
-    // UNDO TEST
+    //                                                              // undo // test
     await h.undo();
     await h.redo();
   });
@@ -72,10 +72,10 @@ test.describe("Tutorial 01: Phases 14-16 (Steps 356-455)", () => {
     await h.enableExpression("rotation");
     await h.setExpression("rotation", "time * 90");
 
-    // DETERMINISM TEST for expressions
+    //                                                       // determinism // test
     await h.verifyDeterminism(["position", "rotation"], 40);
 
-    // UNDO TEST
+    //                                                              // undo // test
     await h.undo();
     await h.redo();
   });

@@ -99,7 +99,7 @@ export function parseCOLMAPOutput(files: {
 
   // Convert images to camera path
   const cameraPath: CameraPose[] = images.map((img, index) => {
-    // COLMAP stores camera-to-world inverse, need to invert
+    //                                                                    // colmap
     // Quaternion is already world-to-camera, position needs adjustment
     const qw = img.qw,
       qx = img.qx,

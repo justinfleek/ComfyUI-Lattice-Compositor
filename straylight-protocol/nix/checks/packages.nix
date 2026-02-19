@@ -12,7 +12,7 @@
 }:
 let
   # ══════════════════════════════════════════════════════════════════════════
-  # TEST: mdspan-installation
+  #                                                                      // test
   # ══════════════════════════════════════════════════════════════════════════
   # Verify that mdspan headers are properly installed and can be used
   # to compile a C++23 program using std::mdspan
@@ -80,7 +80,7 @@ let
   };
 
   # ══════════════════════════════════════════════════════════════════════════
-  # TEST: nvidia-sdk-structure (Linux-only)
+  #                                                                      // test
   # ══════════════════════════════════════════════════════════════════════════
   # Verify that the NVIDIA SDK has the expected structure and critical headers
 

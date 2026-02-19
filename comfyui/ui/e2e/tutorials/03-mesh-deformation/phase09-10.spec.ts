@@ -50,7 +50,7 @@ test.describe("Tutorial 03: Mesh Deformation - Phases 9-10 (Steps 116-145)", () 
     await h.selectAllKeyframes(0, 0, "position");
     await h.smoothEase();
 
-    // UNDO/REDO
+    //                                                                      // undo
     await h.undo();
     await h.redo();
   });
@@ -83,7 +83,7 @@ test.describe("Tutorial 03: Mesh Deformation - Phases 9-10 (Steps 116-145)", () 
       page.locator('[data-testid="layer-0-mesh-overlay"]'),
     ).toBeVisible();
 
-    // UNDO/REDO
+    //                                                                      // undo
     await h.undo();
     await h.redo();
   });

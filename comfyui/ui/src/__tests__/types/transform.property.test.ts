@@ -21,9 +21,9 @@ import {
 } from "@/types/transform";
 import { createAnimatableProperty, createKeyframe, type AnimatableProperty } from "@/types/animation";
 
-// ============================================================
-// ARBITRARIES
-// ============================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                                               // arbitraries
+// ════════════════════════════════════════════════════════════════════════════
 
 const layerIdArb = fc.string({ minLength: 1, maxLength: 50 });
 const positionArb = fc.record({
@@ -32,9 +32,9 @@ const positionArb = fc.record({
   z: fc.double({ min: -10000, max: 10000, noNaN: true }),
 });
 
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
 // createDefaultTransform TESTS
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 describe("PROPERTY: createDefaultTransform", () => {
   it("returns LayerTransform with all required properties", () => {
@@ -124,9 +124,9 @@ describe("PROPERTY: createDefaultTransform", () => {
   });
 });
 
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
 // normalizeLayerTransform TESTS
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 describe("PROPERTY: normalizeLayerTransform", () => {
   it("returns the same transform object", () => {
@@ -174,9 +174,9 @@ describe("PROPERTY: normalizeLayerTransform", () => {
   });
 });
 
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
 // createFollowPathConstraint TESTS
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 describe("PROPERTY: createFollowPathConstraint", () => {
   it("returns FollowPathConstraint with all required properties", () => {
@@ -252,9 +252,9 @@ describe("PROPERTY: createFollowPathConstraint", () => {
   });
 });
 
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
 // separatePositionDimensions TESTS
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 describe("PROPERTY: separatePositionDimensions", () => {
   it("creates positionX, positionY, positionZ properties", () => {
@@ -329,9 +329,9 @@ describe("PROPERTY: separatePositionDimensions", () => {
   });
 });
 
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
 // linkPositionDimensions TESTS
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 describe("PROPERTY: linkPositionDimensions", () => {
   it("merges separate dimensions back to combined position", () => {
@@ -394,9 +394,9 @@ describe("PROPERTY: linkPositionDimensions", () => {
   });
 });
 
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
 // separateScaleDimensions TESTS
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 describe("PROPERTY: separateScaleDimensions", () => {
   it("creates scaleX, scaleY, scaleZ properties", () => {
@@ -443,9 +443,9 @@ describe("PROPERTY: separateScaleDimensions", () => {
   });
 });
 
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
 // linkScaleDimensions TESTS
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 describe("PROPERTY: linkScaleDimensions", () => {
   it("merges separate dimensions back to combined scale", () => {

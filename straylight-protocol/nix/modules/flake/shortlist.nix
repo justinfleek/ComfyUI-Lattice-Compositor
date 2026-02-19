@@ -28,7 +28,7 @@
 #   - nlohmann-json : JSON for Modern C++ (header-only)
 #   - libsodium   : Modern cryptography library
 #
-# USAGE:
+#                                                                     // usage
 #
 #   imports = [ straylight.modules.flake.shortlist ];
 #

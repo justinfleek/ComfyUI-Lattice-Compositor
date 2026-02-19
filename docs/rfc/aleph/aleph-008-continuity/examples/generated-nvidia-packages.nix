@@ -1,5 +1,5 @@
 # Auto-generated from Dhall wheel templates
-# DO NOT EDIT - regenerate with: dhall text < generate-nix.dhall
+#                                                         // do // not // edit
 
 final: prev:
 let

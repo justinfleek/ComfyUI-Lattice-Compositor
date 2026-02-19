@@ -91,7 +91,7 @@ test.describe("Tutorial 04: Expressions - Phases 9-10 (Steps 181-248)", () => {
     // Step 214-215: Determinism test
     await h.verifyExpressionDeterminism(0, "position", 50);
 
-    // UNDO/REDO
+    //                                                                      // undo
     await h.undo();
     await h.redo();
   });
@@ -188,7 +188,7 @@ test.describe("Tutorial 04: Expressions - Phases 9-10 (Steps 181-248)", () => {
     // Verify determinism
     await h.verifyExpressionDeterminism(0, "position", 30);
 
-    // UNDO/REDO
+    //                                                                      // undo
     await h.undo();
     await h.redo();
   });

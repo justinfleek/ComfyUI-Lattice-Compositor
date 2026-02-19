@@ -20,10 +20,10 @@ let
   inherit (prev) lib;
 
   # ══════════════════════════════════════════════════════════════════════════════
-  # HASKELL DEPENDENCIES
+  #                                                   // haskell // dependencies
   # ══════════════════════════════════════════════════════════════════════════════
 
-  # GHC with dependencies for combine-archive script
+  #                                                                       // ghc
   ghcWithDeps = final.haskellPackages.ghcWithPackages (
     ps: with ps; [
       shelly
@@ -36,7 +36,7 @@ let
   );
 
   # ══════════════════════════════════════════════════════════════════════════════
-  # HELPER SCRIPTS
+  #                                                         // helper // scripts
   # ══════════════════════════════════════════════════════════════════════════════
 
   # combine-archive: Combines multiple .a files into one using ar
@@ -69,7 +69,7 @@ let
   };
 
   # ══════════════════════════════════════════════════════════════════════════════
-  # BUILDER HELPER
+  #                                                         // builder // helper
   # ══════════════════════════════════════════════════════════════════════════════
 
   # Standard CMake flags for all libmodern packages
@@ -159,7 +159,7 @@ let
     );
 
   # ══════════════════════════════════════════════════════════════════════════════
-  # PACKAGES
+  #                                                                  // packages
   # ══════════════════════════════════════════════════════════════════════════════
 
   fmt = import ./fmt.nix { inherit final lib mk-static-cpp; };

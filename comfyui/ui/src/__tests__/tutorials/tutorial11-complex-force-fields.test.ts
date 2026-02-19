@@ -58,9 +58,9 @@ describe('Tutorial 11: Complex Force Fields - Force Field Symphony', () => {
     vi.clearAllMocks();
   });
 
-  // ============================================================================
-  // PHASE 1: DRAG FORCE - OPPOSES VELOCITY (Steps 1-50)
-  // ============================================================================
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  //                                                                // phase // 1
+  // ════════════════════════════════════════════════════════════════════════════
 
   describe('Phase 1: Drag Force - Opposes Velocity (Steps 1-50)', () => {
     test('Step 1-25: Verify drag reduces particle velocity', async () => {
@@ -101,7 +101,7 @@ describe('Tutorial 11: Complex Force Fields - Force Field Symphony', () => {
         particleLayer.update(layer!, i, 1/30, new Map());
       }
 
-      // PROVEN: Drag opposes velocity - particles slow down
+      //                                                                    // proven
       const state = (particleLayer as any).particleSystem.getState();
       expect(state.particleCount).toBeGreaterThan(0);
     });
@@ -144,15 +144,15 @@ describe('Tutorial 11: Complex Force Fields - Force Field Symphony', () => {
         particleLayer.update(layer!, i, 1/30, new Map());
       }
 
-      // PROVEN: Weak drag has less effect than strong drag
+      //                                                                    // proven
       const state = (particleLayer as any).particleSystem.getState();
       expect(state.particleCount).toBeGreaterThan(0);
     });
   });
 
-  // ============================================================================
-  // PHASE 2: GRAVITY FORCE (Steps 51-100)
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                // phase // 2
+  // ════════════════════════════════════════════════════════════════════════════
 
   describe('Phase 2: Gravity Force (Steps 51-100)', () => {
     test('Step 51-75: Test gravity pulls particles downward', async () => {
@@ -194,7 +194,7 @@ describe('Tutorial 11: Complex Force Fields - Force Field Symphony', () => {
         particleLayer.update(layer!, i, 1/30, new Map());
       }
 
-      // PROVEN: Gravity pulls particles downward
+      //                                                                    // proven
       const state = (particleLayer as any).particleSystem.getState();
       expect(state.particleCount).toBeGreaterThan(0);
     });
@@ -238,15 +238,15 @@ describe('Tutorial 11: Complex Force Fields - Force Field Symphony', () => {
         particleLayer.update(layer!, i, 1/30, new Map());
       }
 
-      // PROVEN: Gravity works in any direction
+      //                                                                    // proven
       const state = (particleLayer as any).particleSystem.getState();
       expect(state.particleCount).toBeGreaterThan(0);
     });
   });
 
-  // ============================================================================
-  // PHASE 3: VORTEX FORCE - CURL PROPERTY (Steps 101-150)
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                // phase // 3
+  // ════════════════════════════════════════════════════════════════════════════
 
   describe('Phase 3: Vortex Force - Curl Property (Steps 101-150)', () => {
     test('Step 101-125: Test vortex creates rotational motion', async () => {
@@ -290,7 +290,7 @@ describe('Tutorial 11: Complex Force Fields - Force Field Symphony', () => {
         particleLayer.update(layer!, i, 1/30, new Map());
       }
 
-      // PROVEN: Vortex creates rotational motion
+      //                                                                    // proven
       const state = (particleLayer as any).particleSystem.getState();
       expect(state.particleCount).toBeGreaterThan(0);
     });
@@ -336,15 +336,15 @@ describe('Tutorial 11: Complex Force Fields - Force Field Symphony', () => {
         particleLayer.update(layer!, i, 1/30, new Map());
       }
 
-      // PROVEN: Vortex works with any axis
+      //                                                                    // proven
       const state = (particleLayer as any).particleSystem.getState();
       expect(state.particleCount).toBeGreaterThan(0);
     });
   });
 
-  // ============================================================================
-  // PHASE 4: POINT ATTRACTOR/REPELLER (Steps 151-200)
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                // phase // 4
+  // ════════════════════════════════════════════════════════════════════════════
 
   describe('Phase 4: Point Attractor/Repeller (Steps 151-200)', () => {
     test('Step 151-175: Test point attractor pulls particles', async () => {
@@ -388,7 +388,7 @@ describe('Tutorial 11: Complex Force Fields - Force Field Symphony', () => {
         particleLayer.update(layer!, i, 1/30, new Map());
       }
 
-      // PROVEN: Point attractor pulls particles toward position
+      //                                                                    // proven
       const state = (particleLayer as any).particleSystem.getState();
       expect(state.particleCount).toBeGreaterThan(0);
     });
@@ -434,15 +434,15 @@ describe('Tutorial 11: Complex Force Fields - Force Field Symphony', () => {
         particleLayer.update(layer!, i, 1/30, new Map());
       }
 
-      // PROVEN: Point repeller pushes particles away
+      //                                                                    // proven
       const state = (particleLayer as any).particleSystem.getState();
       expect(state.particleCount).toBeGreaterThan(0);
     });
   });
 
-  // ============================================================================
-  // PHASE 5: FALLOFF FUNCTIONS (Steps 201-250)
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                // phase // 5
+  // ════════════════════════════════════════════════════════════════════════════
 
   describe('Phase 5: Falloff Functions (Steps 201-250)', () => {
     test('Step 201-225: Test linear falloff', async () => {
@@ -486,7 +486,7 @@ describe('Tutorial 11: Complex Force Fields - Force Field Symphony', () => {
         particleLayer.update(layer!, i, 1/30, new Map());
       }
 
-      // PROVEN: Linear falloff provides smooth force decrease
+      //                                                                    // proven
       const state = (particleLayer as any).particleSystem.getState();
       expect(state.particleCount).toBeGreaterThan(0);
     });
@@ -532,15 +532,15 @@ describe('Tutorial 11: Complex Force Fields - Force Field Symphony', () => {
         particleLayer.update(layer!, i, 1/30, new Map());
       }
 
-      // PROVEN: Inverse square falloff provides realistic physics
+      //                                                                    // proven
       const state = (particleLayer as any).particleSystem.getState();
       expect(state.particleCount).toBeGreaterThan(0);
     });
   });
 
-  // ============================================================================
-  // PHASE 6: MULTIPLE FORCE FIELDS INTERACTION (Steps 251-300)
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                // phase // 6
+  // ════════════════════════════════════════════════════════════════════════════
 
   describe('Phase 6: Multiple Force Fields Interaction (Steps 251-300)', () => {
     test('Step 251-275: Test gravity + drag interaction', async () => {
@@ -588,7 +588,7 @@ describe('Tutorial 11: Complex Force Fields - Force Field Symphony', () => {
         particleLayer.update(layer!, i, 1/30, new Map());
       }
 
-      // PROVEN: Multiple forces accumulate correctly
+      //                                                                    // proven
       const state = (particleLayer as any).particleSystem.getState();
       expect(state.particleCount).toBeGreaterThan(0);
     });
@@ -643,15 +643,15 @@ describe('Tutorial 11: Complex Force Fields - Force Field Symphony', () => {
         particleLayer.update(layer!, i, 1/30, new Map());
       }
 
-      // PROVEN: Complex force interactions work correctly
+      //                                                                    // proven
       const state = (particleLayer as any).particleSystem.getState();
       expect(state.particleCount).toBeGreaterThan(0);
     });
   });
 
-  // ============================================================================
-  // PHASE 7: WIND & TURBULENCE FORCES (Steps 301-350)
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                // phase // 7
+  // ════════════════════════════════════════════════════════════════════════════
 
   describe('Phase 7: Wind & Turbulence Forces (Steps 301-350)', () => {
     test('Step 301-325: Test wind force', async () => {
@@ -693,7 +693,7 @@ describe('Tutorial 11: Complex Force Fields - Force Field Symphony', () => {
         particleLayer.update(layer!, i, 1/30, new Map());
       }
 
-      // PROVEN: Wind pushes particles in direction
+      //                                                                    // proven
       const state = (particleLayer as any).particleSystem.getState();
       expect(state.particleCount).toBeGreaterThan(0);
     });
@@ -738,15 +738,15 @@ describe('Tutorial 11: Complex Force Fields - Force Field Symphony', () => {
         particleLayer.update(layer!, i, 1/30, new Map());
       }
 
-      // PROVEN: Turbulence creates chaotic but bounded motion
+      //                                                                    // proven
       const state = (particleLayer as any).particleSystem.getState();
       expect(state.particleCount).toBeGreaterThan(0);
     });
   });
 
-  // ============================================================================
-  // PHASE 8: COMPLETE FORCE FIELD SYMPHONY (Steps 351-400)
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                // phase // 8
+  // ════════════════════════════════════════════════════════════════════════════
 
   describe('Phase 8: Complete Force Field Symphony (Steps 351-400)', () => {
     test('Step 351-400: Create complete force field symphony visualization', async () => {
@@ -864,7 +864,7 @@ describe('Tutorial 11: Complex Force Fields - Force Field Symphony', () => {
       const connectionMesh = system.getConnectionMesh();
       expect(connectionMesh).toBeDefined();
 
-      // PROVEN: Complete force field symphony works beautifully
+      //                                                                    // proven
       // All force types interact correctly
       // Physics proofs guarantee correctness
     });

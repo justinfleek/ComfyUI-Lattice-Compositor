@@ -107,7 +107,7 @@ in
         # Single source of truth: build.toolchain.haskell.packages from _main.nix
         # Devshell adds testing/dev packages on top via extra-haskell-packages.
         #
-        # HLS go-to-definition:
+        #                                                                       // hls
         # - For YOUR code: works via hie.yaml (generated in shellHook)
         # - For library code: HLS uses Haddock docs for type info, but source
         #   navigation requires packages built with -fwrite-ide-info (not default).
@@ -148,7 +148,7 @@ in
               ghcWithAllDeps
 
               # ════════════════════════════════════════════════════════════════
-              # LSP servers - go-to-definition works out of the box
+              #                                                                       // lsp
               # ════════════════════════════════════════════════════════════════
 
               # Haskell: HLS with matching GHC version
@@ -174,7 +174,7 @@ in
             ++ lib.optionals (cfg.nv.enable && pkgs ? nvidia-sdk) [
               pkgs.nvidia-sdk
             ]
-            # GHC WASM toolchain for builtins.wasm plugin development
+            #                                                               // ghc // wasm
             ++ lib.optionals (cfg.ghc-wasm.enable && pkgs ? straylight && pkgs.straylight ? ghc-wasm) (
               let
                 ghcWasm = pkgs.straylight.ghc-wasm;
@@ -196,13 +196,13 @@ in
             # Buck2 build system packages (excludes GHC since devshell has its own ghcWithAllDeps)
             # This includes llvm-git, nvidia-sdk, rustc, lean4, python, etc.
             ++ lib.filter (p: !(lib.hasPrefix "ghc-" (p.name or ""))) (config.straylight.build.packages or [ ])
-            # LRE packages (nativelink, lre-start)
+            #                                                                       // lre
             ++ (config.straylight.lre.packages or [ ]);
 
             shellHook = ''
                 echo "━━━ straylight-naught devshell ━━━"
 
-                # GHC packages are baked into ghcWithPackages - no runtime config needed
+                #                                                                       // ghc
                 # Buck2 uses its own GHC from .buckconfig.local with explicit -package flags
                 echo "GHC: $(${ghcWithAllDeps}/bin/ghc --version)"
                 ${lib.optionalString cfg.ghc-wasm.enable ''

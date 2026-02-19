@@ -25,7 +25,7 @@ const canvasRef = ref<HTMLCanvasElement | null>(null);
 const canvasWidth = 256;
 const canvasHeight = 150;
 
-// IRE levels (video legal range)
+//                                                                       // ire
 const _IRE_LEVELS = {
   black: 0, // 0 IRE (16 in 8-bit video)
   white: 100, // 100 IRE (235 in 8-bit video)
@@ -85,7 +85,7 @@ function drawGrid(ctx: CanvasRenderingContext2D) {
     ctx.stroke();
   });
 
-  // IRE labels
+  //                                                                       // ire
   ctx.fillStyle = "rgba(100, 100, 100, 0.8)";
   ctx.font = "9px monospace";
   ctx.textAlign = "left";

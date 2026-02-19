@@ -8,7 +8,7 @@ import { describe, expect, test } from "vitest";
 // Inline the inverseMass calculation for testing
 // This matches the implementation in PhysicsEngine.ts
 function calculateInverseMass(type: string, mass: number): number {
-  // BUG-005 FIX: Prevent division by zero when mass is 0 for dynamic bodies
+  //                                                                       // bug
   // Use || 1 pattern like moment of inertia calculation
   return type === "static" || type === "dead"
     ? 0

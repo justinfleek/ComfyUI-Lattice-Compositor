@@ -27,9 +27,9 @@ import Data.List (intercalate)
 import Data.Text (Text)
 import qualified Data.Text as T
 
--- =============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 -- Types (mirror Script.dhall)
--- =============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 data Path
     = PathSrc Text -- Source-relative
@@ -101,9 +101,9 @@ data Condition
 
 type Script = [Command]
 
--- =============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 -- Bash Compilation
--- =============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Compile a script to bash
 toBash :: Script -> Text
@@ -284,9 +284,9 @@ pathBasename = \case
     PathTmp p -> T.takeWhileEnd (/= '/') p
     PathAbs p -> T.takeWhileEnd (/= '/') p
 
--- =============================================================================
--- WASM/builtins.wasm Compilation
--- =============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                                      // wasm
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Compile to WASM action list (JSON for builtins.wasm)
 toWasm :: Script -> Text
@@ -310,7 +310,7 @@ cmdToWasm = \case
         wasmAction "run" [("cmd", "\"" <> runCmd <> "\""), ("args", "[" <> T.intercalate "," (map interpToWasm runArgs) <> "]")]
     CmdShell raw ->
         wasmAction "shell" [("script", "\"" <> escapeJson raw <> "\"")]
-    -- TODO: other commands
+    --                                                                      // todo
     other -> wasmAction "todo" [("cmd", "\"" <> T.pack (show other) <> "\"")]
 
 wasmAction :: Text -> [(Text, Text)] -> Text
@@ -352,9 +352,9 @@ boolToWasm False = "false"
 escapeJson :: Text -> Text
 escapeJson = T.replace "\"" "\\\"" . T.replace "\\" "\\\\" . T.replace "\n" "\\n"
 
--- =============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 -- Nix Expression Compilation
--- =============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Compile to Nix expression (for use in builders)
 toNix :: Script -> Text

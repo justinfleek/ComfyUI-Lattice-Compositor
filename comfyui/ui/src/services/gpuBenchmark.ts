@@ -17,9 +17,9 @@ import {
   initializeGPUEffects,
 } from "./gpuEffectDispatcher";
 
-// ============================================================================
-// TYPES
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                                                     // types
+// ════════════════════════════════════════════════════════════════════════════
 
 export interface BenchmarkResult {
   effectKey: string;
@@ -44,9 +44,9 @@ export interface BenchmarkSuite {
   };
 }
 
-// ============================================================================
-// TEST DATA GENERATION
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                // test // data // generation
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Create a test canvas with random noise pattern
@@ -109,9 +109,9 @@ function createTestEffect(
   };
 }
 
-// ============================================================================
-// BENCHMARK EFFECTS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                      // benchmark // effects
+// ════════════════════════════════════════════════════════════════════════════
 
 const BENCHMARK_EFFECTS: Array<{ key: string; params: Record<string, PropertyValue> }> = [
   // Blur effects (high GPU benefit)
@@ -130,9 +130,9 @@ const BENCHMARK_EFFECTS: Array<{ key: string; params: Record<string, PropertyVal
   { key: "turbulent-displace", params: { amount: 50 } },
 ];
 
-// ============================================================================
-// BENCHMARK FUNCTIONS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                    // benchmark // functions
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Run a single effect benchmark
@@ -150,7 +150,7 @@ async function benchmarkEffect(
   processEffectStack(effects, canvas, 0, "high");
   await processEffectStackAsync(effects, canvas, 0);
 
-  // CPU benchmark
+  //                                                                       // cpu
   const cpuStart = performance.now();
   for (let i = 0; i < iterations; i++) {
     processEffectStack(effects, canvas, 0, "high");
@@ -158,7 +158,7 @@ async function benchmarkEffect(
   const cpuEnd = performance.now();
   const cpuTimeMs = (cpuEnd - cpuStart) / iterations;
 
-  // GPU benchmark
+  //                                                                       // gpu
   const gpuStart = performance.now();
   for (let i = 0; i < iterations; i++) {
     await processEffectStackAsync(effects, canvas, 0);

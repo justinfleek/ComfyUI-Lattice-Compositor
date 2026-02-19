@@ -41,7 +41,7 @@ export async function detectGPUTier(): Promise<GPUTier> {
       });
 
       if (adapter) {
-        // GPUAdapter.info exists in newer WebGPU spec - define shape without extending
+        //                                                                      // gpua
         interface GPUAdapterInfoLike {
           device?: string;
           description?: string;
@@ -103,7 +103,7 @@ export async function detectGPUTier(): Promise<GPUTier> {
     };
   }
 
-  // CPU fallback
+  //                                                                       // cpu
   return {
     tier: "cpu",
     vram: 0,

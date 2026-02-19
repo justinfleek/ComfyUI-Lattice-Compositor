@@ -56,7 +56,7 @@ export default defineConfig({
     },
   ],
 
-  // IMPORTANT: ComfyUI must be running BEFORE tests
+  //                                                                 // important
   // Start ComfyUI manually: cd /path/to/ComfyUI && python main.py --port 8188
   // The Lattice Compositor extension opens from left menu bar under "Motion Compositor"
   // 

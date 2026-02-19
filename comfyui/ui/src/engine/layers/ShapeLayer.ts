@@ -71,9 +71,9 @@ import type {
 } from "@/types/shapes";
 import { BaseLayer } from "./BaseLayer";
 
-// ============================================================================
-// EVALUATED SHAPE STATE
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                               // evaluated // shape // state
+// ════════════════════════════════════════════════════════════════════════════
 
 interface EvaluatedPath {
   path: BezierPath;
@@ -114,9 +114,9 @@ interface EvaluatedPath {
   groupBlendMode?: string;
 }
 
-// ============================================================================
-// SHAPE LAYER CLASS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                   // shape // layer // class
+// ════════════════════════════════════════════════════════════════════════════
 
 export class ShapeLayer extends BaseLayer {
   public readonly type = "shape" as const;
@@ -190,9 +190,9 @@ export class ShapeLayer extends BaseLayer {
     this.renderShape();
   }
 
-  // ============================================================================
-  // SIZE MANAGEMENT
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                        // size // management
+  // ════════════════════════════════════════════════════════════════════════════
 
   /**
    * Set canvas size (should match composition)
@@ -218,7 +218,7 @@ export class ShapeLayer extends BaseLayer {
     this.ctx = ctx;
 
     // Update texture
-    // THREE.CanvasTexture.image accepts HTMLCanvasElement | OffscreenCanvas at runtime
+    //                                                                     // three
     // Deterministic: Explicit type check - OffscreenCanvas and HTMLCanvasElement are both valid
     if (this.canvas && (this.canvas.constructor.name === "OffscreenCanvas" || this.canvas instanceof HTMLCanvasElement)) {
       // Type guard ensures canvas is compatible with texture.image
@@ -236,9 +236,9 @@ export class ShapeLayer extends BaseLayer {
     this.renderShape();
   }
 
-  // ============================================================================
-  // SHAPE DATA ACCESS
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                   // shape // data // access
+  // ════════════════════════════════════════════════════════════════════════════
 
   getShapeData(): ShapeLayerData {
     return this.shapeData;
@@ -266,9 +266,9 @@ export class ShapeLayer extends BaseLayer {
     }
   }
 
-  // ============================================================================
-  // FRAME EVALUATION
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                       // frame // evaluation
+  // ════════════════════════════════════════════════════════════════════════════
 
   evaluateFrame(frame: number): void {
     this.currentFrame = frame;
@@ -307,9 +307,9 @@ export class ShapeLayer extends BaseLayer {
     this.renderShape();
   }
 
-  // ============================================================================
-  // SHAPE RENDERING
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                        // shape // rendering
+  // ════════════════════════════════════════════════════════════════════════════
 
   /**
    * Main render function
@@ -1089,9 +1089,9 @@ export class ShapeLayer extends BaseLayer {
     }
   }
 
-  // ============================================================================
-  // CLEANUP
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                   // cleanup
+  // ════════════════════════════════════════════════════════════════════════════
 
   dispose(): void {
     // Dispose texture

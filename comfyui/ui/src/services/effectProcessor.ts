@@ -20,10 +20,10 @@ import type { AudioReactiveModifiers } from "./audioReactiveMapping";
 import { type GPURenderPath, gpuEffectDispatcher } from "./gpuEffectDispatcher";
 import { interpolateProperty } from "./interpolation";
 
-// ============================================================================
-// AUDIO MODIFIER APPLICATION
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                          // audio // modifier // application
 // Audio-reactive modifiers for effect parameters (glow intensity, glitch amount, etc.)
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Apply audio-reactive modifiers to effect parameters
@@ -89,7 +89,7 @@ function applyAudioModifiersToEffect(
     }
   }
 
-  // RGB Split / Chromatic Aberration - apply audio-reactive channel separation
+  //                                                                  // rgb // s
   // Uses per-channel offsets: red_offset_x, blue_offset_x (pixels)
   if (effectKey === "rgb-split" || effectKey === "chromatic-aberration") {
     if (
@@ -106,14 +106,14 @@ function applyAudioModifiersToEffect(
   }
 }
 
-// ============================================================================
-// CANVAS BUFFER POOL (imported from @/utils/canvasPool)
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                  // canvas // buffer // pool
+// ════════════════════════════════════════════════════════════════════════════
 
-// ============================================================================
-// EFFECT RESULT CACHE
+// ════════════════════════════════════════════════════════════════════════════
+//                                                 // effect // result // cache
 // Caches effect output when parameters haven't changed
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 interface EffectCacheEntry {
   result: ImageData;
@@ -326,9 +326,9 @@ export function cleanupEffectResources(): void {
   canvasPool.cleanup();
 }
 
-// ============================================================================
-// EFFECT TYPES
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                           // effect // types
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Evaluated effect parameters at a specific frame

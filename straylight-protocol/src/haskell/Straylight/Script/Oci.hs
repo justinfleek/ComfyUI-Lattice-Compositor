@@ -60,9 +60,9 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
 import qualified Data.Vector as V
 
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 -- Types
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | OCI runtime configuration
 data Config = Config
@@ -97,9 +97,9 @@ data ContainerEnv = ContainerEnv
 emptyEnv :: ContainerEnv
 emptyEnv = ContainerEnv Nothing Nothing
 
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 -- Image Operations
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Compute cache key from image name (SHA256, first 16 chars)
 computeCacheKey :: Text -> Text
@@ -188,9 +188,9 @@ parseEnvFromConfig val = case val of
          in (k, T.drop 1 v)
     extractEnvVar _ = ("", "")
 
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 -- Sandbox Construction
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Build a base sandbox for running containers (no GPU)
 baseSandbox :: FilePath -> Bwrap.Sandbox
@@ -229,9 +229,9 @@ applyGpuBinds binds sandbox = go binds sandbox
     go ("--ro-bind" : src : dst : rest) s = go rest (Bwrap.roBind (unpack src) (unpack dst) s)
     go (_ : rest) s = go rest s
 
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 -- Path Building
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Build PATH for container with nvidia
 buildPath :: ContainerEnv -> Text

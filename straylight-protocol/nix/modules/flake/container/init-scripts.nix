@@ -8,7 +8,7 @@
 #
 #                                                         — Neuromancer
 #
-# VM init scripts for Firecracker and Cloud Hypervisor.
+#                                                                        // vm
 # These are Nix strings that get written via pkgs.writeText.
 #
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

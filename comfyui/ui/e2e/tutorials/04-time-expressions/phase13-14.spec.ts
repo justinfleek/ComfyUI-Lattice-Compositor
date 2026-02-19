@@ -74,7 +74,7 @@ test.describe("Tutorial 04: Expressions - Phases 13-14 (Steps 276-355)", () => {
     );
     // Updates once per second
 
-    // UNDO/REDO
+    //                                                                      // undo
     await h.undo();
     await h.redo();
   });
@@ -146,7 +146,7 @@ test.describe("Tutorial 04: Expressions - Phases 13-14 (Steps 276-355)", () => {
     );
     // Fades in over 1 second from layer start
 
-    // UNDO/REDO
+    //                                                                      // undo
     await h.undo();
     await h.redo();
   });

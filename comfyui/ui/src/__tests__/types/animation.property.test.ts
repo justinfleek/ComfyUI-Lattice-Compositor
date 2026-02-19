@@ -15,9 +15,9 @@ import {
   type Keyframe,
 } from "@/types/animation";
 
-// ============================================================
-// ARBITRARIES
-// ============================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                                               // arbitraries
+// ════════════════════════════════════════════════════════════════════════════
 
 const propertyTypeArb = fc.constantFrom(
   "number" as const,
@@ -90,9 +90,9 @@ const colorValueArb = fc.record({
   a: fc.double({ min: 0, max: 1, noNaN: true }),
 });
 
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
 // createAnimatableProperty TESTS
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 describe("PROPERTY: createAnimatableProperty", () => {
   it("returns object with all required fields", () => {
@@ -240,9 +240,9 @@ describe("PROPERTY: createAnimatableProperty", () => {
   });
 });
 
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
 // createKeyframe TESTS
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 describe("PROPERTY: createKeyframe", () => {
   it("returns object with all required fields", () => {
@@ -370,7 +370,7 @@ describe("PROPERTY: createKeyframe", () => {
     );
   });
 
-  // BUG-002: Validates NaN/Infinity rejection
+  //                                                                       // bug
   it("throws on NaN frame (BUG-002 fix verification)", () => {
     expect(() => createKeyframe(NaN, 100)).toThrow("Invalid keyframe frame");
   });

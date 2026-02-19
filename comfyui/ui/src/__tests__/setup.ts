@@ -11,9 +11,9 @@
 
 import { vi } from 'vitest';
 
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // ImageData Polyfill for Node.js/happy-dom environment
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Polyfill for ImageData browser API.
@@ -109,7 +109,7 @@ class MockCompartment implements SESCompartment {
     // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
     const globalsObj = (globals !== null && globals !== undefined && typeof globals === "object" && globals !== null) ? (globals as Record<string, JSONValue>) : {};
     this.globals = globalsObj;
-    // SESCompartment requires globalThis property
+    //                                                                      // sesc
     const globalThisObj = (globals !== null && globals !== undefined && typeof globals === "object" && globals !== null) ? globals : {};
     this.globalThis = globalThisObj;
   }
@@ -148,7 +148,7 @@ class MockCompartment implements SESCompartment {
 }
 
 // Add to globalThis so sesEvaluator can find them
-// IMPORTANT: This must happen BEFORE any imports that use sesEvaluator
+//                                                                 // important
 // Type-safe polyfill assignment - these exist at runtime but may not be in TypeScript types
 // Properly extend globalThis type instead of using double assertion
 import type { SESCompartmentConstructor } from "@/types/ses-ambient";

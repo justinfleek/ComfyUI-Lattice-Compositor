@@ -33,9 +33,9 @@ import {
   type LevelsParams,
 } from "./webgpuRenderer";
 
-// ============================================================================
-// TYPES
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                                                     // types
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Runtime value type for type guards
@@ -43,9 +43,9 @@ import {
  */
 type RuntimeValue = string | number | boolean | object | null | undefined | bigint | symbol;
 
-// ============================================================================
-// PARAMETER VALIDATION - DETERMINISTIC WITH MIN/MAX/DEFAULT/VERIFICATION
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                   // parameter // validation
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Validate and convert JSONValue to BlurParams
@@ -277,17 +277,17 @@ export interface TexturePoolEntry {
   lastUsed: number;
 }
 
-// ============================================================================
-// EFFECT GPU MAPPINGS
+// ════════════════════════════════════════════════════════════════════════════
+//                                                 // effect // gpu // mappings
 // Define which effects can use GPU acceleration
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
-// ============================================================================
-// GLSL SHADERS FOR STYLIZE EFFECTS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                              // glsl // shaders // for // stylize // effects
+// ════════════════════════════════════════════════════════════════════════════
 
 const GLSL_SHADERS: Record<string, string> = {
-  // RGB Split (Chromatic Aberration)
+  //                                                                  // rgb // s
   "rgb-split": `
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   vec2 uv = fragCoord / iResolution.xy;
@@ -391,7 +391,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   fragColor = vec4(vec3(dot), color.a);
 }`,
 
-  // VHS Effect
+  //                                                                  // vhs // e
   vhs: `
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   vec2 uv = fragCoord / iResolution.xy;
@@ -545,10 +545,10 @@ const EFFECT_GPU_MAPPINGS: EffectGPUMapping[] = [
   { effectKey: "ellipse", preferGPU: false },
 ];
 
-// ============================================================================
-// TEXTURE POOL
+// ════════════════════════════════════════════════════════════════════════════
+//                                                           // texture // pool
 // Reduces GPU memory allocation overhead
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 class TexturePool {
   private pool: TexturePoolEntry[] = [];
@@ -630,9 +630,9 @@ class TexturePool {
   }
 }
 
-// ============================================================================
-// GPU EFFECT DISPATCHER
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                               // gpu // effect // dispatcher
+// ════════════════════════════════════════════════════════════════════════════
 
 class GPUEffectDispatcher {
   private capabilities: GPUCapabilityInfo = {
@@ -853,7 +853,7 @@ class GPUEffectDispatcher {
         const validatedParams = validateDirectionalBlurParams(params);
         return webgpuRenderer.directionalBlur(input, validatedParams);
       },
-      // NOTE: displacement method not yet implemented in WebGPURenderer
+      //                                                                      // note
       // Pipeline exists (displacementPipeline) but no public method
       warp: (input, params) => {
         // Deterministic: Validate params structure with explicit min/max/default
@@ -1384,9 +1384,9 @@ class GPUEffectDispatcher {
   }
 }
 
-// ============================================================================
-// SINGLETON EXPORT
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                       // singleton // export
+// ════════════════════════════════════════════════════════════════════════════
 
 export const gpuEffectDispatcher = new GPUEffectDispatcher();
 

@@ -54,5 +54,5 @@ export * as SettingsSchemas from "./settings";
 // Drag-Drop schemas (ProjectItem for drag-drop operations)
 export * as DragDropSchemas from "./dragdrop";
 
-// AI schemas (MotionIntentResult, MotionSuggestion for AI responses)
+//                                                                        // ai
 export * as AISchemas from "./ai";

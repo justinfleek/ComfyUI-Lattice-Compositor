@@ -38,9 +38,9 @@ import Lattice.State.Asset
   , MaterialSide(..)
   )
 
--- ============================================================================
--- TEST DATA HELPERS
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                   // test // data // helpers
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Create test material config
 createTestMaterialConfig :: Text -> Text -> PBRMaterialConfig
@@ -126,9 +126,9 @@ createTestAssetState materials selectedMaterialId svgDocuments selectedSvgId mes
     , assetStateIsLoadingEnvironment = isLoadingEnvironment
     }
 
--- ============================================================================
--- TESTS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                                     // tests
+-- ════════════════════════════════════════════════════════════════════════════
 
 spec :: TestTree
 spec = testGroup "Asset State Functions"

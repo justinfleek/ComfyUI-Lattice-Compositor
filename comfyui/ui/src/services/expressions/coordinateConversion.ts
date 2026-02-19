@@ -9,9 +9,9 @@ import { isFiniteNumber } from "@/utils/typeGuards";
 import { safeDivide } from "@/utils/numericSafety";
 import type { ExpressionContext } from "./types";
 
-// ============================================================
-// COORDINATE CONVERSION TYPES
-// ============================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                         // coordinate // conversion // types
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Transform matrix interface for coordinate conversion
@@ -24,9 +24,9 @@ export interface LayerTransform {
   parent?: LayerTransform | null;
 }
 
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
 // 3D ORIENTATION FUNCTIONS
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * lookAt - Calculate rotation to face a target point
@@ -98,9 +98,9 @@ export function orientToPath(
   return [0, 0, 0];
 }
 
-// ============================================================
-// COORDINATE CONVERSION FUNCTIONS
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                     // coordinate // conversion // functions
+// ════════════════════════════════════════════════════════════════════════════
 
 // Maximum recursion depth for parent traversal (prevents stack overflow)
 const MAX_PARENT_DEPTH = 50;
@@ -252,7 +252,7 @@ export function fromComp(
   let z3 = z2;
 
   // Inverse scale (mathematically rigorous division by zero protection)
-  // PROVEN: Division is safe - zero denominators handled with fallback
+  //                                                                    // proven
   // Type proof: scale[i] ∈ ℝ ∪ {undefined} → ℝ
   const scale0 = scale[0];
   const sx = (isFiniteNumber(scale0) ? scale0 : 100) / 100;
@@ -261,7 +261,7 @@ export function fromComp(
   const scale2 = scale[2];
   const sz = (isFiniteNumber(scale2) ? scale2 : 100) / 100;
   
-  // PROVEN: safeDivide() prevents division by zero and NaN propagation
+  //                                                                    // proven
   // Fallback to 1.0 preserves coordinate (no scaling) when scale is 0
   // This is mathematically correct: inverse of scale 0 is undefined, so we preserve the coordinate
   x3 = safeDivide(x3, sx, x3); // If sx === 0, return x3 unchanged (no inverse scaling)
@@ -306,9 +306,9 @@ export function fromWorld(
   return fromComp(point3D, layerTransform);
 }
 
-// ============================================================
-// COORDINATE CONVERSION NAMESPACE
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                     // coordinate // conversion // namespace
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Coordinate conversion namespace

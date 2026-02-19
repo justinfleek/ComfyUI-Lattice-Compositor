@@ -25,9 +25,9 @@ import Lattice.Utils.Defaults (defaultText, defaultDouble, defaultBool)
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit (testCase, assertEqual, assertBool)
 
--- ============================================================================
--- TEST HELPERS
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                           // test // helpers
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Create a test property driver with minimal required fields
 -- All values have explicit defaults - no Maybe/Nothing
@@ -93,9 +93,9 @@ createPropertyDriver id_ targetLayerId targetProperty sourceLayerId sourceProper
     , propertyDriverBlendAmount = 1.0
     }
 
--- ============================================================================
--- TEST SUITE
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                             // test // suite
+-- ════════════════════════════════════════════════════════════════════════════
 
 spec :: TestTree
 spec =

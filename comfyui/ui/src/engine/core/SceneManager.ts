@@ -18,9 +18,9 @@ import type { JSONValue } from "@/types/dataAsset";
  */
 type RuntimeValue = string | number | boolean | object | null | undefined | bigint | symbol;
 
-// ============================================================================
-// TYPE EXTENSIONS FOR THREE.JS COMPATIBILITY
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                        // type // extensions // for // three
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Extended Object3D interface for compatibility with objects from different Three.js instances
@@ -189,9 +189,9 @@ export class SceneManager {
     this.scene.add(fillLight);
   }
 
-  // ============================================================================
-  // COMPOSITION MANAGEMENT
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                 // composition // management
+  // ════════════════════════════════════════════════════════════════════════════
 
   /**
    * Add object to composition group
@@ -290,9 +290,9 @@ export class SceneManager {
     return [...this.compositionGroup.children];
   }
 
-  // ============================================================================
-  // OVERLAY MANAGEMENT
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                     // overlay // management
+  // ════════════════════════════════════════════════════════════════════════════
 
   /**
    * Add object to overlay group
@@ -459,7 +459,7 @@ export class SceneManager {
    * internal structures (like children arrays) to be incompatible.
    */
   prepareForRender(): void {
-      // NOTE: This function patches Three.js runtime objects, which are NOT JSON-serializable.
+      //                                                                      // note
       // We use a permissive type here that allows Three.js objects (Matrix4, Layers, functions, etc.)
       // This is acceptable because these are internal runtime patches, not JSON data.
       type ThreeJSObjectPatch = THREE.Object3D & {
@@ -486,7 +486,7 @@ export class SceneManager {
       }
       const objAny = obj as ThreeJSObjectPatch;
       
-      // CRITICAL: Ensure children is always an array
+      //                                                                  // critical
       // This fixes "Cannot read properties of undefined (reading 'length')"
       // when TransformControls from another Three.js instance creates gizmo parts
       // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy undefined/null checks
@@ -502,7 +502,7 @@ export class SceneManager {
         objAny.matrixWorld = new THREE.Matrix4();
       }
 
-      // CRITICAL: Ensure layers property exists
+      //                                                                  // critical
       // This fixes "Cannot read properties of undefined (reading 'test')"
       // when Three.js calls camera.layers.test(object.layers) during render
       if (!objAny.layers) {
@@ -601,9 +601,9 @@ export class SceneManager {
     }
   }
 
-  // ============================================================================
-  // DEBUG HELPERS
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                          // debug // helpers
+  // ════════════════════════════════════════════════════════════════════════════
 
   /**
    * Toggle debug helpers visibility
@@ -641,9 +641,9 @@ export class SceneManager {
     this.debugGroup.add(helper);
   }
 
-  // ============================================================================
-  // BACKGROUND
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                // background
+  // ════════════════════════════════════════════════════════════════════════════
 
   /**
    * Set scene background color
@@ -674,9 +674,9 @@ export class SceneManager {
     return "";
   }
 
-  // ============================================================================
-  // ENVIRONMENT MAP (HDRI)
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                        // environment // map
+  // ════════════════════════════════════════════════════════════════════════════
 
   /**
    * Initialize PMREM generator (requires WebGL renderer)
@@ -919,9 +919,9 @@ export class SceneManager {
     this.setEnvironmentConfig({ useAsBackground: use });
   }
 
-  // ============================================================================
-  // COMPOSITION BOUNDS
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                     // composition // bounds
+  // ════════════════════════════════════════════════════════════════════════════
 
   /**
    * Set composition dimensions and create/update bounds frame
@@ -1242,9 +1242,9 @@ export class SceneManager {
     }
   }
 
-  // ============================================================================
-  // RAYCASTING
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                // raycasting
+  // ════════════════════════════════════════════════════════════════════════════
 
   /**
    * Raycast against composition objects
@@ -1271,9 +1271,9 @@ export class SceneManager {
     throw new Error(`Layer with ID "${layerId}" not found in scene`);
   }
 
-  // ============================================================================
-  // DISPOSAL
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                  // disposal
+  // ════════════════════════════════════════════════════════════════════════════
 
   /**
    * Dispose object and its resources

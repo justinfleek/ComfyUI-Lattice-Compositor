@@ -40,9 +40,9 @@ import type { ToolCall } from "./toolDefinitions";
 // Re-export for backwards compatibility
 export { hardenedScopeManager } from "./security/hardenedScopeManager";
 
-// ============================================================================
-// TYPES
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                                                     // types
+// ════════════════════════════════════════════════════════════════════════════
 
 export interface SecureExecutionResult {
   success: boolean;
@@ -64,9 +64,9 @@ export interface SecureExecutorOptions {
   confirmationId?: string;
 }
 
-// ============================================================================
-// SECURE EXECUTOR
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                        // secure // executor
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Execute a tool call with full security checks
@@ -157,7 +157,7 @@ export async function executeToolCallSecure(
         },
       );
 
-      // HARDENED: Report to scope manager (affects suspicion score)
+      //                                                                  // hardened
       for (const injection of injections) {
         const severity = injection.confidence === "high" ? 5 : injection.confidence === "medium" ? 2 : 1;
         reportInjectionDetected(`${injection.type}: ${injection.details || "unknown"}`);
@@ -165,7 +165,7 @@ export async function executeToolCallSecure(
 
       // Block high-confidence injections
       if (highConfidence.length > 0) {
-        // HARDENED: Auto-downgrade to readonly on injection
+        //                                                                  // hardened
         hardenedScopeManager.autoDowngrade("High-confidence injection detected");
 
         throw new Error(`[SecureActionExecutor] Blocked: prompt injection detected (${highConfidence[0].type}). High-confidence security threat detected and blocked.`);
@@ -322,9 +322,9 @@ export async function confirmPendingToolCall(
   return executeToolCallSecure(toolCall, { confirmed: true, bypassScopeCheck: true });
 }
 
-// ============================================================================
-// SCOPE MANAGEMENT (using hardened manager)
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                       // scope // management
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Get current scope level

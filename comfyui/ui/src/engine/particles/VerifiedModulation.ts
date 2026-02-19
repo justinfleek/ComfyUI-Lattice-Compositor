@@ -9,9 +9,9 @@
 
 import type { ParticleBuffer } from "./VerifiedParticleBuffer";
 
-// ============================================================================
-// MODULATION CURVES
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                                      // modulation // curves
+// ════════════════════════════════════════════════════════════════════════════
 
 export type ModulationCurve = 'linear' | 'easeIn' | 'easeOut' | 'easeInOut';
 
@@ -42,9 +42,9 @@ function evalCurve(curve: ModulationCurve, t: number): number {
   }
 }
 
-// ============================================================================
-// LIFETIME MODULATION
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                    // lifetime // modulation
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Apply lifetime-based size modulation
@@ -84,8 +84,8 @@ export function applyLifetimeSizeModulation(
     // Interpolate between start and end scale
     const scale = safeStartScale + (safeEndScale - safeStartScale) * curveVal;
     
-    // CRITICAL: Multiply initial size, not current size
-    // PROVEN: This prevents exponential decay/compounding
+    //                                                                  // critical
+    //                                                                    // proven
     size[i] = initialSize[i] * scale;
     
     // Ensure result is finite and positive

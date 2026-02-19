@@ -1,6 +1,6 @@
-// ============================================================
-// LATTICE PROJECT SCHEMA - Complete Type Definitions
-// ============================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                              // lattice // project // schema
+// ════════════════════════════════════════════════════════════════════════════
 //
 // Architecture Overview:
 // - Projects contain multiple Compositions
@@ -8,7 +8,7 @@
 // - Layers can reference other compositions (nested compositions)
 // - Video assets store duration metadata for auto-sizing
 // - ComfyUI sub-graph mapping via workflowId references
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 // Import types needed for local use in this file
 import type { AnimatableProperty } from "./animation";
@@ -201,9 +201,9 @@ export interface ProjectMeta {
   author?: string;
 }
 
-// ============================================================
-// COMPOSITION - Independent timeline with its own layers
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                               // composition
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Timeline Marker
@@ -218,7 +218,7 @@ export interface Marker {
   comment?: string; // Optional comment/note
 }
 
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export interface Composition {
   id: string;
@@ -300,9 +300,9 @@ export interface CompositionSettings {
   motionBlurSamples?: number; // Samples per frame (2-64, higher = smoother but slower)
 }
 
-// ============================================================
-// COMFYUI WORKFLOW MAPPING
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                            // comfyui // workflow // mapping
+// ════════════════════════════════════════════════════════════════════════════
 
 export interface WorkflowInput {
   name: string;
@@ -318,9 +318,9 @@ export interface WorkflowOutput {
   outputName: string;
 }
 
-// ============================================================
-// ASSET REFERENCES
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                       // asset // references
+// ════════════════════════════════════════════════════════════════════════════
 
 /** Asset types supported by the compositor */
 export type AssetType =
@@ -395,11 +395,11 @@ export interface AssetReference {
     opacity?: string; // Asset ID for opacity map
   };
 
-  // HDRI metadata
+  //                                                                      // hdri
   hdriExposure?: number;
   hdriRotation?: number;
 
-  // SVG metadata (for extrusion)
+  //                                                                       // svg
   svgPaths?: number; // Number of paths in SVG
   svgViewBox?: { x: number; y: number; width: number; height: number };
 
@@ -410,9 +410,9 @@ export interface AssetReference {
   spriteFrameRate?: number;
 }
 
-// ============================================================
-// LAYER TYPES
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                            // layer // types
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Auto-Orient Mode - How a layer orients itself in 3D space
@@ -645,9 +645,9 @@ export type LayerType =
   | "effectLayer" // Effect layer (effects apply to layers below)
   | "adjustment"; // @deprecated Use 'effectLayer' instead
 
-// ============================================================
-// MOTION BLUR SETTINGS
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                // motion // blur // settings
+// ════════════════════════════════════════════════════════════════════════════
 
 export type MotionBlurType =
   | "standard" // Standard shutter-based blur
@@ -679,9 +679,9 @@ export interface LayerMotionBlurSettings {
   radialAmount?: number;
 }
 
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
 // 3D MATERIAL OPTIONS (Industry Standard)
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export interface LayerMaterialOptions {
   /** Whether this layer casts shadows */
@@ -704,10 +704,10 @@ export interface LayerMaterialOptions {
   metal: number;
 }
 
-// ============================================================
-// LAYER DATA TYPE MAPPING
+// ════════════════════════════════════════════════════════════════════════════
+//                                          // layer // data // type // mapping
 // Maps LayerType to its corresponding data type for type safety
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export type LayerDataMap = {
   spline: SplineData;
@@ -861,9 +861,9 @@ export const BLEND_MODE_CATEGORIES = {
   ],
 } as const;
 
-// ============================================================
-// IMAGE LAYER DATA - Static image display
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                    // image // layer // data
+// ════════════════════════════════════════════════════════════════════════════
 
 export interface ImageLayerData {
   // Asset reference - empty string if using inline source
@@ -890,9 +890,9 @@ export interface ImageLayerData {
   segmentationMaskId: string; // Empty string if not from segmentation
 }
 
-// ============================================================
-// DEPTH LAYER DATA - Depth map visualization for AI workflows
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                    // depth // layer // data
+// ════════════════════════════════════════════════════════════════════════════
 
 export interface DepthLayerData {
   /** Source asset ID (depth map image) */
@@ -923,9 +923,9 @@ export interface DepthLayerData {
   wireframe: boolean;
 }
 
-// ============================================================
-// NORMAL LAYER DATA - Normal map visualization for AI workflows
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                   // normal // layer // data
+// ════════════════════════════════════════════════════════════════════════════
 
 export interface NormalLayerData {
   /** Source asset ID (normal map image) */
@@ -953,9 +953,9 @@ export interface NormalLayerData {
   ambientIntensity: number;
 }
 
-// ============================================================
-// AUDIO LAYER DATA - Audio-only layer (no visual)
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                    // audio // layer // data
+// ════════════════════════════════════════════════════════════════════════════
 
 export interface AudioLayerData {
   /** Source asset ID (audio file) */
@@ -1001,9 +1001,9 @@ export interface AudioLayerData {
   markers?: Array<{ frame: number; label: string }>;
 }
 
-// ============================================================
-// GENERATED LAYER DATA - AI-generated content
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                // generated // layer // data
+// ════════════════════════════════════════════════════════════════════════════
 
 export interface GeneratedLayerData {
   /** Generated content type */
@@ -1038,9 +1038,9 @@ export interface GeneratedLayerData {
   lastGenerated?: string;
 }
 
-// ============================================================
-// GROUP LAYER DATA - Layer folder/group
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                    // group // layer // data
+// ════════════════════════════════════════════════════════════════════════════
 
 export interface GroupLayerData {
   /** Collapsed state in timeline */
@@ -1056,9 +1056,9 @@ export interface GroupLayerData {
   isolate: boolean;
 }
 
-// ============================================================
-// CONTROL LAYER DATA - Null object / transform controller
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                  // control // layer // data
+// ════════════════════════════════════════════════════════════════════════════
 
 export interface ControlLayerData {
   /** Visual size of control icon in editor */
@@ -1077,10 +1077,10 @@ export interface ControlLayerData {
   iconColor: string;
 }
 
-// ============================================================
-// EFFECT LAYER DATA - Effects apply to layers below
+// ════════════════════════════════════════════════════════════════════════════
+//                                                   // effect // layer // data
 // (Previously called Adjustment Layer - renamed for trade dress)
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export interface EffectLayerData {
   /** Effect layer flag (always true for effect layers) */
@@ -1104,9 +1104,9 @@ export function createDefaultEffectLayerData(): EffectLayerData {
   };
 }
 
-// ============================================================
-// LIGHT LAYER DATA - Point, spot, directional, ambient lights
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                    // light // layer // data
+// ════════════════════════════════════════════════════════════════════════════
 
 export interface LightLayerData {
   /** Light type */
@@ -1164,9 +1164,9 @@ export function createDefaultLightLayerData(): LightLayerData {
   };
 }
 
-// ============================================================
-// SOLID LAYER DATA - Solid color rectangle
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                    // solid // layer // data
+// ════════════════════════════════════════════════════════════════════════════
 
 /** Motion path configuration for layer position animation */
 export interface MotionPathConfig {
@@ -1217,9 +1217,9 @@ export function createDefaultSolidLayerData(
   };
 }
 
-// ============================================================
-// NULL LAYER DATA - Invisible transform controller
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                     // null // layer // data
+// ════════════════════════════════════════════════════════════════════════════
 
 export interface NullLayerData {
   /** Visual size of null icon in editor */
@@ -1235,10 +1235,10 @@ export function createDefaultNullLayerData(): NullLayerData {
   };
 }
 
-// ============================================================
-// POSE LAYER DATA
+// ════════════════════════════════════════════════════════════════════════════
+//                                                     // pose // layer // data
 // OpenPose skeleton for ControlNet conditioning
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export type PoseFormat = "coco18" | "body25" | "custom";
 
@@ -1344,9 +1344,9 @@ function createDefaultTPose(): PoseKeypoint[] {
   ];
 }
 
-// ============================================================
-// MATTE LAYER DATA - Procedural matte/mask generation
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                    // matte // layer // data
+// ════════════════════════════════════════════════════════════════════════════
 
 export interface MatteLayerData {
   /** Matte extraction method */
@@ -1378,9 +1378,9 @@ export interface MatteLayerData {
   previewMode: "matte" | "composite" | "overlay";
 }
 
-// ============================================================
-// LEGACY PARTICLE LAYER DATA (for backwards compatibility)
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                       // legacy // particle // layer // data
+// ════════════════════════════════════════════════════════════════════════════
 
 export interface LegacyParticleLayerData {
   /** @deprecated Use ParticleLayerData with 'particles' type instead */
@@ -1394,9 +1394,9 @@ export interface LegacyParticleLayerData {
   size: number;
 }
 
-// ============================================================
-// VIDEO DATA - Full video playback control
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                             // video // data
+// ════════════════════════════════════════════════════════════════════════════
 
 export interface VideoData {
   assetId: string | null;
@@ -1434,9 +1434,9 @@ export interface VideoData {
   posterFrame: number; // Frame to show when paused at start
 }
 
-// ============================================================
-// NESTED COMP DATA - Nested composition reference
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                    // nested // comp // data
+// ════════════════════════════════════════════════════════════════════════════
 
 export interface NestedCompData {
   compositionId: string | null; // Reference to composition in project.compositions - CODE IS TRUTH (defaults create null)
@@ -1462,9 +1462,9 @@ export interface NestedCompData {
   frameRate?: number;
 }
 
-// ============================================================
-// GENERATED MAP DATA (AI-powered layer generation)
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                  // generated // map // data
+// ════════════════════════════════════════════════════════════════════════════
 
 export interface GeneratedMapData {
   sourceLayerId: string; // Which layer to generate from
@@ -1484,9 +1484,9 @@ export type GeneratedMapType =
   | "lineart" // Lineart extraction
   | "softedge"; // Soft edge detection
 
-// ============================================================
-// PROCEDURAL MATTE DATA (Animated patterns for track mattes)
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                               // procedural // matte // data
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Procedural matte layer - generates animated patterns
@@ -1629,9 +1629,9 @@ export function createDefaultProceduralMatteData(
 // Particle types moved to ./particles.ts
 // Re-exported above for backwards compatibility
 
-// ============================================================
-// DEPTHFLOW PARALLAX LAYER DATA (matching akatz-ai)
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                    // depthflow // parallax // layer // data
+// ════════════════════════════════════════════════════════════════════════════
 
 export type DepthflowPreset =
   | "static"
@@ -1695,9 +1695,9 @@ export interface DepthflowConfig {
   inpaintEdges: boolean;
 }
 
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
 // 3D MODEL LAYER DATA - GLTF, OBJ, FBX, USD Support
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /** Supported 3D model formats */
 export type ModelFormat =
@@ -1825,9 +1825,9 @@ export interface ModelLayerData {
   };
 }
 
-// ============================================================
-// POINT CLOUD LAYER DATA - PLY, PCD, LAS Support
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                           // point // cloud // layer // data
+// ════════════════════════════════════════════════════════════════════════════
 
 /** Supported point cloud formats */
 export type PointCloudFormat = "ply" | "pcd" | "las" | "laz" | "xyz" | "pts";
@@ -1943,9 +1943,9 @@ export interface PointCloudLayerData {
   intensityRange?: { min: number; max: number };
 }
 
-// ============================================================
-// CAMERA LAYER DATA
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                   // camera // layer // data
+// ════════════════════════════════════════════════════════════════════════════
 
 export interface CameraDepthOfField {
   enabled: boolean;
@@ -2074,9 +2074,9 @@ export interface CameraLayerData {
 
 // AudioParticleMapping is imported and re-exported from './particles'
 
-// ============================================================
-// EXTRACTED TEXTURE DATA (from MatSeg)
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                              // extracted // texture // data
+// ════════════════════════════════════════════════════════════════════════════
 
 export interface ExtractedTexture {
   id: string;
@@ -2101,9 +2101,9 @@ export interface ExtractedTexture {
   resolution: { width: number; height: number };
 }
 
-// ============================================================
-// UTILITY TYPES
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                          // utility // types
+// ════════════════════════════════════════════════════════════════════════════
 
 export interface Point {
   x: number;
@@ -2123,9 +2123,9 @@ export interface ExportOptions {
   resolution: { width: number; height: number };
 }
 
-// ============================================================
-// HELPER FUNCTIONS (unique to project.ts - others in modular files)
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                       // helper // functions
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Normalize a layer's timing to use the new 'startFrame'/'endFrame' properties.

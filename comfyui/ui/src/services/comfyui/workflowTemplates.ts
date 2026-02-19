@@ -23,9 +23,9 @@ import {
   safeValidateATIMotionData,
 } from "@/schemas/exports/workflow-params-schema";
 
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Types
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export interface WorkflowParams {
   // Input images
@@ -81,7 +81,7 @@ export interface WorkflowParams {
   ttmTweakIndex?: number;
   ttmTstrongIndex?: number;
 
-  // SCAIL (pose-driven video) specific
+  //                                                                     // scail
   scailPoseVideo?: string; // Pose video filename or path
   scailPoseDirectory?: string; // Directory of pose frame images
   scailReferenceImage?: string; // Reference image (identity/appearance)
@@ -91,9 +91,9 @@ export interface WorkflowParams {
   outputFilename?: string;
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Parameter Validation
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 // Validation constants
 const MIN_DIMENSION = 64;
@@ -190,9 +190,9 @@ export function validateWorkflowParams(params: WorkflowParams): void {
   }
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Node Factory Helpers
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 let nodeIdCounter = 1;
 
@@ -223,9 +223,9 @@ function conn(nodeId: string, outputIndex: number = 0): NodeConnection {
   return [nodeId, outputIndex];
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Common Node Patterns
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 function addCheckpointLoader(
   workflow: ComfyUIWorkflow,
@@ -416,9 +416,9 @@ function addVideoOutput(
   return id;
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Wan 2.2 Image-to-Video Workflow
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export function generateWan22I2VWorkflow(
   params: WorkflowParams,
@@ -543,9 +543,9 @@ export function generateWan22I2VWorkflow(
   return workflow;
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Wan 2.2 Fun Camera Workflow
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export function generateWan22FunCameraWorkflow(
   params: WorkflowParams,
@@ -623,7 +623,7 @@ export function generateWan22FunCameraWorkflow(
     "Camera Motion",
   );
 
-  // I2V with camera control
+  //                                                                       // i2v
   const latentId = nextNodeId();
   workflow[latentId] = createNode(
     "WanFunCameraI2V",
@@ -671,9 +671,9 @@ export function generateWan22FunCameraWorkflow(
   return workflow;
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Wan 2.2 First+Last Frame Workflow
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export function generateWan22FirstLastWorkflow(
   params: WorkflowParams,
@@ -801,9 +801,9 @@ export function generateWan22FirstLastWorkflow(
   return workflow;
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Uni3C Camera Control Workflow
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export function generateUni3CWorkflow(params: WorkflowParams): ComfyUIWorkflow {
   resetNodeIds();
@@ -925,9 +925,9 @@ export function generateUni3CWorkflow(params: WorkflowParams): ComfyUIWorkflow {
   return workflow;
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // MotionCtrl Workflow
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export function generateMotionCtrlWorkflow(
   params: WorkflowParams,
@@ -1002,7 +1002,7 @@ export function generateMotionCtrlWorkflow(
     "Apply MotionCtrl",
   );
 
-  // SVD Encode
+  //                                                                  // svd // e
   const encodeId = nextNodeId();
   workflow[encodeId] = createNode(
     "SVDEncode",
@@ -1046,9 +1046,9 @@ export function generateMotionCtrlWorkflow(
   return workflow;
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // ControlNet Depth Workflow
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export function generateControlNetDepthWorkflow(
   params: WorkflowParams,
@@ -1126,14 +1126,14 @@ export function generateControlNetDepthWorkflow(
     "Apply ControlNet",
   );
 
-  // VAE Encode reference
+  //                                                                  // vae // e
   const encodeRefId = addVAEEncode(
     workflow,
     conn(resizeRefId),
     conn(checkpointId, 2),
   );
 
-  // KSampler
+  //                                                                        // ks
   const sampleId = addKSampler(
     workflow,
     conn(checkpointId),
@@ -1167,9 +1167,9 @@ export function generateControlNetDepthWorkflow(
   return workflow;
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // AnimateDiff with CameraCtrl Workflow
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export function generateAnimateDiffCameraCtrlWorkflow(
   params: WorkflowParams,
@@ -1299,9 +1299,9 @@ export function generateAnimateDiffCameraCtrlWorkflow(
   return workflow;
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // CogVideoX Workflow
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export function generateCogVideoXWorkflow(
   params: WorkflowParams,
@@ -1414,9 +1414,9 @@ export function generateCogVideoXWorkflow(
   return workflow;
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Time-to-Move (TTM) Workflow
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Generate a Time-to-Move workflow for multi-layer motion-controlled video generation.
@@ -1433,7 +1433,7 @@ export function generateTTMWorkflow(params: WorkflowParams): ComfyUIWorkflow {
   const layersRaw = params.ttmLayers;
   const layers = (layersRaw !== null && layersRaw !== undefined && Array.isArray(layersRaw)) ? layersRaw : [];
 
-  // TTM (Time-to-Move) currently only has official support for Wan models.
+  //                                                                       // ttm
   // Other model backends may produce unexpected results.
   if (ttmModel !== "wan") {
     console.warn(
@@ -1740,7 +1740,7 @@ export function generateTTMWorkflow(params: WorkflowParams): ComfyUIWorkflow {
       filename: params.outputFilename || "ttm_cogvideo_output",
     });
   } else {
-    // SVD-based TTM generation
+    //                                                                       // svd
     const baseModelId = nextNodeId();
     workflow[baseModelId] = createNode(
       "ImageOnlyCheckpointLoader",
@@ -1819,9 +1819,9 @@ export function generateTTMWorkflow(params: WorkflowParams): ComfyUIWorkflow {
   return workflow;
 }
 
-// ============================================================================
-// SCAIL Pose-Driven Video Workflow
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                                // scail // p
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Generate a SCAIL workflow for pose-driven video generation.
@@ -1846,7 +1846,7 @@ export function generateSCAILWorkflow(params: WorkflowParams): ComfyUIWorkflow {
   resetNodeIds();
   const workflow: ComfyUIWorkflow = {};
 
-  // CRITICAL: Validate that generation resolution is divisible by 32
+  //                                                                  // critical
   if (params.width % 32 !== 0 || params.height % 32 !== 0) {
     console.warn(
       `SCAIL: Generation resolution (${params.width}x${params.height}) should be divisible by 32`,
@@ -1936,7 +1936,7 @@ export function generateSCAILWorkflow(params: WorkflowParams): ComfyUIWorkflow {
     );
   }
 
-  // CRITICAL: Resize pose to HALF of generation resolution
+  //                                                                  // critical
   // This is a SCAIL requirement - pose must be exactly half resolution
   const resizePoseId = addImageResize(
     workflow,
@@ -2033,9 +2033,9 @@ export function generateSCAILWorkflow(params: WorkflowParams): ComfyUIWorkflow {
   return workflow;
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Generic ControlNet Workflow (Canny, Lineart, etc.)
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export function generateControlNetWorkflow(
   params: WorkflowParams,
@@ -2147,9 +2147,9 @@ export function generateControlNetWorkflow(
   return workflow;
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Light-X Relighting Workflow
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Generate a Light-X workflow for relighting video generation.
@@ -2291,9 +2291,9 @@ export function generateLightXWorkflow(params: WorkflowParams): ComfyUIWorkflow 
   return workflow;
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Wan-Move Point Trajectory Workflow
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Generate a Wan-Move workflow for point trajectory-controlled video.
@@ -2438,9 +2438,9 @@ export function generateWanMoveWorkflow(params: WorkflowParams): ComfyUIWorkflow
   return workflow;
 }
 
-// ============================================================================
-// ATI (Any Trajectory Instruction) Workflow
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                                       // ati
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Generate an ATI workflow for trajectory-controlled video generation.
@@ -2585,9 +2585,9 @@ export function generateATIWorkflow(params: WorkflowParams): ComfyUIWorkflow {
   return workflow;
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Camera-ComfyUI 4x4 Matrix Workflow
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Generate a camera-comfyUI workflow that uses 4x4 camera transformation matrices.
@@ -2647,7 +2647,7 @@ export function generateCameraComfyUIWorkflow(
     "Apply Camera Control",
   );
 
-  // SVD Encode
+  //                                                                  // svd // e
   const encodeId = nextNodeId();
   workflow[encodeId] = createNode(
     "SVDEncode",
@@ -2692,9 +2692,9 @@ export function generateCameraComfyUIWorkflow(
   return workflow;
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Workflow Generator Router
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export function generateWorkflowForTarget(
   target: ExportTarget,
@@ -2708,7 +2708,7 @@ export function generateWorkflowForTarget(
       return generateWan22I2VWorkflow(params);
 
     case "wan22-t2v":
-      // T2V is similar to I2V but without reference image
+      //                                                                       // t2v
       return generateWan22I2VWorkflow({ ...params, referenceImage: undefined });
 
     case "wan22-fun-camera":
@@ -2748,7 +2748,7 @@ export function generateWorkflowForTarget(
       return generateTTMWorkflow(params);
 
     case "scail":
-      // SCAIL pose-driven video generation
+      //                                                                     // scail
       return generateSCAILWorkflow(params);
 
     case "light-x":
@@ -2760,7 +2760,7 @@ export function generateWorkflowForTarget(
       return generateWanMoveWorkflow(params);
 
     case "ati":
-      // ATI (Any Trajectory Instruction) motion control
+      //                                                                       // ati
       return generateATIWorkflow(params);
 
     case "controlnet-pose":
@@ -2780,9 +2780,9 @@ export function generateWorkflowForTarget(
   }
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Workflow Utilities
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export function injectParameters(
   workflow: ComfyUIWorkflow,

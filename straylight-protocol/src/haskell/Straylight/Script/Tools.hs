@@ -125,7 +125,7 @@ import qualified Straylight.Script.Tools.Taplo as Taplo
 import qualified Straylight.Script.Tools.Tokei as Tokei
 import qualified Straylight.Script.Tools.Zoxide as Zoxide
 
--- GNU/Classic Unix tools
+--                                                                       // gnu
 
 import qualified Straylight.Script.Tools.Find as Find
 import qualified Straylight.Script.Tools.Grep as Grep

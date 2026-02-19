@@ -170,7 +170,7 @@ export interface KeyboardShortcutsOptions {
   showCameraTrackingImportDialog: Ref<boolean>;
   showKeyboardShortcutsModal?: Ref<boolean>;
 
-  // UI state refs
+  //                                                                        // ui
   currentTool: Ref<string>;
   leftTab: Ref<string>;
   viewOptions: Ref<{
@@ -309,9 +309,9 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
     assetStore,
   } = options;
 
-  // ========================================================================
-  // PLAYBACK STATE
-  // ========================================================================
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  //                                                         // playback // state
+  // ════════════════════════════════════════════════════════════════════════════
   const isPlaying = ref(false);
 
   function togglePlay() {
@@ -345,9 +345,9 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
     animationStore.setFrame(animationAccess, Math.max(0, currentFrame - frames));
   }
 
-  // ========================================================================
-  // SMOOTH EASING (F9)
-  // ========================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                          // smooth // easing
+  // ════════════════════════════════════════════════════════════════════════════
   function applySmoothEasing() {
     const selectedIds = selectionStore.selectedLayerIds;
     if (selectedIds.length === 0) return;
@@ -488,9 +488,9 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
     }
   }
 
-  // ========================================================================
-  // KEYFRAME NAVIGATION (J/K)
-  // ========================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                    // keyframe // navigation
+  // ════════════════════════════════════════════════════════════════════════════
   function goToPrevKeyframe() {
     const selectedIds = selectionStore.selectedLayerIds;
     if (selectedIds.length === 0) return;
@@ -553,9 +553,9 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
     }
   }
 
-  // ========================================================================
-  // PROPERTY SOLO (P, S, R, T, A, U)
-  // ========================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                          // property // solo
+  // ════════════════════════════════════════════════════════════════════════════
   const soloedProperties = ref<Set<SoloPropertyType>>(new Set());
 
   function soloProperty(prop: SoloPropertyType, additive: boolean = false) {
@@ -583,9 +583,9 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
     return arr.length > 0 ? arr[0] : null;
   });
 
-  // ========================================================================
-  // DOUBLE-TAP DETECTION (UU, EE, MM)
-  // ========================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                    // double
+  // ════════════════════════════════════════════════════════════════════════════
   const lastKeyPress = ref<{ key: string; time: number } | null>(null);
   const DOUBLE_TAP_THRESHOLD = 300;
 
@@ -603,9 +603,9 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
     return false;
   }
 
-  // ========================================================================
-  // RENDER RANGE (B/N)
-  // ========================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                           // render // range
+  // ════════════════════════════════════════════════════════════════════════════
   const workAreaStart = ref<number | null>(null);
   const workAreaEnd = ref<number | null>(null);
 
@@ -634,9 +634,9 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
     console.log("[Lattice] Render range cleared");
   }
 
-  // ========================================================================
-  // HIDDEN LAYERS (Ctrl+Shift+Y)
-  // ========================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                          // hidden // layers
+  // ════════════════════════════════════════════════════════════════════════════
   const showHiddenLayers = ref(true);
 
   function toggleHiddenLayersVisibility() {
@@ -654,9 +654,9 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
     }
   }
 
-  // ========================================================================
-  // PREVIEW PAUSE (Caps Lock)
-  // ========================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                          // preview // pause
+  // ════════════════════════════════════════════════════════════════════════════
   const previewUpdatesPaused = ref(false);
 
   function togglePreviewPause() {
@@ -666,9 +666,9 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
     );
   }
 
-  // ========================================================================
-  // TRANSPARENCY GRID (Ctrl+Shift+H)
-  // ========================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                      // transparency // grid
+  // ════════════════════════════════════════════════════════════════════════════
   const showTransparencyGrid = ref(false);
 
   function toggleTransparencyGrid() {
@@ -678,9 +678,9 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
     );
   }
 
-  // ========================================================================
-  // GRID OVERLAY (Ctrl+')
-  // ========================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                           // grid // overlay
+  // ════════════════════════════════════════════════════════════════════════════
   const gridColor = ref("#444444");
   const gridMajorColor = ref("#666666");
 
@@ -693,9 +693,9 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
     viewOptions.value.gridSize = Math.max(10, Math.min(200, size));
   }
 
-  // ========================================================================
-  // RULERS (Ctrl+Shift+R)
-  // ========================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                    // rulers
+  // ════════════════════════════════════════════════════════════════════════════
   const rulerUnits = ref<"pixels" | "percent">("pixels");
 
   function toggleRulers() {
@@ -705,9 +705,9 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
     );
   }
 
-  // ========================================================================
-  // SNAP (Ctrl+Shift+;)
-  // ========================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                      // snap
+  // ════════════════════════════════════════════════════════════════════════════
   const snapEnabled = ref(false);
   const snapToGrid = ref(true);
   const snapToGuides = ref(true);
@@ -719,9 +719,9 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
     console.log(`[Lattice] Snap: ${snapEnabled.value ? "ON" : "OFF"}`);
   }
 
-  // ========================================================================
-  // UNDO/REDO (Ctrl+Z)
-  // ========================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                      // undo
+  // ════════════════════════════════════════════════════════════════════════════
   function undo() {
     projectStore.undo();
   }
@@ -730,9 +730,9 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
     projectStore.redo();
   }
 
-  // ========================================================================
-  // LAYER NAVIGATION (I/O - in/out points)
-  // ========================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                       // layer // navigation
+  // ════════════════════════════════════════════════════════════════════════════
   function goToLayerInPoint() {
     const selectedIds = selectionStore.selectedLayerIds;
     if (selectedIds.length === 0) return;
@@ -813,9 +813,9 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
     }
   }
 
-  // ========================================================================
-  // LAYER SELECTION (Ctrl+Arrow)
-  // ========================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                        // layer // selection
+  // ════════════════════════════════════════════════════════════════════════════
   function selectPreviousLayer(extend: boolean = false) {
     const layers = projectStore.getActiveCompLayers();
     if (layers.length === 0) return;
@@ -860,9 +860,9 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
     }
   }
 
-  // ========================================================================
-  // SPLIT LAYER (Ctrl+Shift+D)
-  // ========================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                            // split // layer
+  // ════════════════════════════════════════════════════════════════════════════
   function splitLayerAtPlayhead() {
     const selectedIds = selectionStore.selectedLayerIds;
     if (selectedIds.length === 0) return;
@@ -896,9 +896,9 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
     }
   }
 
-  // ========================================================================
-  // REVERSE LAYER (Ctrl+Alt+R)
-  // ========================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                          // reverse // layer
+  // ════════════════════════════════════════════════════════════════════════════
   function reverseSelectedLayers() {
     const selectedIds = selectionStore.selectedLayerIds;
     if (selectedIds.length === 0) return;
@@ -908,9 +908,9 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
     }
   }
 
-  // ========================================================================
-  // FREEZE FRAME (Alt+Shift+F)
-  // ========================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                           // freeze // frame
+  // ════════════════════════════════════════════════════════════════════════════
   function freezeSelectedLayers() {
     const selectedIds = selectionStore.selectedLayerIds;
     if (selectedIds.length === 0) return;
@@ -923,9 +923,9 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
     );
   }
 
-  // ========================================================================
-  // TIMELINE ZOOM (=/- keys)
-  // ========================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                          // timeline // zoom
+  // ════════════════════════════════════════════════════════════════════════════
   const timelineZoom = ref(1);
 
   function zoomTimelineIn() {
@@ -943,9 +943,9 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
     animationStore.setTimelineZoom(1);
   }
 
-  // ========================================================================
-  // VIEWER ZOOM (Ctrl+=/Ctrl+-)
-  // ========================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                            // viewer // zoom
+  // ════════════════════════════════════════════════════════════════════════════
   const viewerZoom = ref(1);
 
   function zoomViewerIn() {
@@ -1002,9 +1002,9 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
     }
   }
 
-  // ========================================================================
-  // HOLD KEYFRAMES (Ctrl+Alt+H)
-  // ========================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                         // hold // keyframes
+  // ════════════════════════════════════════════════════════════════════════════
   function convertToHoldKeyframes() {
     const selectedIds = selectionStore.selectedLayerIds;
     if (selectedIds.length === 0) return;
@@ -1038,9 +1038,9 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
     }
   }
 
-  // ========================================================================
-  // TIME-REVERSE KEYFRAMES (Ctrl+Alt+R without layer)
-  // ========================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                      // time
+  // ════════════════════════════════════════════════════════════════════════════
   function timeReverseKeyframes() {
     const selectedIds = selectionStore.selectedLayerIds;
     if (selectedIds.length === 0) return;
@@ -1056,9 +1056,9 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
     }
   }
 
-  // ========================================================================
-  // FIT LAYER TO COMP (Ctrl+Alt+F)
-  // ========================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                // fit // layer // to // comp
+  // ════════════════════════════════════════════════════════════════════════════
   function fitLayerToComp() {
     const selectedIds = selectionStore.selectedLayerIds;
     if (selectedIds.length === 0) return;
@@ -1136,9 +1136,9 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
     console.log("[Lattice] Fit layer(s) to composition height");
   }
 
-  // ========================================================================
-  // LOCK LAYER (Ctrl+L)
-  // ========================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                             // lock // layer
+  // ════════════════════════════════════════════════════════════════════════════
   function toggleLayerLock() {
     const selectedIds = selectionStore.selectedLayerIds;
     if (selectedIds.length === 0) return;
@@ -1151,9 +1151,9 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
     }
   }
 
-  // ========================================================================
-  // CENTER ANCHOR POINT (Ctrl+Alt+Home)
-  // ========================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                 // center // anchor // point
+  // ════════════════════════════════════════════════════════════════════════════
   function centerAnchorPoint() {
     const selectedIds = selectionStore.selectedLayerIds;
     if (selectedIds.length === 0) return;
@@ -1211,9 +1211,9 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
     console.log("[Lattice] Centered anchor point(s)");
   }
 
-  // ========================================================================
-  // CENTER LAYER IN COMP (Ctrl+Home)
-  // ========================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                             // center // layer // in // comp
+  // ════════════════════════════════════════════════════════════════════════════
   function centerLayerInComp() {
     const selectedIds = selectionStore.selectedLayerIds;
     if (selectedIds.length === 0) return;
@@ -1243,25 +1243,25 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
     console.log("[Lattice] Centered layer(s) in composition");
   }
 
-  // ========================================================================
-  // CREATE EFFECT LAYER (Ctrl+Alt+Y)
-  // ========================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                 // create // effect // layer
+  // ════════════════════════════════════════════════════════════════════════════
   function createAdjustmentLayer() {
     layerStore.createLayer("adjustment", "Effect Layer");
     console.log("[Lattice] Created effect layer");
   }
 
-  // ========================================================================
-  // CREATE CONTROL LAYER (Ctrl+Alt+Shift+Y)
-  // ========================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                // create // control // layer
+  // ════════════════════════════════════════════════════════════════════════════
   function createNullLayer() {
     layerStore.createLayer("null", "Control");
     console.log("[Lattice] Created control layer");
   }
 
-  // ========================================================================
-  // REVEAL SOURCE IN PROJECT (Ctrl+Alt+E)
-  // ========================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                         // reveal // source // in // project
+  // ════════════════════════════════════════════════════════════════════════════
   function revealSourceInProject() {
     const selectedIds = selectionStore.selectedLayerIds;
     if (selectedIds.length === 0) {
@@ -1299,9 +1299,9 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
     }
   }
 
-  // ========================================================================
-  // SELECT ALL KEYFRAMES ON LAYERS (Ctrl+A)
-  // ========================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                // select // all // keyframes // on // layers
+  // ════════════════════════════════════════════════════════════════════════════
   function selectAllKeyframesOnSelectedLayers(): boolean {
     const selectedIds = selectionStore.selectedLayerIds;
     if (selectedIds.length === 0) return false;
@@ -1362,9 +1362,9 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
     return false;
   }
 
-  // ========================================================================
-  // SELECT LAYERS BY LABEL (Ctrl+Shift+G)
-  // ========================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                           // select // layers // by // label
+  // ════════════════════════════════════════════════════════════════════════════
   function selectLayersByLabel() {
     const selectedIds = selectionStore.selectedLayerIds;
     if (selectedIds.length === 0) return;
@@ -1392,9 +1392,9 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
     }
   }
 
-  // ========================================================================
-  // ASSET IMPORT (Ctrl+I)
-  // ========================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                           // asset // import
+  // ════════════════════════════════════════════════════════════════════════════
   function triggerAssetImport() {
     const input = document.createElement("input");
     input.type = "file";
@@ -1489,24 +1489,24 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
     input.click();
   }
 
-  // ========================================================================
-  // OPEN TIME STRETCH DIALOG (Ctrl+Alt+T)
-  // ========================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                         // open // time // stretch // dialog
+  // ════════════════════════════════════════════════════════════════════════════
   function openTimeStretchDialog() {
     if (selectionStore.selectedLayerIds.length === 0) return;
     showTimeStretchDialog.value = true;
   }
 
-  // ========================================================================
-  // OPEN CAMERA TRACKING IMPORT DIALOG (Ctrl+Shift+I)
-  // ========================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                            // open // camera // tracking // import // dialog
+  // ════════════════════════════════════════════════════════════════════════════
   function openCameraTrackingImportDialog() {
     showCameraTrackingImportDialog.value = true;
   }
 
-  // ========================================================================
-  // KEYBOARD EVENT HANDLER
-  // ========================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                              // keyboard // event // handler
+  // ════════════════════════════════════════════════════════════════════════════
   function handleKeydown(e: KeyboardEvent) {
     // Don't handle if input is focused
     if (
@@ -1993,9 +1993,9 @@ export function useKeyboardShortcuts(options: KeyboardShortcutsOptions) {
     }
   }
 
-  // ========================================================================
-  // PROVIDE STATE TO CHILD COMPONENTS
-  // ========================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                             // provide // state // to // child // components
+  // ════════════════════════════════════════════════════════════════════════════
   function setupProvides() {
     provide("soloedProperty", soloedProperty);
     provide("soloedProperties", soloedProperties);

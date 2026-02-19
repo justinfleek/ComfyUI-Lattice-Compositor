@@ -1,6 +1,6 @@
 # nvidia-sdk packages
 #
-# NVIDIA libraries extracted via typed Haskell scripts.
+#                                                                    // nvidia
 # Wheels from PyPI (preferred, no redistribution), containers for CUDA toolkit.
 #
 # Architecture:
@@ -76,7 +76,7 @@ let
     bzip2
     xz
     lz4
-    # RDMA
+    #                                                                      // rdma
     rdma-core
     # Triton framework deps
     abseil-cpp
@@ -93,9 +93,9 @@ let
     libarchive
     # Unicode
     icu
-    # FFI
+    #                                                                       // ffi
     libffi
-    # GLib ecosystem
+    #                                                                        // gl
     glib
     pcre2
     # System libs (from working libmodern-nvidia-sdk)
@@ -136,7 +136,7 @@ let
   commonIgnoredDeps = [
     "libcuda.so.1"
     "libnvidia-ml.so.1"
-    # CUDA runtime libs (cross-references between packages)
+    #                                                                      // cuda
     "libcudart.so.13"
     "libcublas.so.13"
     "libcublasLt.so.13"
@@ -447,7 +447,7 @@ lib.optionalAttrs (system == "x86_64-linux") {
 }
 
 # ══════════════════════════════════════════════════════════════════════════════
-# CUTLASS (header-only from GitHub)
+#                                                                   // cutlass
 # ══════════════════════════════════════════════════════════════════════════════
 
 // {
@@ -511,9 +511,9 @@ lib.optionalAttrs (system == "x86_64-linux") {
     extractMode = "triton";
     runtimeInputs = tritonRuntimeDeps;
     ignoreMissingDeps = [
-      # LLVM/Clang
+      #                                                                      // llvm
       "libLLVM.so.18.1"
-      # GC/ObjC
+      #                                                                        // gc
       "libgc.so.1"
       "libobjc_gc.so.4.0.0"
       # Misc utilities
@@ -524,11 +524,11 @@ lib.optionalAttrs (system == "x86_64-linux") {
       "libsasl2.so.2"
       "libapt-pkg.so.6.0"
       "libapt-private.so.0.0"
-      # CUDA libs (provided at runtime via LD_LIBRARY_PATH)
+      #                                                                      // cuda
       "libcaffe2_nvrtc.so"
       "libcufile.so.0"
       "libOpenCL.so.1"
-      # CUDA 12.x compat (backends compiled against older CUDA)
+      #                                                                // cuda // 12
       "libcusolver.so.12"
       "libcusparse.so.12"
       "libcufft.so.12"

@@ -51,7 +51,7 @@ export {
   terminateWorker,
 } from "./workerEvaluator";
 
-// SES lockdown status
+//                                                                       // ses
 let sesInitialized = false;
 const sesError: Error | null = null;
 
@@ -99,7 +99,7 @@ export function getSESError(): Error | null {
   return sesError;
 }
 
-// SES types are provided by the 'ses' package's types.d.ts
+//                                                                       // ses
 // which declares Compartment and harden on globalThis
 
 /**
@@ -118,7 +118,7 @@ export function createExpressionCompartment(
   }
 
   // Import Compartment from SES (available after lockdown)
-  // SES injects these globals at runtime - types declared via `declare global`
+  //                                                                       // ses
   if (!globalThis.Compartment || !globalThis.harden) {
     throw new Error(
       "[SES] Compartment not available. Ensure lockdown() was called.",
@@ -129,7 +129,7 @@ export function createExpressionCompartment(
 
 
   // Create safe Math object (harden to prevent modification)
-  // NOTE: Math.random is intentionally EXCLUDED for determinism
+  //                                                                      // note
   // Use the seeded random() utility function instead
   const safeMath = harden({
     PI: Math.PI,
@@ -380,7 +380,7 @@ export function createExpressionCompartment(
       warn: (...args: JSONValue[]) => console.warn("[Expression]", ...args),
     }),
 
-    // SECURITY: Explicitly block dangerous intrinsics
+    //                                                                  // security
     // Even though SES sandboxes these, we block them for defense-in-depth
     Function: undefined,
     eval: undefined,
@@ -421,7 +421,7 @@ export function evaluateInSES(
   code: string,
   ctx: ExpressionContext,
 ): number | number[] | string {
-  // SECURITY: Type check - defense in depth for JS callers
+  //                                                                  // security
   if (typeof code !== "string") {
     console.warn("[SECURITY] evaluateInSES: code is not a string");
     return ctx.value;
@@ -431,7 +431,7 @@ export function evaluateInSES(
     return ctx.value;
   }
 
-  // SECURITY: If SES is not initialized, DO NOT evaluate - return passthrough
+  //                                                                  // security
   // This is intentional. We fail CLOSED, not open.
   if (!sesInitialized) {
     console.error(
@@ -443,7 +443,7 @@ export function evaluateInSES(
     return ctx.value;
   }
 
-  // SECURITY: Length limit to prevent payload attacks
+  //                                                                  // security
   if (code.length > MAX_EXPRESSION_LENGTH) {
     console.warn(
       `[SECURITY] Expression too long (${code.length} bytes, max ${MAX_EXPRESSION_LENGTH})`,
@@ -451,7 +451,7 @@ export function evaluateInSES(
     return ctx.value;
   }
 
-  // WARNING: This is SYNC evaluation - no timeout protection.
+  //                                                                   // warning
   // For DoS protection, use evaluateWithTimeout() which runs in a Worker with 100ms timeout.
 
   try {
@@ -509,27 +509,27 @@ export function evaluateSimpleExpression(
   expr: string,
   context: ExpressionContext,
 ): number {
-  // SECURITY: Type check - defense in depth for JS callers
+  //                                                                  // security
   if (typeof expr !== "string") {
     throw new Error(`[SESEvaluator] Expression must be a string, got ${typeof expr}`);
   }
 
-  // SECURITY: Empty expression = fail closed
+  //                                                                  // security
   if (!expr || expr.trim() === "") {
     throw new Error("[SESEvaluator] Expression cannot be empty");
   }
 
-  // SECURITY: If SES is not initialized, DO NOT evaluate
+  //                                                                  // security
   if (!sesInitialized) {
     throw new Error("[SESEvaluator] SES not initialized - expression evaluation DISABLED");
   }
 
-  // SECURITY: Length limit to prevent payload attacks
+  //                                                                  // security
   if (expr.length > MAX_EXPRESSION_LENGTH) {
     throw new Error(`[SESEvaluator] Expression too long (${expr.length} bytes, max ${MAX_EXPRESSION_LENGTH})`);
   }
 
-  // WARNING: This is SYNC evaluation - no timeout protection.
+  //                                                                   // warning
   // For DoS protection, use evaluateWithTimeout() which runs in a Worker with 100ms timeout.
 
   // Get SES globals - types declared via `declare global`
@@ -541,7 +541,7 @@ export function evaluateSimpleExpression(
 
   try {
     // Create safe Math subset (hardened)
-    // NOTE: Math.random is intentionally EXCLUDED for determinism
+    //                                                                      // note
     const safeMath = harden({
       PI: Math.PI,
       E: Math.E,
@@ -601,7 +601,7 @@ export function evaluateSimpleExpression(
       // Spread safe context values
       ...safeContext,
 
-      // SECURITY: Explicitly block dangerous intrinsics
+      //                                                                  // security
       Function: undefined,
       eval: undefined,
       globalThis: undefined,
@@ -631,13 +631,13 @@ export function evaluateSimpleExpression(
 
     const result = compartment.evaluate(wrappedCode);
 
-    // SECURITY: Validate result is a primitive number
+    //                                                                  // security
     // Using typeof check - NOT Number(result) which could trigger valueOf
     if (typeof result !== "number") {
       throw new Error(`[SESEvaluator] Expression did not return a number, got ${typeof result}`);
     }
 
-    // SECURITY: Check for NaN/Infinity
+    //                                                                  // security
     if (!Number.isFinite(result)) {
       throw new Error(`[SESEvaluator] Expression returned non-finite number: ${result}`);
     }

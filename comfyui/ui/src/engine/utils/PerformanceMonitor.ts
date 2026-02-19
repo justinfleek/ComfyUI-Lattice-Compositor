@@ -18,7 +18,7 @@ export class PerformanceMonitor {
   private frameTimes: number[] = [];
   private maxFrameTimes: number = 60;
 
-  // FPS calculation
+  //                                                                       // fps
   private fps: number = 0;
   private fpsUpdateInterval: number = 500; // ms
   private lastFpsUpdate: number = 0;

@@ -14,9 +14,9 @@ import { safeNonNegativeDefault } from "@/utils/typeGuards";
 // Re-export for consumers that import from this module
 export type { AudioFeature };
 
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Types
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export type TargetParameter =
   // Particle parameters
@@ -84,7 +84,7 @@ export interface AudioMapping {
   threshold: number; // Values below this become 0 (noise gate)
   enabled: boolean; // Toggle mapping on/off
 
-  // ATI_AudioReactive style parameters
+  //                                                                  // ati // a
   amplitudeCurve: number; // Power curve (1=linear, >1=noise gate/expander, <1=compressor)
   release: number; // 0-1, return speed after peak (0=instant, 1=slow decay)
 
@@ -109,9 +109,9 @@ export interface WeightSchedule {
   weights: number[]; // Weight for each image at this frame
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Default Values
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export function createDefaultAudioMapping(
   id?: string,
@@ -134,7 +134,7 @@ export function createDefaultAudioMapping(
     invert: false,
     threshold: 0,
     enabled: true,
-    // ATI style
+    //                                                                       // ati
     amplitudeCurve: 1.0, // Linear by default
     release: 0.5, // Medium decay
     beatResponse: "none",
@@ -143,9 +143,9 @@ export function createDefaultAudioMapping(
   };
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Audio Reactive Mapper
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export class AudioReactiveMapper {
   private analysis: AudioAnalysis;
@@ -605,9 +605,9 @@ export class AudioReactiveMapper {
   }
 }
 
-// ============================================================================
-// IPAdapter Schedule Generation (from Yvann-Nodes)
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                                       // ipa
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Generate IPAdapter weight schedule from peaks
@@ -701,9 +701,9 @@ export function getIPAdapterWeightsAtFrame(
   return entry ? entry.weights : [];
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Utility Functions
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Get human-readable name for a feature
@@ -986,11 +986,11 @@ export function createSplineControlPointTargets(
   return targets;
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Audio Reactive Layer Application
 // (Inspired by filliptm's ComfyUI_Fill-Nodes)
 // Attribution: https://github.com/filliptm/ComfyUI_Fill-Nodes
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Represents the audio-reactive modifiers for a layer

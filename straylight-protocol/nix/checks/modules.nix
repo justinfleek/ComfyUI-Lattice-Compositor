@@ -1,11 +1,11 @@
-# ==============================================================================
-#                         STRAYLIGHT MODULE COMPILATION TESTS
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#                              // straylight // module // compilation // tests
 #
 #  Verifies that all Straylight.* modules compile successfully.
 #  This catches import errors, type errors, and missing dependencies.
 #
 #  We use GHC's --make mode which handles dependency ordering automatically.
-# ==============================================================================
+# ════════════════════════════════════════════════════════════════════════════
 {
   pkgs,
   system,
@@ -16,9 +16,9 @@ let
   # Get script source and GHC from the overlay
   inherit (pkgs.straylight.script) src ghc;
 
-  # ==============================================================================
-  # TEST: straylight-modules
-  # ==============================================================================
+  # ════════════════════════════════════════════════════════════════════════════
+  #                                                                      // test
+  # ════════════════════════════════════════════════════════════════════════════
   # Compile all Straylight.* modules using GHC's --make mode.
   # This automatically handles dependency ordering and verifies everything compiles.
 
@@ -77,9 +77,9 @@ let
     };
   };
 
-  # ==============================================================================
-  # TEST: straylight-compiled-scripts
-  # ==============================================================================
+  # ════════════════════════════════════════════════════════════════════════════
+  #                                                                      // test
+  # ════════════════════════════════════════════════════════════════════════════
   # Verify all compiled scripts in straylight.script.compiled build successfully
 
   test-straylight-compiled-scripts = pkgs.runCommand "test-straylight-compiled-scripts" { } ''

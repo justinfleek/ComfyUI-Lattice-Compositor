@@ -10,7 +10,7 @@ import { describe, expect, test } from "vitest";
 // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
 function calculateWindStrength(wind: { x?: number; y?: number } | undefined): number {
   if (wind) {
-    // BUG-006 FIX: Prevent NaN when wind.x or wind.y are undefined
+    //                                                                       // bug
     const windX = (wind.x !== null && wind.x !== undefined && typeof wind.x === "number" && Number.isFinite(wind.x)) ? wind.x : 0;
     const windY = (wind.y !== null && wind.y !== undefined && typeof wind.y === "number" && Number.isFinite(wind.y)) ? wind.y : 0;
     return Math.sqrt(windX ** 2 + windY ** 2);
@@ -20,7 +20,7 @@ function calculateWindStrength(wind: { x?: number; y?: number } | undefined): nu
 
 function calculateWindDirection(wind: { x?: number; y?: number } | undefined): number {
   if (wind) {
-    // BUG-006 FIX: Prevent NaN when wind.x or wind.y are undefined
+    //                                                                       // bug
     const windX = (wind.x !== null && wind.x !== undefined && typeof wind.x === "number" && Number.isFinite(wind.x)) ? wind.x : 0;
     const windY = (wind.y !== null && wind.y !== undefined && typeof wind.y === "number" && Number.isFinite(wind.y)) ? wind.y : 0;
     return Math.atan2(windY, windX) * (180 / Math.PI);

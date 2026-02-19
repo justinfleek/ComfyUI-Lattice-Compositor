@@ -143,7 +143,7 @@ describe('Dimension Separation Export Regression', () => {
       const evaluated = evaluateLayerCached(layer, 15, 30);
 
       // Should use separated dimensions (interpolated 50% between keyframes)
-      // NOT the combined position values of 999
+      //                                                                       // not
       expect(evaluated.transform.position.x).toBeCloseTo(50, 1);
       expect(evaluated.transform.position.y).toBeCloseTo(100, 1);
     });
@@ -151,7 +151,7 @@ describe('Dimension Separation Export Regression', () => {
     test('evaluateLayerCached falls back to combined position when not separated', () => {
       const layer = createTestLayer();
 
-      // NOT separated - use combined position
+      //                                                                       // not
       layer.transform.position.animated = true;
       layer.transform.position.keyframes = [
         createKeyframe(0, { x: 0, y: 0, z: 0 }),
@@ -207,7 +207,7 @@ describe('Dimension Separation Export Regression', () => {
     test('evaluateLayerCached falls back to combined scale when not separated', () => {
       const layer = createTestLayer();
 
-      // NOT separated - use combined scale
+      //                                                                       // not
       layer.transform.scale.animated = true;
       layer.transform.scale.keyframes = [
         createKeyframe(0, { x: 100, y: 100, z: 100 }),

@@ -19,7 +19,7 @@
 #   2. Logs all fetches (attestation)
 #   3. Enforces domain allowlist policy
 #
-# USAGE:
+#                                                                     // usage
 #
 #   services.nix-proxy = {
 #     enable = true;
@@ -129,7 +129,7 @@ in
       description = "Suppress mitmproxy output (logs still written to logDir)";
     };
 
-    # R2 cache sync (optional)
+    #                                                                        // r2
     cache.r2 = {
       enable = lib.mkOption {
         type = lib.types.bool;

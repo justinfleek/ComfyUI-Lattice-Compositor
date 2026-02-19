@@ -35,9 +35,9 @@ import { findPropertyByPath } from "@/stores/keyframeStore/helpers";
 import type { Layer, AnimatableProperty, Keyframe } from "@/types/project";
 import { generateKeyframeId } from "@/utils/uuid5";
 
-// ============================================================================
-// ARBITRARIES (Generators)
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                                               // arbitraries
+// ════════════════════════════════════════════════════════════════════════════
 
 const finiteNumber = fc.double({ noNaN: true, noDefaultInfinity: true, min: -10000, max: 10000 });
 const positiveFrame = fc.integer({ min: 0, max: 1000 });
@@ -115,9 +115,9 @@ function propertyExists(layer: Layer, propertyPath: string): boolean {
   return false; // Unknown property
 }
 
-// ============================================================================
-// TEST HELPERS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                           // test // helpers
+// ════════════════════════════════════════════════════════════════════════════
 
 function createTestLayer(id: string): Layer {
   const projectStore = useProjectStore();
@@ -137,9 +137,9 @@ function createTestLayer(id: string): Layer {
   return layerStore.createLayer("solid", `Layer ${id}`);
 }
 
-// ============================================================================
-// PROPERTY TESTS: Deterministic ID Generation
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                         // property // tests
+// ════════════════════════════════════════════════════════════════════════════
 
 describe("Keyframe Store Property Tests - Deterministic IDs", () => {
   beforeEach(() => {
@@ -180,9 +180,9 @@ describe("Keyframe Store Property Tests - Deterministic IDs", () => {
   });
 });
 
-// ============================================================================
-// PROPERTY TESTS: Keyframe CRUD
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                         // property // tests
+// ════════════════════════════════════════════════════════════════════════════
 
 describe("Keyframe Store Property Tests - CRUD Operations", () => {
   beforeEach(() => {
@@ -444,9 +444,9 @@ describe("Keyframe Store Property Tests - CRUD Operations", () => {
   });
 });
 
-// ============================================================================
-// PROPERTY TESTS: Interpolation
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                         // property // tests
+// ════════════════════════════════════════════════════════════════════════════
 
 describe("Keyframe Store Property Tests - Interpolation", () => {
   beforeEach(() => {

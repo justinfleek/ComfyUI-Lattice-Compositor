@@ -193,7 +193,7 @@ const cameraStore = useCameraStore();
 const selectedModel = ref<VisionModelId>("rule-based");
 const localEndpoint = ref("http://localhost:8188/api/vlm");
 
-// API key status (from backend)
+//                                                                       // api
 const apiKeyStatus = ref<{ openai: boolean; anthropic: boolean }>({
   openai: false,
   anthropic: false,

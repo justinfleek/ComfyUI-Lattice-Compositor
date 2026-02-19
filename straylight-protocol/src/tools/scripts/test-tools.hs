@@ -23,7 +23,7 @@ import qualified Straylight.Script.Tools.Rg as Rg
 import qualified Straylight.Script.Tools.Stylua as Stylua
 import qualified Straylight.Script.Tools.Tokei as Tokei
 
--- GNU tools
+--                                                                       // gnu
 
 import qualified Straylight.Script.Tools.Grep as Grep
 import qualified Straylight.Script.Tools.Ls as Ls
@@ -120,9 +120,9 @@ main = shelly $ verbosely $ do
     echo $ "Deadnix output: " <> tshow (length (T.lines dnOut)) <> " lines"
     echo ""
 
-    -- ========================================
-    -- GNU Tools
-    -- ========================================
+    -- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    --                                                                  // gnu // t
+    -- ════════════════════════════════════════════════════════════════════════════
 
     echo "=== Testing GNU Tools ==="
     echo ""

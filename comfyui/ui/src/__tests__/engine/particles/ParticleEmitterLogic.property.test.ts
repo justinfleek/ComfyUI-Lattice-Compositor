@@ -26,9 +26,9 @@ import {
 } from "@/engine/particles/ParticleEmitterLogic";
 import type { EmitterConfig, EmitterShapeConfig } from "@/engine/particles/types";
 
-// ============================================================================
-// ARBITRARIES
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                                               // arbitraries
+// ════════════════════════════════════════════════════════════════════════════
 
 // Safe float that won't cause NaN issues
 const safeFloat = (min = -10000, max = 10000) =>
@@ -174,9 +174,9 @@ function createSeededRNG(seed: number): RNGFunction {
   };
 }
 
-// ============================================================================
-// TESTS: getEmitterPosition
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                                     // tests
+// ════════════════════════════════════════════════════════════════════════════
 
 describe("ParticleEmitterLogic.getEmitterPosition", () => {
   it("should never return NaN or Infinity for any shape type", () => {
@@ -463,9 +463,9 @@ describe("ParticleEmitterLogic.getEmitterPosition", () => {
   });
 });
 
-// ============================================================================
-// TESTS: getEmissionDirection
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                                     // tests
+// ════════════════════════════════════════════════════════════════════════════
 
 describe("ParticleEmitterLogic.getEmissionDirection", () => {
   it("should always return a normalized vector", () => {
@@ -628,9 +628,9 @@ describe("ParticleEmitterLogic.getEmissionDirection", () => {
   });
 });
 
-// ============================================================================
-// TESTS: calculateInitialVelocity
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                                     // tests
+// ════════════════════════════════════════════════════════════════════════════
 
 describe("ParticleEmitterLogic.calculateInitialVelocity", () => {
   it("should never return NaN velocity components", () => {
@@ -802,9 +802,9 @@ describe("ParticleEmitterLogic.calculateInitialVelocity", () => {
   });
 });
 
-// ============================================================================
-// HELPER FUNCTIONS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                       // helper // functions
+// ════════════════════════════════════════════════════════════════════════════
 
 function createMinimalEmitter(): EmitterConfig {
   return {

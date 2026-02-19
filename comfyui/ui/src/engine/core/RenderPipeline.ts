@@ -28,10 +28,10 @@ import type { SceneManager } from "./SceneManager";
 // Local Pass type since PostPass doesn't exist in main namespace
 type PostPass = Pass;
 
-// ============================================================================
-// SENTINEL PASS OBJECTS - Lean4/PureScript/Haskell: Explicit pattern matching
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                               // sentinel // pass // objects
 // Pattern match: Never use null - use sentinel objects that implement Pass interface
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Sentinel "uninitialized" pass object
@@ -84,9 +84,9 @@ function isInitializedPass<T extends Pass>(pass: T | SentinelPass): pass is T {
   return pass !== SENTINEL_PASS;
 }
 
-// ============================================================================
-// TYPE EXTENSIONS FOR THREE.JS POST-PROCESSING
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                        // type // extensions // for // three
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Extended BokehPass options interface
@@ -124,9 +124,9 @@ type EffectComposerWithTargets = EffectComposer & {
   renderTarget2?: THREE.WebGLRenderTarget;
 };
 
-// ============================================================================
-// DOF CONFIGURATION
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                      // dof // configuration
+// ════════════════════════════════════════════════════════════════════════════
 
 export interface DOFConfig {
   enabled: boolean;
@@ -209,7 +209,7 @@ export class RenderPipeline {
   // Render mode
   private renderMode: "color" | "depth" | "normal" = "color";
 
-  // DOF pass
+  //                                                                       // dof
   // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null
   // Pattern match: Use sentinel object instead of null
   private bokehPass: BokehPass | SentinelPass = SENTINEL_PASS;
@@ -220,7 +220,7 @@ export class RenderPipeline {
     maxBlur: 0.01,
   };
 
-  // SSAO pass
+  //                                                                      // ssao
   // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null
   // Pattern match: Use sentinel object instead of null
   private ssaoPass: SSAOPass | SentinelPass = SENTINEL_PASS;
@@ -345,9 +345,9 @@ export class RenderPipeline {
     );
   }
 
-  // ============================================================================
-  // RENDER TARGET CREATION
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                              // render // target // creation
+  // ════════════════════════════════════════════════════════════════════════════
 
   private createColorTarget(
     width: number,
@@ -434,9 +434,9 @@ export class RenderPipeline {
     });
   }
 
-  // ============================================================================
-  // POST-PROCESSING
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                      // post
+  // ════════════════════════════════════════════════════════════════════════════
 
   private setupDefaultPasses(): void {
     // Main render pass
@@ -471,9 +471,9 @@ export class RenderPipeline {
     this.composer.removePass(pass);
   }
 
-  // ============================================================================
-  // DEPTH OF FIELD
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                      // depth // of // field
+  // ════════════════════════════════════════════════════════════════════════════
 
   /**
    * Configure depth of field effect
@@ -577,9 +577,9 @@ export class RenderPipeline {
     this.setDOF({ enabled });
   }
 
-  // ============================================================================
-  // SSAO (Screen Space Ambient Occlusion)
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                      // ssao
+  // ════════════════════════════════════════════════════════════════════════════
 
   /**
    * Configure SSAO effect
@@ -623,7 +623,7 @@ export class RenderPipeline {
     );
     this.ssaoPass = ssaoPass;
 
-    // SSAO should be applied early in the pipeline (after render, before DOF)
+    //                                                                      // ssao
     // Find the render pass and insert after it
     const renderPassIndex = this.composer.passes.findIndex(
       (p) => p.constructor.name === "RenderPass",
@@ -681,9 +681,9 @@ export class RenderPipeline {
     this.setSSAO({ kernelRadius: radius });
   }
 
-  // ============================================================================
-  // BLOOM (Emissive Glow)
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                     // bloom
+  // ════════════════════════════════════════════════════════════════════════════
 
   /**
    * Configure bloom effect
@@ -784,9 +784,9 @@ export class RenderPipeline {
     this.setBloom({ threshold });
   }
 
-  // ============================================================================
-  // MOTION BLUR CONFIGURATION
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                           // motion // blur // configuration
+  // ════════════════════════════════════════════════════════════════════════════
 
   /**
    * Configure motion blur
@@ -866,9 +866,9 @@ export class RenderPipeline {
     return this.motionBlurProcessor;
   }
 
-  // ============================================================================
-  // RENDERING
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                 // rendering
+  // ════════════════════════════════════════════════════════════════════════════
 
   /**
    * Render the current frame
@@ -908,9 +908,9 @@ export class RenderPipeline {
     this.renderer.setRenderTarget(prevTarget);
   }
 
-  // ============================================================================
-  // RENDER MODE
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                            // render // mode
+  // ════════════════════════════════════════════════════════════════════════════
 
   // Depth visualization pass for post-processing
   // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy null
@@ -1121,9 +1121,9 @@ export class RenderPipeline {
     return this.renderMode;
   }
 
-  // ============================================================================
-  // FRAME CAPTURE
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                          // frame // capture
+  // ════════════════════════════════════════════════════════════════════════════
 
   /**
    * Capture the current frame as ImageData
@@ -1195,9 +1195,9 @@ export class RenderPipeline {
     return flipped;
   }
 
-  // ============================================================================
-  // RESIZE
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                    // resize
+  // ════════════════════════════════════════════════════════════════════════════
 
   /**
    * Resize the renderer and targets
@@ -1264,9 +1264,9 @@ export class RenderPipeline {
     }
   }
 
-  // ============================================================================
-  // ACCESSORS
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                 // accessors
+  // ════════════════════════════════════════════════════════════════════════════
 
   /**
    * Get the underlying WebGL renderer
@@ -1293,9 +1293,9 @@ export class RenderPipeline {
     };
   }
 
-  // ============================================================================
-  // NESTED COMPOSITION RENDER-TO-TEXTURE
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                           // nested // composition // render
+  // ════════════════════════════════════════════════════════════════════════════
 
   /** Cache of render targets for nested compositions (keyed by compositionId) */
   private nestedCompTargets: Map<string, THREE.WebGLRenderTarget> = new Map();
@@ -1369,9 +1369,9 @@ export class RenderPipeline {
     this.nestedCompTargets.clear();
   }
 
-  // ============================================================================
-  // DISPOSAL
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                  // disposal
+  // ════════════════════════════════════════════════════════════════════════════
 
   /**
    * Get the DOM element (canvas) attached to the renderer

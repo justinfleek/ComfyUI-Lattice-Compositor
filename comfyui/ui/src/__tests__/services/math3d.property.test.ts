@@ -61,9 +61,9 @@ import {
   type Quat,
 } from '@/services/math3d';
 
-// ============================================================================
-// ARBITRARIES
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                                               // arbitraries
+// ════════════════════════════════════════════════════════════════════════════
 
 // Reasonable range to avoid overflow/precision issues
 const coordArb = fc.double({ min: -1000, max: 1000, noNaN: true, noDefaultInfinity: true });
@@ -92,9 +92,9 @@ const positiveArb = fc.double({ min: 0.1, max: 1000, noNaN: true, noDefaultInfin
 // Tolerance for floating point comparisons
 const EPSILON = 1e-5;
 
-// ============================================================================
-// HELPER: Compare vectors with tolerance
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                                    // helper
+// ════════════════════════════════════════════════════════════════════════════
 
 function vec3Equal(a: Vec3, b: Vec3, tolerance = EPSILON): boolean {
   return (
@@ -113,12 +113,12 @@ function mat4Equal(a: Mat4, b: Mat4, tolerance = EPSILON): boolean {
   return true;
 }
 
-// ============================================================================
-// VECTOR ALGEBRA PROPERTIES
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                           // vector // algebra // properties
+// ════════════════════════════════════════════════════════════════════════════
 
 describe('PROPERTY: Vector Algebra', () => {
-  // ADDITION
+  //                                                                  // addition
   test.prop([vec3Arb, vec3Arb])('addition is commutative: a + b = b + a', (a, b) => {
     const ab = addVec3(a, b);
     const ba = addVec3(b, a);
@@ -137,7 +137,7 @@ describe('PROPERTY: Vector Algebra', () => {
     expect(vec3Equal(result, a)).toBe(true);
   });
 
-  // SUBTRACTION
+  //                                                               // subtraction
   test.prop([vec3Arb])('subtraction: a - a = 0', (a) => {
     const result = subVec3(a, a);
     expect(vec3Equal(result, vec3(0, 0, 0))).toBe(true);
@@ -149,7 +149,7 @@ describe('PROPERTY: Vector Algebra', () => {
     expect(vec3Equal(left, right)).toBe(true);
   });
 
-  // SCALING
+  //                                                                   // scaling
   test.prop([vec3Arb])('scale by 1 is identity: 1 * a = a', (a) => {
     const result = scaleVec3(a, 1);
     expect(vec3Equal(result, a)).toBe(true);
@@ -166,7 +166,7 @@ describe('PROPERTY: Vector Algebra', () => {
     expect(vec3Equal(left, right)).toBe(true);
   });
 
-  // DOT PRODUCT
+  //                                                            // dot // product
   test.prop([vec3Arb, vec3Arb])('dot product is commutative: a · b = b · a', (a, b) => {
     expect(dotVec3(a, b)).toBeCloseTo(dotVec3(b, a), 5);
   });
@@ -177,7 +177,7 @@ describe('PROPERTY: Vector Algebra', () => {
     expect(dot).toBeCloseTo(len * len, 5);
   });
 
-  // CROSS PRODUCT
+  //                                                          // cross // product
   test.prop([vec3Arb, vec3Arb])('cross product is anti-commutative: a × b = -(b × a)', (a, b) => {
     const ab = crossVec3(a, b);
     const ba = crossVec3(b, a);
@@ -190,7 +190,7 @@ describe('PROPERTY: Vector Algebra', () => {
     expect(vec3Equal(result, vec3(0, 0, 0))).toBe(true);
   });
 
-  // LENGTH
+  //                                                                    // length
   test.prop([vec3Arb])('length is non-negative', (a) => {
     expect(lengthVec3(a)).toBeGreaterThanOrEqual(0);
   });
@@ -202,7 +202,7 @@ describe('PROPERTY: Vector Algebra', () => {
     expect(left).toBeCloseTo(right, 4);
   });
 
-  // NORMALIZE
+  //                                                                 // normalize
   test.prop([nonZeroVec3Arb])('normalized vector has length 1', (a) => {
     const n = normalizeVec3(a);
     expect(lengthVec3(n)).toBeCloseTo(1, 5);
@@ -214,7 +214,7 @@ describe('PROPERTY: Vector Algebra', () => {
     expect(vec3Equal(once, twice)).toBe(true);
   });
 
-  // LERP
+  //                                                                      // lerp
   test.prop([vec3Arb, vec3Arb])('lerp at t=0 gives first vector', (a, b) => {
     const result = lerpVec3(a, b, 0);
     expect(vec3Equal(result, a)).toBe(true);
@@ -230,7 +230,7 @@ describe('PROPERTY: Vector Algebra', () => {
     expect(vec3Equal(result, a)).toBe(true);
   });
 
-  // DISTANCE
+  //                                                                  // distance
   test.prop([vec3Arb, vec3Arb])('distance is symmetric: d(a,b) = d(b,a)', (a, b) => {
     expect(distanceVec3(a, b)).toBeCloseTo(distanceVec3(b, a), 5);
   });
@@ -245,9 +245,9 @@ describe('PROPERTY: Vector Algebra', () => {
   });
 });
 
-// ============================================================================
-// MATRIX ALGEBRA PROPERTIES
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                           // matrix // algebra // properties
+// ════════════════════════════════════════════════════════════════════════════
 
 describe('PROPERTY: Matrix Algebra', () => {
   test.prop([fc.constant(null)])('identity * identity = identity', () => {
@@ -322,9 +322,9 @@ describe('PROPERTY: Matrix Algebra', () => {
   });
 });
 
-// ============================================================================
-// LENS MATH PROPERTIES
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                // lens // math // properties
+// ════════════════════════════════════════════════════════════════════════════
 
 describe('PROPERTY: Lens Math', () => {
   test.prop([angleArb])('deg → rad → deg roundtrip', (deg) => {
@@ -358,9 +358,9 @@ describe('PROPERTY: Lens Math', () => {
   });
 });
 
-// ============================================================================
-// QUATERNION PROPERTIES
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                  // quaternion // properties
+// ════════════════════════════════════════════════════════════════════════════
 
 describe('PROPERTY: Quaternion', () => {
   test.prop([fc.constant(null)])('identity quaternion has w=1', () => {
@@ -411,9 +411,9 @@ describe('PROPERTY: Quaternion', () => {
   });
 });
 
-// ============================================================================
-// HIGH PRECISION MATRIX PROPERTIES
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                 // high // precision // matrix // properties
+// ════════════════════════════════════════════════════════════════════════════
 
 describe('PROPERTY: High Precision Matrices (Mat4_64)', () => {
   test.prop([fc.constant(null)])('identity_64 converts to identity_32', () => {
@@ -437,9 +437,9 @@ describe('PROPERTY: High Precision Matrices (Mat4_64)', () => {
   });
 });
 
-// ============================================================================
-// DETERMINISM PROPERTIES
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                 // determinism // properties
+// ════════════════════════════════════════════════════════════════════════════
 
 describe('PROPERTY: Determinism', () => {
   test.prop([vec3Arb, vec3Arb])('addVec3 is deterministic', (a, b) => {
@@ -472,9 +472,9 @@ describe('PROPERTY: Determinism', () => {
   });
 });
 
-// ============================================================================
-// PROJECTION MATRICES (CRITICAL for rendering)
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                    // projection // matrices
+// ════════════════════════════════════════════════════════════════════════════
 
 import {
   perspectiveMat4,
@@ -483,7 +483,7 @@ import {
   scaleMat4_64,
 } from '@/services/math3d';
 
-// FOV in radians (reasonable range: 10° to 170°)
+//                                                                       // fov
 const fovArb = fc.double({ min: Math.PI / 18, max: Math.PI * 17 / 18, noNaN: true, noDefaultInfinity: true });
 // Aspect ratio (reasonable range)
 const aspectArb = fc.double({ min: 0.25, max: 4, noNaN: true, noDefaultInfinity: true });

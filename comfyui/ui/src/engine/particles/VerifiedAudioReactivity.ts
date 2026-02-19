@@ -23,9 +23,9 @@
 import { pos, unit, type Positive, type UnitInterval } from "./VerifiedTypes";
 import type { ParticleBuffer } from "./VerifiedParticleBuffer";
 
-// ============================================================================
-// TYPES
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                                                     // types
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Audio-reactive emitter configuration
@@ -134,7 +134,7 @@ export class AudioReactivitySystem {
     
     // Modulation formula: base * (1 - sens/2 + audio * sens)
     // This maps audio [0,1] to multiplier [1-sens/2, 1+sens/2]
-    // PROVEN: No compounding - always uses base values
+    //                                                                    // proven
     const speedMult = 1 - config.speedSensitivity/2 + audioLevel * config.speedSensitivity;
     const sizeMult = 1 - config.sizeSensitivity/2 + audioLevel * config.sizeSensitivity;
     const rateMult = 1 - config.rateSensitivity/2 + audioLevel * config.rateSensitivity;
@@ -175,8 +175,8 @@ export class AudioReactivitySystem {
       const sensRaw = (config !== null && config !== undefined && typeof config === "object" && "sizeSensitivity" in config) ? config.sizeSensitivity : undefined;
       const sens = (sensRaw !== null && sensRaw !== undefined && typeof sensRaw === "number" && Number.isFinite(sensRaw) && sensRaw >= 0 && sensRaw <= 1) ? sensRaw as UnitInterval : (0 as UnitInterval);
       
-      // CRITICAL: Always start from initialSize, never current size
-      // PROVEN: This prevents compounding (Lean4 theorem no_compounding)
+      //                                                                  // critical
+      //                                                                    // proven
       const mult = 1 - sens/2 + audio * sens;
       size[i] = initialSize[i] * mult;
     }

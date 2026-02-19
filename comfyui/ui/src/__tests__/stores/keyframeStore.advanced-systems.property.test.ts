@@ -33,18 +33,18 @@ import { createAnimatableProperty } from "@/types/project";
 import type { Layer, AnimatableProperty } from "@/types/project";
 import { generateKeyframeId } from "@/utils/uuid5";
 
-// ============================================================================
-// ARBITRARIES
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                                               // arbitraries
+// ════════════════════════════════════════════════════════════════════════════
 
 const finiteNumber = fc.double({ noNaN: true, noDefaultInfinity: true, min: -10000, max: 10000 });
 const positiveFrame = fc.integer({ min: 0, max: 1000 });
 const scalarArb = finiteNumber;
 const opacityArb = fc.double({ min: 0, max: 100, noNaN: true, noDefaultInfinity: true });
 
-// ============================================================================
-// TEST HELPERS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                           // test // helpers
+// ════════════════════════════════════════════════════════════════════════════
 
 function createTestLayer(type: Layer["type"]): Layer {
   const projectStore = useProjectStore();
@@ -62,9 +62,9 @@ function createTestLayer(type: Layer["type"]): Layer {
   return createLayer(type, `Test ${type} Layer`);
 }
 
-// ============================================================================
-// PROPERTY TESTS: Point Clouds
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                         // property // tests
+// ════════════════════════════════════════════════════════════════════════════
 
 describe("Keyframe Store Property Tests - Point Clouds", () => {
   beforeEach(() => {
@@ -147,9 +147,9 @@ describe("Keyframe Store Property Tests - Point Clouds", () => {
   });
 });
 
-// ============================================================================
-// PROPERTY TESTS: Masks
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                         // property // tests
+// ════════════════════════════════════════════════════════════════════════════
 
 describe("Keyframe Store Property Tests - Masks", () => {
   beforeEach(() => {
@@ -269,9 +269,9 @@ describe("Keyframe Store Property Tests - Masks", () => {
   });
 });
 
-// ============================================================================
-// PROPERTY TESTS: Effects Over Time
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                         // property // tests
+// ════════════════════════════════════════════════════════════════════════════
 
 describe("Keyframe Store Property Tests - Effects Over Time", () => {
   beforeEach(() => {
@@ -350,9 +350,9 @@ describe("Keyframe Store Property Tests - Effects Over Time", () => {
   });
 });
 
-// ============================================================================
-// PROPERTY TESTS: Serialization/Deserialization
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                         // property // tests
+// ════════════════════════════════════════════════════════════════════════════
 
 describe("Keyframe Store Property Tests - Serialization/Deserialization", () => {
   beforeEach(() => {
@@ -415,9 +415,9 @@ describe("Keyframe Store Property Tests - Serialization/Deserialization", () => 
   });
 });
 
-// ============================================================================
-// PROPERTY TESTS: Undo/Redo
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                         // property // tests
+// ════════════════════════════════════════════════════════════════════════════
 
 describe("Keyframe Store Property Tests - Undo/Redo", () => {
   beforeEach(() => {

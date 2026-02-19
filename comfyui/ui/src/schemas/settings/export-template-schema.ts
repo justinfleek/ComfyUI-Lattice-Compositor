@@ -17,18 +17,18 @@ import {
   ControlTypeSchema,
 } from "../comfyui-schema";
 
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Primitives
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 const finiteNumber = z.number().finite();
 const positiveInt = z.number().int().positive();
 const nonNegativeInt = z.number().int().nonnegative();
 const positiveFinite = z.number().finite().positive();
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Export Template Schema
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Export Template
@@ -85,9 +85,9 @@ export const ExportTemplateSchema = z.object({
 
 export type ExportTemplate = z.infer<typeof ExportTemplateSchema>;
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Export Template Store Schema
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Export Template Store
@@ -109,17 +109,17 @@ export const ExportTemplateStoreSchema = z.object({
 
 export type ExportTemplateStore = z.infer<typeof ExportTemplateStoreSchema>;
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Export Template Array Schema (for imports)
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export const ExportTemplateArraySchema = z.array(ExportTemplateSchema).max(1000); // Max 1000 templates
 
 export type ExportTemplateArray = z.infer<typeof ExportTemplateArraySchema>;
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Validation Helpers
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export function validateExportTemplate(data: unknown): ExportTemplate {
   return ExportTemplateSchema.parse(data);

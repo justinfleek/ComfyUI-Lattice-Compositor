@@ -31,7 +31,7 @@ import {
   type PathFollowerState,
 } from '@/services/export/vaceControlExport';
 
-// BUG-054: EASING_FUNCTIONS is not exported from vaceControlExport.ts
+//                                                                       // bug
 // This is an internal constant that should be exported for testing/preview
 // For now, we define our own copy to test expected behavior
 const EASING_FUNCTIONS: Record<PathFollowerEasing, (t: number) => number> = {
@@ -44,9 +44,9 @@ const EASING_FUNCTIONS: Record<PathFollowerEasing, (t: number) => number> = {
 };
 import type { ControlPoint } from '@/types/spline';
 
-// ============================================================================
-// ARBITRARIES
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                                               // arbitraries
+// ════════════════════════════════════════════════════════════════════════════
 
 // Helper to create a valid control point with required fields
 const makeControlPoint = (
@@ -133,9 +133,9 @@ const arbitraryPathFollowerConfig = (): fc.Arbitrary<PathFollowerConfig> =>
     opacityEnd: fc.double({ min: 0, max: 1, noNaN: true }),
   });
 
-// ============================================================================
-// EASING FUNCTION TESTS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                               // easing // function // tests
+// ════════════════════════════════════════════════════════════════════════════
 
 describe('STRICT: VACE Easing Functions', () => {
   test.prop([fc.double({ min: 0, max: 1, noNaN: true })])(
@@ -199,9 +199,9 @@ describe('STRICT: VACE Easing Functions', () => {
   });
 });
 
-// ============================================================================
-// PATH FOLLOWER TESTS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                 // path // follower // tests
+// ════════════════════════════════════════════════════════════════════════════
 
 describe('STRICT: PathFollower Class', () => {
   test('path with 2 points has positive length', () => {
@@ -334,9 +334,9 @@ describe('STRICT: PathFollower Class', () => {
   });
 });
 
-// ============================================================================
-// LOOP BEHAVIOR TESTS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                 // loop // behavior // tests
+// ════════════════════════════════════════════════════════════════════════════
 
 describe('STRICT: PathFollower Loop Behavior', () => {
   test('restart loop: returns to start after duration', () => {
@@ -384,9 +384,9 @@ describe('STRICT: PathFollower Loop Behavior', () => {
   });
 });
 
-// ============================================================================
-// VACE EXPORTER TESTS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                 // vace // exporter // tests
+// ════════════════════════════════════════════════════════════════════════════
 
 describe('STRICT: VACEControlExporter Class', () => {
   test('getFrameCount returns correct count', () => {
@@ -424,9 +424,9 @@ describe('STRICT: VACEControlExporter Class', () => {
   });
 });
 
-// ============================================================================
-// UTILITY FUNCTION TESTS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                              // utility // function // tests
+// ════════════════════════════════════════════════════════════════════════════
 
 describe('STRICT: VACE Utility Functions', () => {
   test.prop([
@@ -498,9 +498,9 @@ describe('STRICT: VACE Utility Functions', () => {
   });
 });
 
-// ============================================================================
-// EDGE CASE TESTS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                     // edge // case // tests
+// ════════════════════════════════════════════════════════════════════════════
 
 describe('STRICT: VACE Export Edge Cases', () => {
   test('empty path follower list', () => {

@@ -17,9 +17,9 @@ import {
   type ViewOptions,
 } from "@/types/camera";
 
-// ============================================================
-// ARBITRARIES
-// ============================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                                               // arbitraries
+// ════════════════════════════════════════════════════════════════════════════
 
 // Composition dimensions (must be positive)
 const compWidthArb = fc.integer({ min: 1, max: 8192 });
@@ -28,9 +28,9 @@ const compHeightArb = fc.integer({ min: 1, max: 8192 });
 // Camera ID
 const cameraIdArb = fc.string({ minLength: 1, maxLength: 50 });
 
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
 // createDefaultCamera TESTS
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 describe("PROPERTY: createDefaultCamera", () => {
   it("returns object with all required Camera3D fields", () => {
@@ -58,7 +58,7 @@ describe("PROPERTY: createDefaultCamera", () => {
         expect(camera).toHaveProperty("filmSize");
         expect(camera).toHaveProperty("measureFilmSize");
 
-        // DOF
+        //                                                                       // dof
         expect(camera).toHaveProperty("depthOfField");
 
         // Iris
@@ -274,9 +274,9 @@ describe("PROPERTY: createDefaultCamera", () => {
   });
 });
 
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
 // createDefaultViewportState TESTS
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 describe("PROPERTY: createDefaultViewportState", () => {
   it("returns object with all required ViewportState fields", () => {
@@ -339,9 +339,9 @@ describe("PROPERTY: createDefaultViewportState", () => {
   });
 });
 
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
 // createDefaultViewOptions TESTS
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 describe("PROPERTY: createDefaultViewOptions", () => {
   it("returns object with all required ViewOptions fields", () => {
@@ -422,9 +422,9 @@ describe("PROPERTY: createDefaultViewOptions", () => {
   });
 });
 
-// ============================================================
-// CAMERA_PRESETS TESTS
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                // camera // presets // tests
+// ════════════════════════════════════════════════════════════════════════════
 
 describe("PROPERTY: CAMERA_PRESETS", () => {
   it("has 8 presets", () => {

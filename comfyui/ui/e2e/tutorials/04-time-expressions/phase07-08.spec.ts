@@ -48,7 +48,7 @@ test.describe("Tutorial 04: Time Remapping - Phases 7-8 (Steps 136-180)", () => 
     const pixels2 = await h.captureFramePixels();
     expect(pixels2).toBe(pixels1);
 
-    // UNDO/REDO
+    //                                                                      // undo
     await h.undo();
     await h.redo();
   });
@@ -80,7 +80,7 @@ test.describe("Tutorial 04: Time Remapping - Phases 7-8 (Steps 136-180)", () => 
     await h.setPosterizeTimeFrameRate(0, 12);
     // All layers below affected
 
-    // UNDO/REDO
+    //                                                                      // undo
     await h.undo();
     await h.redo();
   });

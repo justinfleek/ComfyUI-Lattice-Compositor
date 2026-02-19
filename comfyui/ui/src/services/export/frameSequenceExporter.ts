@@ -44,7 +44,7 @@ export interface FrameSequenceResult {
   warnings: string[];
 }
 
-// MIME types for browser-supported formats
+//                                                                      // mime
 const FORMAT_MIME: Record<string, string> = {
   png: "image/png",
   jpeg: "image/jpeg",

@@ -746,7 +746,7 @@ const {
 } = globalThis;
 
 // Even though the imported one is not exported by the pony as a live binding,
-// TS doesn't know that,
+//                                                                        // ts
 // so it cannot do its normal flow-based inference. By making and using a local
 // copy, no problem.
 const optTransferBufferToImmutable = optTransferBufferToImmutable$1;
@@ -806,7 +806,7 @@ for (const key of ownKeys(arrayBufferMethods)) {
 // we're about to overwrite a prior installation, we simply issue this
 // warning and continue.
 //
-// TODO, if the primordials are frozen after the prior implementation, such as
+//                                                                      // todo
 // by `lockdown`, then this precludes overwriting as expected. However, for
 // this case, the following warning text will be confusing.
 //
@@ -1117,7 +1117,7 @@ const resetCell = (cell, oldKey, makeMap) => {
 const zeroMetrics = freeze$1({
   totalQueryCount: 0,
   totalHitCount: 0,
-  // TODO?
+  //                                                                      // todo
   // * method-specific counts
   // * liveTouchStats/evictedTouchStats { count, sum, mean, min, max }
   //   * p50/p90/p95/p99 via Ben-Haim/Tom-Tov streaming histograms
@@ -1846,7 +1846,7 @@ const makeHardener = () => {
                   // unrepaired, in which case it will not be judged passable,
                   // avoiding a safety problem.
                   defineProperty$2(obj, 'stack', {
-                    // NOTE: Calls getter during harden, which seems dangerous.
+                    //                                                                      // note
                     // But we're only calling the problematic getter whose
                     // hazards we think we understand.
                     // @ts-expect-error TS should know FERAL_STACK_GETTER
@@ -2010,11 +2010,11 @@ const universalPropertyNames = {
   // https://github.com/endojs/endo/issues/550
   AggregateError: "AggregateError",
   // https://github.com/tc39/proposal-explicit-resource-management
-  // TODO DisposableStack, AsyncDisposableStack
+  //                                                                 // todo // d
   // DisposableStack: 'DisposableStack',
   // AsyncDisposableStack: 'AsyncDisposableStack',
   // https://tc39.es/proposal-shadowrealm/
-  // TODO ShadowRealm
+  //                                                                 // todo // s
   // ShadowRealm: 'ShadowRealm',
   // *** Other Properties of the Global Object
   JSON: "JSON",
@@ -2022,13 +2022,13 @@ const universalPropertyNames = {
   // *** Annex B
   escape: "escape",
   unescape: "unescape",
-  // ESNext
+  //                                                                       // esn
   // https://github.com/tc39/proposal-source-phase-imports?tab=readme-ov-file#js-module-source
   ModuleSource: "ModuleSource",
   lockdown: "lockdown",
   harden: "harden",
   HandledPromise: "HandledPromise"
-  // TODO: Until Promise.delegate (see below).
+  //                                                                      // todo
 };
 const initialGlobalPropertyNames = {
   // *** Constructor Properties of the Global Object
@@ -2041,15 +2041,15 @@ const initialGlobalPropertyNames = {
   // Symbol: '%InitialSymbol%',
   // *** Other Properties of the Global Object
   Math: "%InitialMath%",
-  // ESNext
+  //                                                                       // esn
   // From Error-stack proposal
   // Only on initial global. No corresponding
   // powerless form for other globals.
   getStackString: "%InitialGetStackString%"
-  // TODO https://github.com/Agoric/SES-shim/issues/551
+  //                                                                      // todo
   // Need initial WeakRef and FinalizationGroup in
   // start compartment only.
-  // TODO Temporal
+  //                                                                 // todo // t
   // https://github.com/tc39/proposal-temporal
   // Temporal: '%InitialTemporal%' // with Temporal.Now
 };
@@ -2061,7 +2061,7 @@ const sharedGlobalPropertyNames = {
   Symbol: "%SharedSymbol%",
   // *** Other Properties of the Global Object
   Math: "%SharedMath%"
-  // TODO Temporal
+  //                                                                 // todo // t
   // https://github.com/tc39/proposal-temporal
   // Temporal: '%SharedTemporal%' // without Temporal.Now
 };
@@ -2219,7 +2219,7 @@ const CommonMath = {
   irandom: false
 };
 const permitted = {
-  // ECMA https://tc39.es/ecma262
+  //                                                                      // ecma
   // The intrinsics object has no prototype to avoid conflicts.
   "[[Proto]]": null,
   // %ThrowTypeError%
@@ -2415,7 +2415,7 @@ const permitted = {
   URIError: NativeError("%URIErrorPrototype%"),
   // https://github.com/endojs/endo/issues/550
   AggregateError: NativeError("%AggregateErrorPrototype%"),
-  // TODO SuppressedError
+  //                                                                 // todo // s
   // https://github.com/tc39/proposal-explicit-resource-management
   // SuppressedError: NativeError('%SuppressedErrorPrototype%'),
   "%EvalErrorPrototype%": NativeErrorPrototype("EvalError"),
@@ -2426,12 +2426,12 @@ const permitted = {
   "%URIErrorPrototype%": NativeErrorPrototype("URIError"),
   // https://github.com/endojs/endo/issues/550
   "%AggregateErrorPrototype%": NativeErrorPrototype("AggregateError"),
-  // TODO AggregateError .errors
-  // TODO SuppressedError
+  //                                                                 // todo // a
+  //                                                                 // todo // s
   // https://github.com/tc39/proposal-explicit-resource-management
   // '%SuppressedErrorPrototype%': NativeErrorPrototype('SuppressedError'),
-  // TODO SuppressedError .error
-  // TODO SuppressedError .suppressed
+  //                                                                 // todo // s
+  //                                                                 // todo // s
   // *** Numbers and Dates
   Number: {
     // Properties of the Number Constructor
@@ -2614,7 +2614,7 @@ const permitted = {
     repeat: fn,
     replace: fn,
     replaceAll: fn,
-    // ES2021
+    //                                                                    // es2021
     search: fn,
     slice: fn,
     split: fn,
@@ -2724,7 +2724,7 @@ const permitted = {
     unicodeSets: getter,
     // Annex B: Additional Properties of the RegExp.prototype Object
     compile: false
-    // UNSAFE and suppressed.
+    //                                                                    // unsafe
   },
   "%RegExpStringIteratorPrototype%": {
     // The %RegExpStringIteratorPrototype% Object
@@ -3087,9 +3087,9 @@ const permitted = {
   },
   // SharedArrayBuffer Objects
   SharedArrayBuffer: false,
-  // UNSAFE and purposely suppressed.
+  //                                                                    // unsafe
   "%SharedArrayBufferPrototype%": false,
-  // UNSAFE and purposely suppressed.
+  //                                                                    // unsafe
   DataView: {
     // Properties of the DataView Constructor
     "[[Proto]]": "%FunctionPrototype%",
@@ -3130,7 +3130,7 @@ const permitted = {
   },
   // Atomics
   Atomics: false,
-  // UNSAFE and suppressed.
+  //                                                                    // unsafe
   JSON: {
     parse: fn,
     stringify: fn,
@@ -3275,7 +3275,7 @@ const permitted = {
     throw: fn,
     "@@toStringTag": "string"
   },
-  // TODO: To be replaced with Promise.delegate
+  //                                                                      // todo
   //
   // The HandledPromise global variable shimmed by `@agoric/eventual-send/shim`
   // implements an initial version of the eventual send specification at:
@@ -3578,7 +3578,7 @@ const makeIntrinsicsCollector = reporter => {
  * @param {Reporter} reporter
  */
 const getGlobalIntrinsics = (globalObject, reporter) => {
-  // TODO pass a proper reporter to `makeIntrinsicsCollector`
+  //                                                                      // todo
   const { addIntrinsics, finalIntrinsics } = makeIntrinsicsCollector(reporter);
 
   addIntrinsics(sampleGlobals(globalObject, sharedGlobalPropertyNames));
@@ -3597,7 +3597,7 @@ const getGlobalIntrinsics = (globalObject, reporter) => {
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//            // without // warranties // or // conditions // of // any // kind
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
@@ -4622,7 +4622,7 @@ const makeEvalFunction = evaluator => {
       if (typeof source !== 'string') {
         // As per the runtime semantic of PerformEval [ECMAScript 18.2.1.1]:
         // If Type(source) is not String, return source.
-        // TODO Recent proposals from Mike Samuel may change this non-string
+        //                                                                 // todo // r
         // rule. Track.
         return source;
       }
@@ -4678,7 +4678,7 @@ const makeFunctionConstructor = evaluator => {
     new FERAL_FUNCTION(bodyText);
 
     // Safe to be combined. Defeat potential trailing comments.
-    // TODO: since we create an anonymous function, the 'this' value
+    //                                                                      // todo
     // isn't bound to the global object as per specs, but set as undefined.
     const src = `(function anonymous(${parameters}\n) {\n${bodyText}\n})`;
     return evaluator(src);
@@ -4862,7 +4862,7 @@ const scopeProxyHandlerProperties = {
   },
 
   // See https://github.com/endojs/endo/issues/1510
-  // TODO: report as bug to v8 or Chrome, and record issue link here.
+  //                                                                      // todo
   getOwnPropertyDescriptor(_shadow, prop) {
     // Coerce with `String` in case prop is a symbol.
     const quotedProp = q$4(String$1(prop));
@@ -4875,7 +4875,7 @@ const scopeProxyHandlerProperties = {
   },
 
   // See https://github.com/endojs/endo/issues/1490
-  // TODO Report bug to JSC or Safari
+  //                                                                 // todo // r
   ownKeys(_shadow) {
     return [];
   },
@@ -5591,7 +5591,7 @@ const makeEvaluate = context => {
   //   `evalScope`. Any further reference to 'eval' in the evaluate string will
   //   get the tamed evaluator from the `globalObject`, if any.
 
-  // TODO https://github.com/endojs/endo/issues/816
+  //                                                                      // todo
   // The optimizer currently runs under sloppy mode, and although we doubt that
   // there is any vulnerability introduced just by running the optimizer
   // sloppy, we are much more confident in the semantics of strict mode.
@@ -5716,7 +5716,7 @@ const makeSafeEvaluator = ({
         // diagnostic info including the thrown error if any from evaluating the
         // source code.
         evalScopeKit.revoked = { err };
-        // TODO A GOOD PLACE TO PANIC(), i.e., kill the vat incarnation.
+        //                                 // todo // a // good // place // to // panic
         // See https://github.com/Agoric/SES-shim/issues/490
         Fail$2`handler did not reset allowNextEvalToBeUnsafe ${err}`;
       }
@@ -5859,7 +5859,7 @@ const defineName = (name, fn) => defineProperty$2(fn, 'name', { value: name });
 // The permitted console methods, from:
 // Whatwg "living standard" https://console.spec.whatwg.org/
 // Node https://nodejs.org/dist/latest-v14.x/docs/api/console.html
-// MDN https://developer.mozilla.org/en-US/docs/Web/API/Console_API
+//                                                                       // mdn
 // TypeScript https://openstapps.gitlab.io/projectmanagement/interfaces/_node_modules__types_node_globals_d_.console.html
 // Chrome https://developers.google.com/web/tools/chrome-devtools/console/api
 
@@ -6411,7 +6411,7 @@ const safeV8CallSiteMethodNames = [
   'toString', // TODO replace to use only permitted info
 ];
 
-// TODO this is a ridiculously expensive way to attenuate callsites.
+//                                                                      // todo
 // Before that matters, we should switch to a reasonable representation.
 const safeV8CallSiteFacet = callSite => {
   const methodEntry = name => {
@@ -6451,7 +6451,7 @@ const FILENAME_SES_AVA_CENSOR = /\/packages\/ses-ava\/src\/ses-ava-test\.js$/;
 
 // Any stack frame whose `fileName` matches any of these censor patterns
 // will be omitted from concise stacks.
-// TODO Enable users to configure FILENAME_CENSORS via `lockdown` options.
+//                                                                 // todo // e
 const FILENAME_CENSORS = [
   FILENAME_NODE_DEPENDENTS_CENSOR,
   FILENAME_NODE_INTERNALS_CENSOR,
@@ -6463,7 +6463,7 @@ const FILENAME_CENSORS = [
 // Should a stack frame with this as its fileName be included in a concise
 // stack trace?
 // Exported only so it can be unit tested.
-// TODO Move so that it applies not just to v8.
+//                                                                 // todo // m
 const filterFileName = fileName => {
   if (!fileName) {
     // Stack frames with no fileName should appear in concise stack traces.
@@ -6533,7 +6533,7 @@ const CALLSITE_FILE_2SLASH_PATTERN = /^((?:.*[( ])?)file:\/\/([^/].*)$/;
 // capture groups containing the parts of the original string we want
 // to keep. The parts outside those capture groups will be dropped from concise
 // stacks.
-// TODO Enable users to configure CALLSITE_PATTERNS via `lockdown` options.
+//                                                                 // todo // e
 const CALLSITE_PATTERNS = [
   CALLSITE_ELLIPSIS_PATTERN1,
   CALLSITE_ELLIPSIS_PATTERN2,
@@ -6545,7 +6545,7 @@ const CALLSITE_PATTERNS = [
 // `callSiteString` is the original stringified stack frame, return the
 // possibly-shorter stringified stack frame that should be shown instead.
 // Exported only so it can be unit tested.
-// TODO Move so that it applies not just to v8.
+//                                                                 // todo // m
 /**
  * @param {string} callSiteString
  */
@@ -6570,7 +6570,7 @@ const tameV8ErrorConstructor = (
       'internal: v8+unsafe-debug special case should already be done',
     );
   }
-  // TODO: Proper CallSite types
+  //                                                                      // todo
   /** @typedef {{}} CallSite */
 
   const originalCaptureStackTrace = OriginalError.captureStackTrace;
@@ -6788,7 +6788,7 @@ function tameErrorConstructor(
         error = construct(FERAL_ERROR, rest, new.target);
       }
       if (platform === 'v8') {
-        // TODO Likely expensive!
+        //                                                                 // todo // l
         apply$2(originalCaptureStackTrace, FERAL_ERROR, [error, ResultError]);
       }
       return error;
@@ -6825,7 +6825,7 @@ function tameErrorConstructor(
     stackTraceLimit: {
       get() {
         if (typeof FERAL_ERROR.stackTraceLimit === 'number') {
-          // FERAL_ERROR.stackTraceLimit is only on v8
+          //                                                            // feral // error
           return FERAL_ERROR.stackTraceLimit;
         }
         return undefined;
@@ -6839,7 +6839,7 @@ function tameErrorConstructor(
           return;
         }
         if (typeof FERAL_ERROR.stackTraceLimit === 'number') {
-          // FERAL_ERROR.stackTraceLimit is only on v8
+          //                                                            // feral // error
           FERAL_ERROR.stackTraceLimit = newLimit;
           // We place the useless return on the next line to ensure
           // that anything we place after the if in the future only
@@ -6848,7 +6848,7 @@ function tameErrorConstructor(
           return;
         }
       },
-      // WTF on v8 stackTraceLimit is enumerable
+      //                                                                       // wtf
       enumerable: false,
       configurable: true,
     },
@@ -7696,7 +7696,7 @@ const provideCompartmentEvaluator = (compartmentFields, options) => {
 
 const compartmentEvaluate = (compartmentFields, source, options) => {
   // Perform this check first to avoid unnecessary sanitizing.
-  // TODO Maybe relax string check and coerce instead:
+  //                                                                 // todo // m
   // https://github.com/tc39/proposal-dynamic-code-brand-checks
   if (typeof source !== 'string') {
     throw TypeError$3('first argument of evaluate() must be a string');
@@ -8704,7 +8704,7 @@ const makeCompartmentConstructor = (
     // We must initialize all constant properties first because
     // `makeSafeEvaluator` may use them to create optimized bindings
     // in the evaluator.
-    // TODO: consider merging into a single initialization if internal
+    //                                                                      // todo
     // evaluator is no longer eagerly created
     setGlobalObjectConstantProperties(globalObject);
 
@@ -8722,7 +8722,7 @@ const makeCompartmentConstructor = (
       markVirtualizedNativeFunction,
     });
 
-    // TODO: maybe add evalTaming to the Compartment constructor 3rd options?
+    //                                                                      // todo
     setGlobalObjectEvaluators(
       globalObject,
       safeEvaluate,
@@ -9253,7 +9253,7 @@ const shimArrayBufferTransfer = () => {
     //
     // Empty object because this shim has nothing for `addIntrinsics` to add.
     return {};
-    // TODO Rather than doing nothing, should the endo ses-shim throw
+    //                                                                 // todo // r
     // in this case?
     // throw TypeError(
     //   `Can only shim missing ArrayBuffer.prototype.transfer on a platform with "structuredClone"`,
@@ -9423,7 +9423,7 @@ const reportInGroup = (groupLabel, console, callback) => {
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//            // without // warranties // or // conditions // of // any // kind
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
@@ -9462,7 +9462,7 @@ const safeHarden = makeHardener();
  * @param {Array<Transform>} [options.__shimTransforms__]
  */
 
-// TODO https://github.com/endojs/endo/issues/814
+//                                                                      // todo
 // Lockdown currently allows multiple calls provided that the specified options
 // of every call agree.  With experience, we have observed that lockdown should
 // only ever need to be called once and that simplifying lockdown will improve
@@ -9869,7 +9869,7 @@ const repairIntrinsics = (options = {}) => {
     priorHardenIntrinsics.stack;
 
     // Circumvent the override mistake.
-    // TODO consider moving this to the end of the repair phase, and
+    //                                                                      // todo
     // therefore before vetted shims rather than afterwards. It is not
     // clear yet which is better.
     // @ts-ignore enablePropertyOverrides does its own input validation
@@ -9966,7 +9966,7 @@ universalThis.Compartment = makeCompartmentConstructor(
 
 universalThis.assert = assert;
 
-// TODO possible additional exports. Some are privileged.
+//                                                                      // todo
 // export { loggedErrorHandler };
 // export {
 //   makeCausalConsole,

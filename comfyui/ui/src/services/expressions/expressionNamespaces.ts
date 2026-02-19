@@ -46,9 +46,9 @@ import { jitter, temporalJitter } from "./jitterExpressions";
 import { repeatAfter, repeatBefore } from "./loopExpressions";
 import { bounce, elastic, inertia } from "./motionExpressions";
 
-// ============================================================
-// NAMESPACE EXPORTS
-// ============================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                                      // namespace // exports
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Easing namespace - all easing functions in one object

@@ -31,9 +31,9 @@ export type CameraSplineProvider = (
   frame: number,
 ) => SplineQueryResult | null;
 
-// ============================================================================
-// TYPES
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                                                     // types
+// ════════════════════════════════════════════════════════════════════════════
 
 /** Callback to get Camera3D data from store */
 export type CameraGetter = (cameraId: string) => Camera3D | null;
@@ -50,9 +50,9 @@ export type CameraUpdater = (
   updates: Partial<Camera3D>,
 ) => void;
 
-// ============================================================================
-// CAMERA LAYER
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                           // camera // layer
+// ════════════════════════════════════════════════════════════════════════════
 
 export class CameraLayer extends BaseLayer {
   // Camera data reference
@@ -106,9 +106,9 @@ export class CameraLayer extends BaseLayer {
     this.createWireframe();
   }
 
-  // ============================================================================
-  // INITIALIZATION
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                            // initialization
+  // ════════════════════════════════════════════════════════════════════════════
 
   /**
    * Extract camera layer data with defaults
@@ -179,9 +179,9 @@ export class CameraLayer extends BaseLayer {
     this.autoAdvanceT = 0;
   }
 
-  // ============================================================================
-  // WIREFRAME VISUALIZATION
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                // wireframe // visualization
+  // ════════════════════════════════════════════════════════════════════════════
 
   /**
    * Create camera wireframe indicator
@@ -381,9 +381,9 @@ export class CameraLayer extends BaseLayer {
     });
   }
 
-  // ============================================================================
-  // CAMERA ACCESS
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                          // camera // access
+  // ════════════════════════════════════════════════════════════════════════════
 
   /**
    * Get the linked Camera3D object (base, without interpolation)
@@ -511,9 +511,9 @@ export class CameraLayer extends BaseLayer {
     }
   }
 
-  // ============================================================================
-  // VISIBILITY CONTROLS
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                    // visibility // controls
+  // ════════════════════════════════════════════════════════════════════════════
 
   /**
    * Set wireframe visibility
@@ -535,9 +535,9 @@ export class CameraLayer extends BaseLayer {
     }
   }
 
-  // ============================================================================
-  // FRAME EVALUATION
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                       // frame // evaluation
+  // ════════════════════════════════════════════════════════════════════════════
 
   protected onEvaluateFrame(frame: number): void {
     // Track current frame for interpolation
@@ -656,7 +656,7 @@ export class CameraLayer extends BaseLayer {
 
     if (pathFollowing.autoAdvance) {
       // Auto-advance mode: calculate t from frame
-      // DETERMINISM: t is calculated from frame, not accumulated state
+      //                                                               // determinism
       // Validate autoAdvanceSpeed (NaN would propagate through modulo)
       const validSpeed = Number.isFinite(pathFollowing.autoAdvanceSpeed)
         ? pathFollowing.autoAdvanceSpeed
@@ -804,9 +804,9 @@ export class CameraLayer extends BaseLayer {
     }
   }
 
-  // ============================================================================
-  // LAYER UPDATE
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                           // layer // update
+  // ════════════════════════════════════════════════════════════════════════════
 
   protected onUpdate(properties: Partial<Layer>): void {
     const data = properties.data as Partial<CameraLayerData> | undefined;
@@ -838,9 +838,9 @@ export class CameraLayer extends BaseLayer {
     }
   }
 
-  // ============================================================================
-  // EXPORT HELPERS
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                         // export // helpers
+  // ════════════════════════════════════════════════════════════════════════════
 
   /**
    * Get camera transform data for export/render
@@ -871,9 +871,9 @@ export class CameraLayer extends BaseLayer {
     };
   }
 
-  // ============================================================================
-  // DISPOSAL
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                  // disposal
+  // ════════════════════════════════════════════════════════════════════════════
 
   private disposeWireframe(): void {
     if (!this.wireframe) return;

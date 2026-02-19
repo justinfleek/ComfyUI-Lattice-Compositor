@@ -254,7 +254,7 @@ const emit = defineEmits<(e: "update", data: Partial<PoseLayerData>) => void>();
 const layerStore = useLayerStore();
 const projectStore = useProjectStore();
 
-// COCO 18 keypoint names
+//                                                                // coco // 18
 const keypointNames = [
   "Nose",
   "Neck",
@@ -369,7 +369,7 @@ function formatPoseFormat(fmt: PoseFormat): string {
 }
 
 // Lean4/PureScript/Haskell: Computed properties for Vue template bindings - explicit pattern matching with memoization
-// PERFORMANCE: Using computed() for memoization - critical for timeline scrubbing with multiple pose layers
+//                                                               // performance
 // Pattern match: boneWidth ∈ number | undefined → number (default 4)
 const getBoneWidth = computed(() => {
   return (typeof poseData.value.boneWidth === "number" && Number.isFinite(poseData.value.boneWidth)) ? poseData.value.boneWidth : 4;

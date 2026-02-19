@@ -29,7 +29,7 @@ test.describe("Tutorial 01: Phases 17-19 (Steps 456-550)", () => {
     // Should open nested comp with 3 layers
     await h.expectLayerCount(3);
 
-    // UNDO TEST
+    //                                                              // undo // test
     await h.undo();
     await h.redo();
   });
@@ -48,7 +48,7 @@ test.describe("Tutorial 01: Phases 17-19 (Steps 456-550)", () => {
     await page.waitForTimeout(500);
     await h.stop();
 
-    // UNDO TEST
+    //                                                              // undo // test
     await h.undo();
     await h.redo();
   });

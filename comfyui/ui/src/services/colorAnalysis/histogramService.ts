@@ -63,7 +63,7 @@ export interface WaveformData {
   height: number;
   mode: "luma" | "rgb";
 
-  // RGB mode - separate waveforms
+  //                                                                       // rgb
   redColumns?: Uint8Array[];
   greenColumns?: Uint8Array[];
   blueColumns?: Uint8Array[];
@@ -115,7 +115,7 @@ export function computeHistogram(imageData: ImageData): HistogramData {
     green[g]++;
     blue[b]++;
 
-    // BT.709 luminance
+    //                                                                        // bt
     const lum = Math.round(BT709_R * r + BT709_G * g + BT709_B * b);
     luminance[Math.min(255, Math.max(0, lum))]++;
   }
@@ -302,7 +302,7 @@ export function computeWaveform(
       const lum = Math.round(BT709_R * r + BT709_G * g + BT709_B * b);
       columns[x][y] = Math.min(255, Math.max(0, lum));
 
-      // RGB mode
+      //                                                                       // rgb
       if (mode === "rgb" && redColumns && greenColumns && blueColumns) {
         redColumns[x][y] = r;
         greenColumns[x][y] = g;
@@ -388,7 +388,7 @@ export function computeVectorscope(imageData: ImageData): VectorscopeData {
     const g = data[i + 1] / 255;
     const b = data[i + 2] / 255;
 
-    // BT.709 Y
+    //                                                                        // bt
     const Y = BT709_R * r + BT709_G * g + BT709_B * b;
 
     // Chrominance (scaled for display)

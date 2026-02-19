@@ -12,9 +12,9 @@ import { isFiniteNumber } from "@/utils/typeGuards";
 
 const logger = createLogger("MemoryBudget");
 
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Types
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export interface MemoryAllocation {
   id: string;
@@ -48,13 +48,13 @@ export interface GPUInfo {
   tier: "low" | "medium" | "high" | "ultra";
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Constants
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /** Estimated VRAM for common operations (in MB) */
 export const VRAM_ESTIMATES = {
-  // AI Models
+  //                                                                   // ai // m
   "model:qwen-image-layered": 28800, // 28.8GB
   "model:depth-anything-v2": 2500,
   "model:segment-anything": 4000,
@@ -87,17 +87,17 @@ const THRESHOLDS = {
   critical: 0.9, // 90% - likely to fail soon
 };
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // State
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 const allocations = reactive<Map<string, MemoryAllocation>>(new Map());
 const gpuInfo = ref<GPUInfo | null>(null);
 const isInitialized = ref(false);
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Computed Values
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /** Total estimated VRAM usage in MB */
 export const totalUsageMB = computed(() => {
@@ -161,9 +161,9 @@ export const unloadableItems = computed(() => {
   return allocationList.value.filter((a) => a.canUnload);
 });
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Service Functions
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Initialize GPU detection
@@ -445,14 +445,14 @@ export function getMemorySummary(): {
   };
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Helper Functions
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 function estimateVRAMFromRenderer(renderer: string): number {
   const r = renderer.toLowerCase();
 
-  // NVIDIA GPUs - 50 series (Blackwell, 2025)
+  //                                                             // nvidia // gpu
   // Check both with and without "rtx " prefix for flexibility
   if (r.includes("5090") && (r.includes("rtx") || r.includes("geforce")))
     return 32000;
@@ -463,7 +463,7 @@ function estimateVRAMFromRenderer(renderer: string): number {
   if (r.includes("5060") && (r.includes("rtx") || r.includes("geforce")))
     return 8000;
 
-  // NVIDIA GPUs - 40 series (Ada Lovelace)
+  //                                                             // nvidia // gpu
   if (r.includes("4090") && (r.includes("rtx") || r.includes("geforce")))
     return 24000;
   if (r.includes("4080") && (r.includes("rtx") || r.includes("geforce")))
@@ -473,7 +473,7 @@ function estimateVRAMFromRenderer(renderer: string): number {
   if (r.includes("4060") && (r.includes("rtx") || r.includes("geforce")))
     return 8000;
 
-  // NVIDIA GPUs - 30 series (Ampere)
+  //                                                             // nvidia // gpu
   if (r.includes("3090") && (r.includes("rtx") || r.includes("geforce")))
     return 24000;
   if (r.includes("3080") && (r.includes("rtx") || r.includes("geforce")))
@@ -483,7 +483,7 @@ function estimateVRAMFromRenderer(renderer: string): number {
   if (r.includes("3060") && (r.includes("rtx") || r.includes("geforce")))
     return 12000;
 
-  // NVIDIA GPUs - 20 series (Turing)
+  //                                                             // nvidia // gpu
   if (r.includes("2080") && (r.includes("rtx") || r.includes("geforce")))
     return 8000;
   if (r.includes("2070") && (r.includes("rtx") || r.includes("geforce")))
@@ -491,7 +491,7 @@ function estimateVRAMFromRenderer(renderer: string): number {
   if (r.includes("2060") && (r.includes("rtx") || r.includes("geforce")))
     return 6000;
 
-  // NVIDIA GTX series
+  //                                                             // nvidia // gtx
   if (r.includes("1080") && (r.includes("gtx") || r.includes("geforce")))
     return 8000;
   if (r.includes("1070") && (r.includes("gtx") || r.includes("geforce")))
@@ -499,12 +499,12 @@ function estimateVRAMFromRenderer(renderer: string): number {
   if (r.includes("1060") && (r.includes("gtx") || r.includes("geforce")))
     return 6000;
 
-  // AMD GPUs - RX 7000 series
+  //                                                                // amd // gpu
   if (r.includes("7900") && r.includes("rx")) return 24000;
   if (r.includes("7800") && r.includes("rx")) return 16000;
   if (r.includes("7700") && r.includes("rx")) return 12000;
 
-  // AMD GPUs - RX 6000 series
+  //                                                                // amd // gpu
   if (r.includes("6900") && r.includes("rx")) return 16000;
   if (r.includes("6800") && r.includes("rx")) return 16000;
   if (r.includes("6700") && r.includes("rx")) return 12000;
@@ -565,9 +565,9 @@ function checkAndLogWarning(): void {
   }
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Export reactive state for Vue components
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export const memoryState = {
   totalUsageMB,

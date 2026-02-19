@@ -1745,7 +1745,7 @@ function goToNextKeyframe(): void {
 
 // Keyboard shortcuts handler (spec I)
 function handleKeyDown(event: KeyboardEvent): void {
-  // F9 Easy Ease
+  //                                                                   // f9 // e
   if (event.key === "F9") {
     event.preventDefault();
     if (event.ctrlKey && event.shiftKey) {

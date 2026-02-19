@@ -36,7 +36,7 @@ test.describe("Tutorial 01: Phases 10-13 (Steps 241-355)", () => {
 
     await h.toggleCurveEditor();
 
-    // UNDO TEST
+    //                                                              // undo // test
     await h.undo();
     await h.redo();
   });
@@ -61,7 +61,7 @@ test.describe("Tutorial 01: Phases 10-13 (Steps 241-355)", () => {
     // Step 292-295: Apply easing
     await h.smoothEase();
 
-    // UNDO TEST
+    //                                                              // undo // test
     await h.undo();
     await h.redo();
   });
@@ -84,7 +84,7 @@ test.describe("Tutorial 01: Phases 10-13 (Steps 241-355)", () => {
     await h.isolatePosition();
     await h.toggleStopwatch("position");
 
-    // UNDO TEST
+    //                                                              // undo // test
     await h.undo();
     await h.redo();
   });
@@ -107,7 +107,7 @@ test.describe("Tutorial 01: Phases 10-13 (Steps 241-355)", () => {
     // Step 349: Center layer
     await h.centerLayerInComp();
 
-    // UNDO TEST
+    //                                                              // undo // test
     await h.undo();
     await h.redo();
   });

@@ -43,9 +43,9 @@ import {
 } from '@/services/export/poseExport';
 import type { Pose, PoseKeypoint } from '@/engine/layers/PoseLayer';
 
-// ============================================================================
-// ARBITRARIES
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                                               // arbitraries
+// ════════════════════════════════════════════════════════════════════════════
 
 // Generate a valid keypoint with normalized coordinates
 const arbitraryKeypoint = (): fc.Arbitrary<PoseKeypoint> =>
@@ -111,9 +111,9 @@ const arbitraryOpenPoseJSON = (numPeople: number = 1): fc.Arbitrary<OpenPoseJSON
     ),
   });
 
-// ============================================================================
-// OPENPOSE JSON FORMAT TESTS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                       // openpose // json // format // tests
+// ════════════════════════════════════════════════════════════════════════════
 
 describe('STRICT: OpenPose JSON Format', () => {
   test.prop([arbitraryPoses()])('exported JSON has correct version', (poses) => {
@@ -149,7 +149,7 @@ describe('STRICT: OpenPose JSON Format', () => {
     const json = exportToOpenPoseJSON([pose]);
     const keypoints = json.people[0].pose_keypoints_2d;
     
-    // COCO-18 format: 18 keypoints * 3 values (x, y, confidence) = 54
+    //                                                                      // coco
     expect(keypoints.length).toBe(54);
   });
 
@@ -205,9 +205,9 @@ describe('STRICT: OpenPose JSON Format', () => {
   });
 });
 
-// ============================================================================
-// JSON IMPORT/EXPORT ROUNDTRIP TESTS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                            // json // import
+// ════════════════════════════════════════════════════════════════════════════
 
 describe('STRICT: Pose Import/Export Roundtrip', () => {
   test.prop([arbitraryPoses()])('import(export(poses)) preserves keypoint count', (poses) => {
@@ -277,9 +277,9 @@ describe('STRICT: Pose Import/Export Roundtrip', () => {
   });
 });
 
-// ============================================================================
-// POSE SEQUENCE TESTS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                 // pose // sequence // tests
+// ════════════════════════════════════════════════════════════════════════════
 
 describe('STRICT: Pose Sequence Animation', () => {
   test.prop([
@@ -347,12 +347,12 @@ describe('STRICT: Pose Sequence Animation', () => {
   });
 });
 
-// ============================================================================
-// POSE RENDERING TESTS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                // pose // rendering // tests
+// ════════════════════════════════════════════════════════════════════════════
 
 describe('STRICT: Pose Frame Rendering', () => {
-  // NOTE: Canvas rendering tests are in browser/poseExport.browser.test.ts
+  //                                                                      // note
   
   test('default config has correct values', () => {
     const config = createDefaultPoseExportConfig();
@@ -368,16 +368,16 @@ describe('STRICT: Pose Frame Rendering', () => {
   });
 });
 
-// ============================================================================
-// CONTROLNET EXPORT TESTS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                             // controlnet // export // tests
+// ════════════════════════════════════════════════════════════════════════════
 
 describe('STRICT: ControlNet Export', () => {
   test.prop([
     arbitraryPoses(),
     fc.integer({ min: 64, max: 2048 }),
     fc.integer({ min: 64, max: 2048 }),
-  // BROWSER-ONLY TEST - Moved to comment, needs Playwright
+  //                                                                   // browser
   // Original test: exportPoseForControlNet returns both canvas and json
   // This requires browser canvas API - move to E2E tests
   ])('exportPoseForControlNet JSON output is valid (node-safe)', (poses, _width, _height) => {
@@ -389,9 +389,9 @@ describe('STRICT: ControlNet Export', () => {
   });
 });
 
-// ============================================================================
-// POSE SEQUENCE EXPORT TESTS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                       // pose // sequence // export // tests
+// ════════════════════════════════════════════════════════════════════════════
 
 describe('STRICT: Full Pose Sequence Export', () => {
   test('exportPoseSequence with json format returns correct structure', () => {
@@ -450,9 +450,9 @@ describe('STRICT: Full Pose Sequence Export', () => {
   });
 });
 
-// ============================================================================
-// POSE SEQUENCE IMPORT TESTS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                       // pose // sequence // import // tests
+// ════════════════════════════════════════════════════════════════════════════
 
 describe('STRICT: Pose Sequence Import', () => {
   test.prop([
@@ -477,9 +477,9 @@ describe('STRICT: Pose Sequence Import', () => {
   });
 });
 
-// ============================================================================
-// EDGE CASE TESTS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                     // edge // case // tests
+// ════════════════════════════════════════════════════════════════════════════
 
 describe('STRICT: Pose Export Edge Cases', () => {
   test('handles zero confidence keypoints', () => {
@@ -545,9 +545,9 @@ describe('STRICT: Pose Export Edge Cases', () => {
   });
 });
 
-// ============================================================================
-// COCO KEYPOINT MAPPING TESTS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                      // coco // keypoint // mapping // tests
+// ════════════════════════════════════════════════════════════════════════════
 
 describe('STRICT: COCO-18 Keypoint Mapping', () => {
   const EXPECTED_KEYPOINT_ORDER = [

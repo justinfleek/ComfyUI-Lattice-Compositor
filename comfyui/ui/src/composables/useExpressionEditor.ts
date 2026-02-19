@@ -48,7 +48,7 @@ export function useExpressionEditor() {
       return false;
     }
 
-    // SECURITY: Validate custom expressions before applying
+    //                                                                  // security
     // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy optional chaining
     if (expression.type === "custom" && expression.params !== undefined && typeof expression.params === "object" && "code" in expression.params && expression.params.code !== null && expression.params.code !== undefined) {
       const code = expression.params.code as string;

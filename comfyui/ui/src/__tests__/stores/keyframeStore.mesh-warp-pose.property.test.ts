@@ -27,9 +27,9 @@ import type { WarpPin } from "@/types/meshWarp";
 import { createDefaultWarpPin } from "@/types/meshWarp";
 import { createAnimatableProperty } from "@/types/project";
 
-// ============================================================================
-// ARBITRARIES (Generators)
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                                               // arbitraries
+// ════════════════════════════════════════════════════════════════════════════
 
 const finiteNumber = fc.double({ noNaN: true, noDefaultInfinity: true, min: -10000, max: 10000 });
 const positiveFrame = fc.integer({ min: 0, max: 1000 });
@@ -39,9 +39,9 @@ const vec2Arb = fc.record({
 });
 const opacityArb = fc.double({ min: 0, max: 100, noNaN: true, noDefaultInfinity: true });
 
-// ============================================================================
-// TEST HELPERS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                           // test // helpers
+// ════════════════════════════════════════════════════════════════════════════
 
 function createTestSplineLayer(): Layer {
   const projectStore = useProjectStore();
@@ -75,9 +75,9 @@ function createTestPoseLayer(): Layer {
   return createLayer("pose", "Test Pose Layer");
 }
 
-// ============================================================================
-// PROPERTY TESTS: Mesh Warp Pins
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                         // property // tests
+// ════════════════════════════════════════════════════════════════════════════
 
 describe("Keyframe Store Property Tests - Mesh Warp Pins", () => {
   beforeEach(() => {
@@ -210,9 +210,9 @@ describe("Keyframe Store Property Tests - Mesh Warp Pins", () => {
   });
 });
 
-// ============================================================================
-// PROPERTY TESTS: Pose Layer Keypoints
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                         // property // tests
+// ════════════════════════════════════════════════════════════════════════════
 
 describe("Keyframe Store Property Tests - Pose Layer Keypoints", () => {
   beforeEach(() => {

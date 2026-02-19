@@ -91,9 +91,9 @@ export class ParticleLayer extends BaseLayer {
   /** Last evaluated frame (for determinism) */
   private lastEvaluatedFrame: number = -1;
 
-  // ============================================================================
-  // EMITTER GIZMO VISUALIZATION
-  // ============================================================================
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  //                                         // emitter // gizmo // visualization
+  // ════════════════════════════════════════════════════════════════════════════
 
   /** Emitter visualization icons */
   private emitterGizmos: Map<string, THREE.Group> = new Map();
@@ -135,7 +135,7 @@ export class ParticleLayer extends BaseLayer {
     this.particleData = layerData.data as import("@/types/particles").ParticleLayerData | null;
 
     // Generate deterministic seed from layer ID
-    // DETERMINISM: Same layer ID always produces same seed
+    //                                                               // determinism
     this.layerSeed = this.generateSeedFromId(layerData.id);
 
     // Build configuration from layer data (with deterministic seed)
@@ -795,7 +795,7 @@ export class ParticleLayer extends BaseLayer {
         };
       }
 
-      // LOD (Level of Detail) settings
+      //                                                                       // lod
       if (data.renderOptions.lodEnabled !== undefined) {
         config.render.lodEnabled = data.renderOptions.lodEnabled;
       }
@@ -1098,9 +1098,9 @@ export class ParticleLayer extends BaseLayer {
     this.fps = Number.isFinite(fps) && fps > 0 ? fps : 16;
   }
 
-  // ============================================================================
-  // EMITTER MANAGEMENT
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                     // emitter // management
+  // ════════════════════════════════════════════════════════════════════════════
 
   /**
    * Add a new emitter
@@ -1128,9 +1128,9 @@ export class ParticleLayer extends BaseLayer {
     this.particleSystem.removeEmitter(id);
   }
 
-  // ============================================================================
-  // FORCE FIELD MANAGEMENT
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                              // force // field // management
+  // ════════════════════════════════════════════════════════════════════════════
 
   /**
    * Add a force field
@@ -1161,9 +1161,9 @@ export class ParticleLayer extends BaseLayer {
     this.particleSystem.removeForceField(id);
   }
 
-  // ============================================================================
-  // AUDIO REACTIVITY
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                       // audio // reactivity
+  // ════════════════════════════════════════════════════════════════════════════
 
   /**
    * Set audio feature value for reactivity
@@ -1209,9 +1209,9 @@ export class ParticleLayer extends BaseLayer {
     }
   }
 
-  // ============================================================================
-  // SIMULATION
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                // simulation
+  // ════════════════════════════════════════════════════════════════════════════
 
   /**
    * Step the particle simulation
@@ -1306,9 +1306,9 @@ export class ParticleLayer extends BaseLayer {
     this.particleSystem.setCacheInterval(interval);
   }
 
-  // ============================================================================
-  // BAKE TO KEYFRAMES / TRAJECTORY EXPORT
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                   // bake // to // keyframes
+  // ════════════════════════════════════════════════════════════════════════════
 
   /**
    * Export particle trajectories for a frame range
@@ -1339,9 +1339,9 @@ export class ParticleLayer extends BaseLayer {
     return this.particleSystem.getActiveParticles();
   }
 
-  // ============================================================================
-  // ABSTRACT IMPLEMENTATIONS
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                               // abstract // implementations
+  // ════════════════════════════════════════════════════════════════════════════
 
   /**
    * Calculate time-remapped frame for particle simulation
@@ -1408,7 +1408,7 @@ export class ParticleLayer extends BaseLayer {
     // Calculate remapped frame for time remapping support
     const simulationFrame = this.calculateRemappedFrame(frame);
 
-    // DETERMINISM: Use frame caching system for scrub-safe particle evaluation
+    //                                                               // determinism
     // The simulateToFrame method handles:
     // - Sequential playback (single step)
     // - Forward scrubbing (continue from current)
@@ -1527,7 +1527,7 @@ export class ParticleLayer extends BaseLayer {
     );
 
     // Update emitters based on audio (using BASE values to prevent compounding)
-    // NOTE: Emission rate is handled in applyEmissionRateModifiers() BEFORE step()
+    //                                                                      // note
     const emitters = this.particleSystem.getConfig().emitters;
     for (const emitter of emitters) {
       const baseValues = this.baseEmitterValues.get(emitter.id);
@@ -1547,7 +1547,7 @@ export class ParticleLayer extends BaseLayer {
         ? emitterMods.size
         : layerSize;
 
-      // CRITICAL: Always reset to base values FIRST to prevent compounding
+      //                                                                  // critical
       // This ensures values are correct even if GPUParticleSystem.applyAudioModulation() ran during step()
       this.particleSystem.updateEmitter(emitter.id, {
         initialSpeed: baseValues.initialSpeed,
@@ -1578,7 +1578,7 @@ export class ParticleLayer extends BaseLayer {
         const baseFieldValues = this.baseForceFieldValues.get(field.id);
         if (!baseFieldValues) continue;
 
-        // CRITICAL: Always reset to base values FIRST to prevent compounding
+        //                                                                  // critical
         // This ensures values are correct even if GPUParticleSystem.applyAudioModulation() ran during step()
         this.particleSystem.updateForceField(field.id, {
           strength: baseFieldValues.strength,
@@ -1621,7 +1621,7 @@ export class ParticleLayer extends BaseLayer {
         type: "particles",
       } as Layer);
 
-      // DETERMINISM: Preserve the layer-specific seed
+      //                                                               // determinism
       this.systemConfig.randomSeed = this.layerSeed;
 
       // Dispose old system
@@ -1647,9 +1647,9 @@ export class ParticleLayer extends BaseLayer {
     this.disposeGizmos();
   }
 
-  // ============================================================================
-  // EMITTER GIZMO VISUALIZATION
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                         // emitter // gizmo // visualization
+  // ════════════════════════════════════════════════════════════════════════════
 
   /**
    * Create visual gizmos for all emitters and force fields
@@ -2151,9 +2151,9 @@ export class ParticleLayer extends BaseLayer {
     }
   }
 
-  // ============================================================================
-  // CC PARTICLE WORLD STYLE VISUALIZATION (Horizon, Grid, Axis)
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                         // cc // particle // world // style // visualization
+  // ════════════════════════════════════════════════════════════════════════════
 
   /**
    * Create or update horizon line at floor position (CC Particle World style)
@@ -2428,9 +2428,9 @@ export class ParticleLayer extends BaseLayer {
     };
   }
 
-  // ============================================================================
-  // ACCESSORS
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                 // accessors
+  // ════════════════════════════════════════════════════════════════════════════
 
   /**
    * Get the underlying particle system for advanced operations

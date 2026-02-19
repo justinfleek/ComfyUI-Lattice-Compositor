@@ -23,9 +23,9 @@
 
 import { isFiniteNumber, assertDefined, safeCoordinateDefault } from "@/utils/typeGuards";
 
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Types
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export interface AudioAnalysis {
   sampleRate: number;
@@ -52,12 +52,12 @@ export interface AudioAnalysis {
   spectralFlatness: number[]; // Tonal vs noise-like (0=tonal, 1=noise)
   chromaFeatures?: ChromaFeatures; // Key/chord detection
 
-  // HPSS: Harmonic-Percussive Source Separation (librosa standard)
+  //                                                                      // hpss
   harmonicEnergy?: number[]; // Tonal/harmonic content per frame
   percussiveEnergy?: number[]; // Transient/percussive content per frame
   hpRatio?: number[]; // Harmonic-to-percussive ratio per frame
 
-  // MFCC: Mel-frequency cepstral coefficients (timbral features)
+  //                                                                      // mfcc
   mfcc?: number[][]; // [frameIndex][coefficient] - 13 coefficients per frame
   mfccStats?: {
     // Per-coefficient normalization stats
@@ -101,9 +101,9 @@ export interface AudioAnalysisConfig {
   };
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Constants
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 const DEFAULT_FFT_SIZE = 2048;
 
@@ -116,9 +116,9 @@ const FREQUENCY_BANDS: FrequencyBandRanges = {
   high: [4000, 20000],
 };
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Audio Loading
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Load an audio file and decode it to an AudioBuffer
@@ -155,9 +155,9 @@ export async function loadAudioFromUrl(url: string): Promise<AudioBuffer> {
   }
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Main Analysis Function
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Perform comprehensive audio analysis
@@ -206,10 +206,10 @@ export async function analyzeAudio(
   const spectralFlatness = extractSpectralFlatness(analyzeBuffer, fps);
   const chromaFeatures = extractChromaFeatures(analyzeBuffer, fps);
 
-  // HPSS: Harmonic-Percussive Source Separation (librosa standard)
+  //                                                                      // hpss
   const hpss = extractHPSS(analyzeBuffer, fps);
 
-  // MFCC: Mel-frequency cepstral coefficients (timbral analysis)
+  //                                                                      // mfcc
   const mfccResult = extractMFCC(analyzeBuffer, fps);
 
   return {
@@ -228,19 +228,19 @@ export async function analyzeAudio(
     spectralRolloff,
     spectralFlatness,
     chromaFeatures,
-    // HPSS
+    //                                                                      // hpss
     harmonicEnergy: hpss.harmonicEnergy,
     percussiveEnergy: hpss.percussiveEnergy,
     hpRatio: hpss.hpRatio,
-    // MFCC with per-coefficient normalization stats
+    //                                                                      // mfcc
     mfcc: mfccResult.mfcc,
     mfccStats: mfccResult.stats,
   };
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Amplitude Envelope
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Extract amplitude envelope (peak values per frame)
@@ -275,9 +275,9 @@ export function extractAmplitudeEnvelope(
   return envelope.map((v) => v / maxValue);
 }
 
-// ============================================================================
-// RMS Energy
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                                  // rms // e
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Extract RMS (Root Mean Square) energy per frame
@@ -311,9 +311,9 @@ export function extractRMSEnergy(buffer: AudioBuffer, fps: number): number[] {
   return rmsValues.map((v) => v / maxValue);
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Frequency Band Analysis
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Extract energy in different frequency bands per frame.
@@ -476,9 +476,9 @@ function simpleFFT(samples: Float32Array): number[] {
   return magnitudes;
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Spectral Centroid
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Extract spectral centroid (brightness) per frame
@@ -527,9 +527,9 @@ export async function extractSpectralCentroid(
   return centroids.map((v) => v / maxValue);
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Onset Detection
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Detect onsets (beats/transients) in the audio
@@ -619,9 +619,9 @@ function calculateAdaptiveThreshold(
   return threshold;
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Enhanced Audio Features (RyanOnTheInside / Yvann style)
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Extract spectral flux (rate of spectral change) - great for beat detection
@@ -860,7 +860,7 @@ export function extractChromaFeatures(
       if (frequency < 27.5 || frequency > 4186) continue; // Piano range
 
       // Convert frequency to pitch class (0-11)
-      // MIDI note = 69 + 12 * log2(f/440)
+      //                                                                      // midi
       const midiNote = 69 + 12 * Math.log2(frequency / 440);
       const pitchClass = Math.round(midiNote) % 12;
 
@@ -912,9 +912,9 @@ export function extractChromaFeatures(
   };
 }
 
-// ============================================================================
-// BPM Detection
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                                  // bpm // d
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Detect BPM (beats per minute) using autocorrelation
@@ -991,9 +991,9 @@ function applyEnvelopeFollower(signal: number[], smoothing: number): number[] {
   return envelope;
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Feature Access
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Get a specific feature value at a given frame
@@ -1355,8 +1355,8 @@ export function getFeatureAtFrame(
       return isFiniteNumber(hpRatioValue) && hpRatioValue >= 0 ? hpRatioValue : 0;
     }
 
-    // MFCC coefficients with per-coefficient normalization
-    // MFCC0 (log energy) has different range than MFCC1-12 (spectral shape)
+    //                                                                      // mfcc
+    //                                                                     // mfcc0
     case "mfcc0":
       return normalizeMFCCCoeff(analysis, clampedFrame, 0);
     case "mfcc1":
@@ -1501,9 +1501,9 @@ export function applyFeatureCurve(
   }
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Peak Detection (from Yvann-Nodes)
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export interface PeakDetectionConfig {
   threshold: number; // Minimum value to count as peak (0-1)
@@ -1685,9 +1685,9 @@ export function isPeakAtFrame(peaks: PeakData, frame: number): boolean {
   return peaks.indices.includes(frame);
 }
 
-// ============================================================================
-// HPSS: Harmonic-Percussive Source Separation
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                                      // hpss
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Perform Harmonic-Percussive Source Separation
@@ -1708,7 +1708,7 @@ export function extractHPSS(
   const frameCount = Math.ceil(buffer.duration * fps);
   const samplesPerFrame = Math.floor(sampleRate / fps);
 
-  // FFT parameters
+  //                                                                       // fft
   const fftSize = 2048;
   const hopSize = samplesPerFrame;
   const numBins = fftSize / 2 + 1;
@@ -1812,9 +1812,9 @@ export function extractHPSS(
   };
 }
 
-// ============================================================================
-// MFCC: Mel-Frequency Cepstral Coefficients
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                                      // mfcc
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Extract MFCC features for timbral analysis
@@ -1877,7 +1877,7 @@ export function extractMFCC(
       melEnergies.push(Math.log(energy + 1e-10));
     }
 
-    // DCT to get MFCCs
+    //                                                                       // dct
     const mfcc: number[] = [];
     for (let c = 0; c < numCoeffs; c++) {
       let sum = 0;
@@ -1892,7 +1892,7 @@ export function extractMFCC(
   }
 
   // Compute per-coefficient min/max statistics for proper MFCC normalization.
-  // MFCC0 (log energy) has different range than MFCC1-12 (spectral shape).
+  //                                                                     // mfcc0
   const stats = {
     min: new Array(numCoeffs).fill(Infinity),
     max: new Array(numCoeffs).fill(-Infinity),
@@ -1992,7 +1992,7 @@ export default {
   generatePeakGraph,
   isBeatAtFrame,
   isPeakAtFrame,
-  // HPSS & MFCC (librosa-style)
+  //                                                                      // hpss
   extractHPSS,
   extractMFCC,
 };

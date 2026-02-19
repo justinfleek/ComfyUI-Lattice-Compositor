@@ -29,9 +29,9 @@ import {
 import type { Camera3D, CameraKeyframe } from "@/types/camera";
 import type { ExportTarget } from "@/types/export";
 
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Test Fixtures
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 function createValidCamera(overrides: Partial<Camera3D> = {}): Camera3D {
   return {
@@ -74,9 +74,9 @@ function createKeyframe(
   };
 }
 
-// ============================================================================
-// CRITICAL: View Matrix Computation
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                                  // critical
+// ════════════════════════════════════════════════════════════════════════════
 
 describe("CRITICAL: computeViewMatrix - Invalid Rotation Values", () => {
   it("should handle NaN rotation values", () => {
@@ -171,9 +171,9 @@ describe("CRITICAL: computeViewMatrix - Invalid Rotation Values", () => {
   });
 });
 
-// ============================================================================
-// CRITICAL: Projection Matrix Validation
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                                  // critical
+// ════════════════════════════════════════════════════════════════════════════
 
 describe("CRITICAL: computeProjectionMatrix - Invalid Aspect Ratio", () => {
   it("should throw for zero aspect ratio", () => {
@@ -282,9 +282,9 @@ describe("CRITICAL: computeProjectionMatrix - Invalid Aspect Ratio", () => {
   });
 });
 
-// ============================================================================
-// HIGH: Camera Interpolation Edge Cases
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                                      // high
+// ════════════════════════════════════════════════════════════════════════════
 
 describe("HIGH: interpolateCameraAtFrame - Empty/Missing Keyframes", () => {
   it("should return camera defaults for empty keyframes array", () => {
@@ -368,9 +368,9 @@ describe("HIGH: interpolateCameraAtFrame - Division by Zero", () => {
   });
 });
 
-// ============================================================================
-// HIGH: Motion Analysis
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                                      // high
+// ════════════════════════════════════════════════════════════════════════════
 
 describe("HIGH: analyzeCameraMotion - Edge Cases", () => {
   it("should return no motion for empty keyframes", () => {
@@ -401,9 +401,9 @@ describe("HIGH: analyzeCameraMotion - Edge Cases", () => {
   });
 });
 
-// ============================================================================
-// HIGH: MotionCtrl Export
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                                      // high
+// ════════════════════════════════════════════════════════════════════════════
 
 describe("HIGH: exportToMotionCtrl - Frame Count Validation", () => {
   it("should return empty poses for zero frame count", () => {
@@ -428,9 +428,9 @@ describe("HIGH: exportToMotionCtrl - Frame Count Validation", () => {
   });
 });
 
-// ============================================================================
-// HIGH: Uni3C Export (Deprecated but should still work)
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                                      // high
+// ════════════════════════════════════════════════════════════════════════════
 
 describe("HIGH: exportToUni3C - Dimension Validation", () => {
   it("should warn about non-functional export", () => {
@@ -459,9 +459,9 @@ describe("HIGH: exportToUni3C - Dimension Validation", () => {
   });
 });
 
-// ============================================================================
-// HIGH: exportCameraMatrices - Full Validation
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                                      // high
+// ════════════════════════════════════════════════════════════════════════════
 
 describe("HIGH: exportCameraMatrices - Input Validation", () => {
   it("should throw for zero dimensions", () => {
@@ -567,9 +567,9 @@ describe("HIGH: exportCameraMatrices - Input Validation", () => {
   });
 });
 
-// ============================================================================
-// MEDIUM: Format-Specific Exports
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                                    // medium
+// ════════════════════════════════════════════════════════════════════════════
 
 describe("MEDIUM: detectMotionCtrlSVDPreset - Motion Detection", () => {
   it("should detect static for no keyframes", () => {
@@ -636,9 +636,9 @@ describe("MEDIUM: mapToWan22FunCamera - Preset Mapping", () => {
   });
 });
 
-// ============================================================================
-// MEDIUM: CameraCtrl Export
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                                    // medium
+// ════════════════════════════════════════════════════════════════════════════
 
 describe("MEDIUM: exportToCameraCtrl - Motion Type Detection", () => {
   it("should return Static for no motion", () => {
@@ -659,9 +659,9 @@ describe("MEDIUM: exportToCameraCtrl - Motion Type Detection", () => {
   });
 });
 
-// ============================================================================
-// EDGE: exportCameraForTarget - Unknown Target
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                                      // edge
+// ════════════════════════════════════════════════════════════════════════════
 
 describe("EDGE: exportCameraForTarget - Target Routing", () => {
   it("should route to MotionCtrl for motionctrl target", () => {

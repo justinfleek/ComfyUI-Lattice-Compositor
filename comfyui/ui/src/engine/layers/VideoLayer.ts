@@ -22,9 +22,9 @@ import { KeyframeEvaluator } from "../animation/KeyframeEvaluator";
 import type { ResourceManager } from "../core/ResourceManager";
 import { BaseLayer } from "./BaseLayer";
 
-// ============================================================================
-// TYPES
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                                                     // types
+// ════════════════════════════════════════════════════════════════════════════
 
 export interface VideoMetadata {
   duration: number; // Total duration in seconds
@@ -41,9 +41,9 @@ export interface VideoLayerEvents {
   "loop-point": number; // Frame at which loop occurred
 }
 
-// ============================================================================
-// VIDEO LAYER
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                            // video // layer
+// ════════════════════════════════════════════════════════════════════════════
 
 export class VideoLayer extends BaseLayer {
   private readonly resources: ResourceManager;
@@ -113,9 +113,9 @@ export class VideoLayer extends BaseLayer {
     this.initializeBlendMode();
   }
 
-  // ============================================================================
-  // INITIALIZATION
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                            // initialization
+  // ════════════════════════════════════════════════════════════════════════════
 
   /**
    * Extract video data with defaults
@@ -179,9 +179,9 @@ export class VideoLayer extends BaseLayer {
     this.group.add(this.mesh);
   }
 
-  // ============================================================================
-  // VIDEO LOADING
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                          // video // loading
+  // ════════════════════════════════════════════════════════════════════════════
 
   /**
    * Load video from asset
@@ -425,9 +425,9 @@ export class VideoLayer extends BaseLayer {
     this.mesh.geometry = new THREE.PlaneGeometry(width, height);
   }
 
-  // ============================================================================
-  // PLAYBACK CONTROL
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                       // playback // control
+  // ════════════════════════════════════════════════════════════════════════════
 
   /**
    * Seek to a specific composition frame
@@ -656,9 +656,9 @@ export class VideoLayer extends BaseLayer {
     }
   }
 
-  // ============================================================================
-  // METADATA CALLBACK
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                      // metadata // callback
+  // ════════════════════════════════════════════════════════════════════════════
 
   /**
    * Set composition FPS for accurate time calculation
@@ -695,9 +695,9 @@ export class VideoLayer extends BaseLayer {
     return { ...this.videoData };
   }
 
-  // ============================================================================
-  // PROPERTY UPDATES
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                       // property // updates
+  // ════════════════════════════════════════════════════════════════════════════
 
   setLoop(loop: boolean): void {
     this.videoData.loop = loop;
@@ -729,9 +729,9 @@ export class VideoLayer extends BaseLayer {
     // Frame blending would be implemented via shader in a full implementation
   }
 
-  // ============================================================================
-  // EFFECTS SUPPORT
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                        // effects // support
+  // ════════════════════════════════════════════════════════════════════════════
 
   /**
    * Get source canvas for effect processing
@@ -966,9 +966,9 @@ export class VideoLayer extends BaseLayer {
     this.material.needsUpdate = true;
   }
 
-  // ============================================================================
-  // FRAME EVALUATION
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                       // frame // evaluation
+  // ════════════════════════════════════════════════════════════════════════════
 
   protected onEvaluateFrame(frame: number): void {
     // Skip if frame hasn't changed
@@ -1028,9 +1028,9 @@ export class VideoLayer extends BaseLayer {
     }
   }
 
-  // ============================================================================
-  // LAYER UPDATE
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                           // layer // update
+  // ════════════════════════════════════════════════════════════════════════════
 
   protected onUpdate(properties: Partial<Layer>): void {
     const data = properties.data as Partial<VideoData> | undefined;
@@ -1103,9 +1103,9 @@ export class VideoLayer extends BaseLayer {
     this.prevFrameTime = -1;
   }
 
-  // ============================================================================
-  // DISPOSAL
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                  // disposal
+  // ════════════════════════════════════════════════════════════════════════════
 
   protected onDispose(): void {
     this.clearVideo();
@@ -1129,13 +1129,13 @@ export class VideoLayer extends BaseLayer {
   }
 }
 
-// ============================================================================
-// VIDEO METADATA EXTRACTION UTILITY
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                // video // metadata // extraction // utility
+// ════════════════════════════════════════════════════════════════════════════
 
-// ============================================================================
-// TYPE EXTENSIONS FOR NEWER WEB APIs
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                          // type // extensions // for // newer // web // api
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * VideoFrameCallbackMetadata - metadata provided by requestVideoFrameCallback
@@ -1173,9 +1173,9 @@ function supportsVideoFrameCallback(
   return "requestVideoFrameCallback" in video;
 }
 
-// ============================================================================
-// VIDEO METADATA EXTRACTION UTILITY
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                // video // metadata // extraction // utility
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Detect video fps using requestVideoFrameCallback API
@@ -1307,9 +1307,9 @@ async function detectVideoFps(
  * Pattern proof: Unknown pattern is an explicit failure condition, not a lazy null return
  */
 function estimateFpsFromDuration(duration: number): number {
-  // AI video models typically use specific frame rates with known patterns
+  //                                                                        // ai
 
-  // WAN models: 16fps (4n+1 pattern: 17, 33, 49, 65, 81 frames)
+  //                                                                       // wan
   const wan16Frames = Math.round(duration * 16);
   if ([17, 33, 49, 65, 81, 97, 113, 129].includes(wan16Frames)) {
     return 16;
@@ -1378,7 +1378,7 @@ export async function extractVideoMetadata(
       try {
         fps = await detectVideoFps(video);
       } catch (error) {
-        // API detection failed - try duration-based heuristics
+        //                                                                       // api
         try {
           fps = estimateFpsFromDuration(video.duration);
         } catch (estimateError) {

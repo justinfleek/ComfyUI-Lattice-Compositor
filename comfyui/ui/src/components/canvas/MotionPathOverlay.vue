@@ -363,7 +363,7 @@ const frameTicks = computed(() => {
   return ticks;
 });
 
-// SVG overlay style (matches viewport transform)
+//                                                                       // svg
 const overlayStyle = computed(() => {
   // Type proof: Viewport transform coordinates are unbounded (can be 0, negative for panning)
   const tx = safeCoordinateDefault(props.viewportTransform[4], 0, "viewportTransform[4]"); // translateX

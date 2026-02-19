@@ -29,9 +29,9 @@ import Data.Scientific (scientific)
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit (testCase, assertEqual, assertBool)
 
--- ============================================================================
--- TEST HELPERS
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                           // test // helpers
+-- ════════════════════════════════════════════════════════════════════════════
 
 createTestLayer :: LayerType -> Maybe TextData -> Layer
 createTestLayer type_ mData = Layer "layer1" type_ mData
@@ -42,9 +42,9 @@ createTestTextData mText mAnimators mPathConfig = TextData mText mAnimators mPat
 createTestAnimator :: Text -> Text -> Bool -> TextAnimator
 createTestAnimator id_ name enabled = TextAnimator id_ name enabled
 
--- ============================================================================
--- TEST SUITE
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                             // test // suite
+-- ════════════════════════════════════════════════════════════════════════════
 
 spec :: TestTree
 spec =

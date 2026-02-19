@@ -41,7 +41,7 @@ describe("SeededRandom Property Tests", () => {
       },
     );
 
-    // REINTEGRATED: 2026-01-07 from _deprecated/properties/strict-seededrandom.property.test.ts
+    //                                                              // reintegrated
     // More comprehensive determinism test (1000 numbers)
     test.prop([fc.integer({ min: 0, max: 2147483647 })])(
       "STRICT: same seed produces identical sequence (1000 numbers)",
@@ -54,7 +54,7 @@ describe("SeededRandom Property Tests", () => {
       },
     );
 
-    // REINTEGRATED: 2026-01-07 from _deprecated/properties/strict-seededrandom.property.test.ts
+    //                                                              // reintegrated
     test.prop([
       fc.integer({ min: 0, max: 2147483647 }),
       fc.integer({ min: 0, max: 2147483647 }),
@@ -142,7 +142,7 @@ describe("SeededRandom Property Tests", () => {
       },
     );
 
-    // REINTEGRATED: 2026-01-07 from _deprecated/properties/strict-seededrandom.property.test.ts
+    //                                                              // reintegrated
     // More comprehensive bounds test (1000 iterations)
     test.prop([fc.integer({ min: 0, max: 2147483647 })])(
       "STRICT: next() always returns [0, 1) (1000 iterations)",
@@ -156,7 +156,7 @@ describe("SeededRandom Property Tests", () => {
       },
     );
 
-    // REINTEGRATED: 2026-01-07 from _deprecated/properties/strict-seededrandom.property.test.ts
+    //                                                              // reintegrated
     test.prop([fc.integer({ min: 0, max: 2147483647 })])(
       "next() is never NaN or Infinity",
       (s) => {
@@ -251,7 +251,7 @@ describe("SeededRandom Property Tests", () => {
       },
     );
 
-    // REINTEGRATED: 2026-01-07 from _deprecated/properties/strict-seededrandom.property.test.ts
+    //                                                              // reintegrated
     test.prop([fc.integer({ min: 0, max: 2147483647 })])(
       "gaussian(0, 1) produces values centered around 0",
       (s) => {
@@ -269,7 +269,7 @@ describe("SeededRandom Property Tests", () => {
       },
     );
 
-    // REINTEGRATED: 2026-01-07 from _deprecated/properties/strict-seededrandom.property.test.ts
+    //                                                              // reintegrated
     test.prop([
       fc.integer({ min: 0, max: 2147483647 }),
       fc.double({ min: -100, max: 100, noNaN: true }),
@@ -289,7 +289,7 @@ describe("SeededRandom Property Tests", () => {
       },
     );
 
-    // REINTEGRATED: 2026-01-07 from _deprecated/properties/strict-seededrandom.property.test.ts
+    //                                                              // reintegrated
     test.prop([fc.integer({ min: 0, max: 2147483647 })])(
       "gaussian() never returns NaN or Infinity (1000 iterations)",
       (s) => {
@@ -320,7 +320,7 @@ describe("SeededRandom Property Tests", () => {
       },
     );
 
-    // REINTEGRATED: 2026-01-07 from _deprecated/properties/strict-seededrandom.property.test.ts
+    //                                                              // reintegrated
     test.prop([
       fc.integer({ min: 0, max: 2147483647 }),
       fc.double({ min: 0.3, max: 0.7, noNaN: true }),
@@ -342,7 +342,7 @@ describe("SeededRandom Property Tests", () => {
     );
   });
 
-  // REINTEGRATED: 2026-01-07 from _deprecated/properties/strict-seededrandom.property.test.ts
+  //                                                              // reintegrated
   describe("DISTRIBUTION QUALITY", () => {
     test.prop([fc.integer({ min: 0, max: 2147483647 })])(
       "next() has reasonable mean (~0.5)",

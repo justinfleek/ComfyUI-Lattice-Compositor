@@ -24,9 +24,9 @@ const resetPinia = () => {
   setActivePinia(createPinia());
 };
 
-// ============================================================================
-// TEST DATA GENERATORS
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                                // test // data // generators
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Generate a valid AnimatableProperty
@@ -141,7 +141,7 @@ const arbitraryProject = (): fc.Arbitrary<LatticeProject> =>
     mainCompositionId: fc.uuid(),
     meta: fc.record({
       name: fc.string({ minLength: 1, maxLength: 50 }),
-      // BUG FIX: Use integer timestamps to avoid Invalid time value errors
+      //                                                                // bug // fix
       // Range: Jan 1, 2000 to Jan 1, 2030 (safe epoch values)
       created: fc.integer({ min: 946684800000, max: 1893456000000 }).map(ts => new Date(ts).toISOString()),
       modified: fc.integer({ min: 946684800000, max: 1893456000000 }).map(ts => new Date(ts).toISOString()),
@@ -163,9 +163,9 @@ const arbitraryProject = (): fc.Arbitrary<LatticeProject> =>
     audioMappings: fc.constant([]),
   }) as fc.Arbitrary<LatticeProject>;
 
-// ============================================================================
-// STRICT INVARIANT TESTS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                              // strict // invariant // tests
+// ════════════════════════════════════════════════════════════════════════════
 
 describe('STRICT: Undo/Redo Invariants', () => {
   beforeEach(() => {
@@ -477,9 +477,9 @@ describe('STRICT: Undo/Redo Invariants', () => {
   });
 });
 
-// ============================================================================
-// STRESS TESTS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                           // stress // tests
+// ════════════════════════════════════════════════════════════════════════════
 
 describe('STRESS: Undo/Redo Under Load', () => {
   beforeEach(() => {

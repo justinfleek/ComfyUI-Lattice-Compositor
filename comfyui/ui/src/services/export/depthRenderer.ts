@@ -13,9 +13,9 @@ import type { LatticeEngine } from "@/engine/LatticeEngine";
 import type { BaseLayer } from "@/engine/layers/BaseLayer";
 import type { ExportedParticle } from "@/engine/particles/types";
 
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Types
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export interface DepthRenderOptions {
   width: number;
@@ -35,9 +35,9 @@ export interface DepthRenderResult {
   maxDepth: number;
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Depth Rendering
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Render depth map from compositor scene
@@ -618,9 +618,9 @@ function interpolateValue(
   return prevValue + (nextValue - prevValue) * t;
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Depth Format Conversion
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Convert depth buffer to export format.
@@ -805,7 +805,7 @@ export function applyColormap(
     const safeRange = depthRange > 0 ? depthRange : 1;
 
     for (let i = 0; i < w * h; i++) {
-      // AI models (MiDaS, Depth-Anything) expect near=bright, far=dark
+      //                                                                        // ai
       // Invert normalized value: 0=far (dark), 1=near (bright)
       const normalized = 1 - Math.max(0, Math.min(1, (depthBuffer[i] - minDepth) / safeRange));
       const [r, g, b] = getColormapColor(normalized, cmap);
@@ -1031,9 +1031,9 @@ function turboColormap(t: number): [number, number, number] {
   ];
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Export Functions
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Export depth sequence as PNG files

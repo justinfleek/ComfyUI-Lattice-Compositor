@@ -1,6 +1,6 @@
 # nix/_main.nix
 #
-# FREESIDEフリーサイド — WHY WAIT?
+#                                                                  // freeside
 #
 # The directory is the kind signature.
 #
@@ -18,7 +18,7 @@ in
   systems = import inputs.systems;
 
   # ════════════════════════════════════════════════════════════════════════════
-  # MODULES BY KIND
+  #                                                     // modules // by // kind
   #
   # flake.modules.<kind>.<name> for automatic _class validation
   # ════════════════════════════════════════════════════════════════════════════
@@ -58,7 +58,7 @@ in
   };
 
   # ════════════════════════════════════════════════════════════════════════════
-  # OVERLAYS
+  #                                                                  // overlays
   #
   # A pure function from the world as it is to the world as it ought to be.
   # ════════════════════════════════════════════════════════════════════════════
@@ -66,7 +66,7 @@ in
   flake.overlays = (import ./overlays inputs).flake.overlays;
 
   # ════════════════════════════════════════════════════════════════════════════
-  # LIB
+  #                                                                       // lib
   #
   # Pure functions. No pkgs, no system.
   # ════════════════════════════════════════════════════════════════════════════
@@ -78,7 +78,7 @@ in
   };
 
   # ════════════════════════════════════════════════════════════════════════════
-  # TEMPLATES
+  #                                                                 // templates
   # ════════════════════════════════════════════════════════════════════════════
 
   flake.templates = {
@@ -114,7 +114,7 @@ in
   };
 
   # ════════════════════════════════════════════════════════════════════════════
-  # INTERNAL: straylight-naught's own development
+  #                                                                  // internal
   # ════════════════════════════════════════════════════════════════════════════
 
   imports = [
@@ -149,14 +149,14 @@ in
       ...
     }:
     let
-      # WASM infrastructure (internal)
+      #                                                                      // wasm
       wasm-infra = import ./prelude/wasm-plugin.nix {
         inherit lib;
         inherit (pkgs) stdenv runCommand;
         inherit (inputs) ghc-wasm-meta;
       };
 
-      # GHC WASM toolchain for compiling .hs packages
+      #                                                               // ghc // wasm
       ghc-wasm = inputs.ghc-wasm-meta.packages.${system}.all_9_12 or null;
 
       # The straylight interface
@@ -179,7 +179,7 @@ in
       #
       # The FFI boilerplate is generated automatically.
       #
-      # IFD AVOIDANCE: If a pre-built .wasm file exists alongside the .hs file,
+      #                                                          // ifd // avoidance
       # we use it directly instead of building at evaluation time. This avoids
       # the "import from derivation" warning in `nix flake show`.
       #
@@ -253,7 +253,7 @@ in
 
           # Build single-file PureScript to WASM
           # Uses pure-sarcasm (Wasm-GC backend) if available, otherwise provides helpful error.
-          # NOTE: pure-sarcasm is experimental and targets Wasm-GC (not standard WASM).
+          #                                                                      // note
           buildPursWasm =
             pursPath:
             let
@@ -340,7 +340,7 @@ in
                   cp ${wrapperMain} Main.purs
                   
                   # Compile PureScript to Wasm-GC using pure-sarcasm
-                  # NOTE: pure-sarcasm is experimental and may have different CLI
+                  #                                                                      // note
                   # This implementation attempts compilation and handles errors gracefully
                   
                   # Check if purs-sarcasm is available
@@ -432,7 +432,7 @@ in
           else
             let
               # Build PureScript to WASM
-              # NOTE: This will fail until PureScript WASM backend is available
+              #                                                                      // note
               wasmDrv = buildPursWasm path;
               spec = builtins.wasm wasmDrv "pkg" args;
             in
@@ -633,7 +633,7 @@ in
             hp.process or null
             hp.time or null
 
-            # CLI / scripting
+            #                                                                       // cli
             hp.aeson or null
             hp.aeson-pretty or null
             hp.optparse-applicative or null

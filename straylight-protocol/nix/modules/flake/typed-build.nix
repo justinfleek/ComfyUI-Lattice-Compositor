@@ -15,7 +15,7 @@
 # Configuration module for Straylight typed build system (call-package).
 # Allows enabling/disabling language backends for .hs, .purs, and .nix files.
 #
-# USAGE (downstream flake):
+#                                                                     // usage
 #
 #   {
 #     inputs.straylight.url = "github:straylight-software/straylight";

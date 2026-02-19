@@ -25,16 +25,16 @@ import type { Layer } from "@/types/project";
 import { createTextAnimator, createAnimatablePropWithKeyframes } from "@/services/textAnimator";
 import { createAmplitudeProperty } from "@/stores/audioKeyframeStore";
 
-// ============================================================================
-// ARBITRARIES (Generators)
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                                               // arbitraries
+// ════════════════════════════════════════════════════════════════════════════
 
 const positiveFrame = fc.integer({ min: 0, max: 1000 });
 const durationArb = fc.integer({ min: 30, max: 300 });
 
-// ============================================================================
-// TEST HELPERS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                           // test // helpers
+// ════════════════════════════════════════════════════════════════════════════
 
 function createTestLayer(type: Layer["type"]): Layer {
   const projectStore = useProjectStore();
@@ -52,9 +52,9 @@ function createTestLayer(type: Layer["type"]): Layer {
   return createLayer(type, `Test ${type} Layer`);
 }
 
-// ============================================================================
-// PROPERTY TESTS: Timewarp Speed Ramps
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                         // property // tests
+// ════════════════════════════════════════════════════════════════════════════
 
 describe("Keyframe Store Property Tests - Timewarp Speed Ramps", () => {
   beforeEach(() => {
@@ -100,9 +100,9 @@ describe("Keyframe Store Property Tests - Timewarp Speed Ramps", () => {
   });
 });
 
-// ============================================================================
-// PROPERTY TESTS: Text Animator
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                         // property // tests
+// ════════════════════════════════════════════════════════════════════════════
 
 describe("Keyframe Store Property Tests - Text Animator", () => {
   beforeEach(() => {
@@ -145,9 +145,9 @@ describe("Keyframe Store Property Tests - Text Animator", () => {
   });
 });
 
-// ============================================================================
-// PROPERTY TESTS: Audio Keyframes
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                         // property // tests
+// ════════════════════════════════════════════════════════════════════════════
 
 describe("Keyframe Store Property Tests - Audio Keyframes", () => {
   beforeEach(() => {

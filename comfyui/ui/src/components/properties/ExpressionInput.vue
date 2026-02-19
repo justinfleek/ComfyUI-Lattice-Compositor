@@ -222,7 +222,7 @@ const isJSONType = computed(() => {
   return asset && (asset.type === "json" || asset.type === "mgjson");
 });
 
-// CSV headers for column dropdown
+//                                                                       // csv
 // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??/?.
 const csvHeaders = computed(() => {
   const asset = selectedAssetDetails.value;
@@ -236,7 +236,7 @@ const generatedDataExpression = computed(() => {
   const assetName = JSON.stringify(selectedDataAsset.value);
 
   if (isCSVType.value) {
-    // CSV: footage("file.csv").dataValue([row, column])
+    //                                                                       // csv
     const column = selectedColumn.value || "0";
     const columnRef = /^\d+$/.test(column) ? column : JSON.stringify(column);
 
@@ -249,7 +249,7 @@ const generatedDataExpression = computed(() => {
 
     return `footage(${assetName}).dataValue([${rowExpr}, ${columnRef}])`;
   } else if (isJSONType.value) {
-    // JSON: footage("file.json").sourceData.path
+    //                                                                      // json
     const path = jsonPropertyPath.value || "";
     if (path) {
       return `footage(${assetName}).sourceData.${path}`;

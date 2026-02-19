@@ -14,9 +14,9 @@ import {
   boundedArray,
 } from "../shared-validation";
 
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Constants
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /** Maximum supported dimension */
 export const WANMOVE_MAX_DIMENSION = 8192;
@@ -27,9 +27,9 @@ export const WANMOVE_MAX_POINTS = 10000;
 /** Maximum number of frames */
 export const WANMOVE_MAX_FRAMES = 10000;
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Primitive Schemas
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /** Finite number that rejects NaN and Infinity */
 const finiteNumber = z.number().finite();
@@ -59,9 +59,9 @@ const nonNegativeInt = z.number().int().nonnegative();
 /** RGB channel (0-255) */
 const colorChannel = z.number().int().min(0).max(255);
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Point Schemas
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Simple 2D point with x,y coordinates.
@@ -101,9 +101,9 @@ export const RGBColorTupleSchema = z.tuple([
 
 export type RGBColorTuple = z.infer<typeof RGBColorTupleSchema>;
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Trajectory Metadata Schema
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Metadata for a WanMove trajectory export.
@@ -118,9 +118,9 @@ export const WanMoveMetadataSchema = z.object({
 
 export type WanMoveMetadata = z.infer<typeof WanMoveMetadataSchema>;
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Main Trajectory Schema
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * A single track's trajectory: array of [x, y] points per frame.
@@ -181,9 +181,9 @@ export const WanMoveTrajectorySchema = WanMoveTrajectoryBaseSchema.refine(
 
 export type WanMoveTrajectory = z.infer<typeof WanMoveTrajectorySchema>;
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Color Gradient Schema
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * A single color stop in a gradient.
@@ -215,9 +215,9 @@ export const ColorGradientSchema = z.object({
 
 export type ColorGradient = z.infer<typeof ColorGradientSchema>;
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Colored Trajectory Schema
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Extended trajectory with color data.
@@ -245,9 +245,9 @@ export const ColoredTrajectorySchema = WanMoveTrajectoryBaseSchema.extend({
 
 export type ColoredTrajectory = z.infer<typeof ColoredTrajectorySchema>;
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Flow Pattern Schema
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Available flow pattern types.
@@ -302,9 +302,9 @@ export const ShapeEasingSchema = z.enum([
 
 export type ShapeEasing = z.infer<typeof ShapeEasingSchema>;
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Generative Flow Params Schema
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Pattern-specific parameters for generative flows.
@@ -355,9 +355,9 @@ export const GenerativeFlowParamsSchema = z.object({
 
 export type GenerativeFlowParams = z.infer<typeof GenerativeFlowParamsSchema>;
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Generative Flow Config Schema
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Configuration for generating flow patterns.
@@ -379,9 +379,9 @@ export const GenerativeFlowConfigSchema = z.object({
 
 export type GenerativeFlowConfig = z.infer<typeof GenerativeFlowConfigSchema>;
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Data Mapping Schema
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Data mapping type for data-driven flows.
@@ -396,9 +396,9 @@ export const DataMappingSchema = z.enum([
 
 export type DataMapping = z.infer<typeof DataMappingSchema>;
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Spline Point Schema (for spline-based flows)
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Control point for spline paths.
@@ -412,9 +412,9 @@ export const SplinePointSchema = z.object({
 
 export type SplinePoint = z.infer<typeof SplinePointSchema>;
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Data-Driven Flow Config Schema
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Configuration for data-driven flow generation.
@@ -438,9 +438,9 @@ export const DataDrivenFlowConfigSchema = z.object({
 
 export type DataDrivenFlowConfig = z.infer<typeof DataDrivenFlowConfigSchema>;
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Attractor Config Schema
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Available strange attractor types.
@@ -475,9 +475,9 @@ export const AttractorConfigSchema = z.object({
 
 export type AttractorConfig = z.infer<typeof AttractorConfigSchema>;
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Shape Definition Schemas
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Circle shape definition.
@@ -563,9 +563,9 @@ export const ShapeDefinitionSchema = z.discriminatedUnion("type", [
 
 export type ShapeDefinition = z.infer<typeof ShapeDefinitionSchema>;
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Shape Target Config Schema
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Configuration for shape morphing.
@@ -588,9 +588,9 @@ export const ShapeTargetConfigSchema = z.object({
 
 export type ShapeTargetConfig = z.infer<typeof ShapeTargetConfigSchema>;
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Force Point Schema
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Falloff types for force points.
@@ -615,9 +615,9 @@ export const ForcePointSchema = z.object({
 
 export type ForcePoint = z.infer<typeof ForcePointSchema>;
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Force Field Config Schema
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Initial distribution types for force fields.
@@ -652,9 +652,9 @@ export const ForceFieldConfigSchema = z.object({
 
 export type ForceFieldConfig = z.infer<typeof ForceFieldConfigSchema>;
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Flow Layer Schema
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * A single layer in multi-layer composition.
@@ -671,9 +671,9 @@ export const FlowLayerSchema = z.object({
 
 export type FlowLayer = z.infer<typeof FlowLayerSchema>;
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Render Options Schema
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Options for rendering trajectory previews.
@@ -699,9 +699,9 @@ export const RenderOptionsSchema = z.object({
 
 export type RenderOptions = z.infer<typeof RenderOptionsSchema>;
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Export Package Schema
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Complete WanMove export package for ComfyUI.
@@ -717,9 +717,9 @@ export const WanMoveExportPackageSchema = z.object({
 
 export type WanMoveExportPackage = z.infer<typeof WanMoveExportPackageSchema>;
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Full Export Data Schema (for file import/export)
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Full WanMove data structure for import/export operations.

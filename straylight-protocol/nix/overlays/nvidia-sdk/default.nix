@@ -44,7 +44,7 @@ let
       outputHashMode = "recursive";
       outputHash = hash;
 
-      # SSL certs for HTTPS
+      #                                                                       // ssl
       SSL_CERT_FILE = "${final.cacert}/etc/ssl/certs/ca-bundle.crt";
 
       buildCommand = ''

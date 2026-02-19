@@ -596,12 +596,12 @@ export function projectToScreen(
   }
 
   // transformPoint already does perspective divide (returns NDC)
-  // NDC range is [-1, 1] for x, y, z
+  //                                                                       // ndc
   const ndc = transformPoint(viewProjection, point);
 
   // Convert NDC to screen space
-  // NDC x: -1 = left edge, +1 = right edge
-  // NDC y: -1 = bottom, +1 = top (flip for screen coords where y=0 is top)
+  //                                                                       // ndc
+  //                                                                       // ndc
   const x = (ndc.x * 0.5 + 0.5) * screenWidth;
   const y = (-ndc.y * 0.5 + 0.5) * screenHeight;
 

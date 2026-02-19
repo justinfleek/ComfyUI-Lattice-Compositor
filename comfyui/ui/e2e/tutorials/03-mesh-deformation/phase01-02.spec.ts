@@ -25,7 +25,7 @@ test.describe("Tutorial 03: Mesh Deformation - Phases 1-2 (Steps 1-22)", () => {
     await h.selectLayer(0);
     await h.expectLayerCount(1);
 
-    // UNDO/REDO
+    //                                                                      // undo
     await h.undo();
     await h.redo();
   });
@@ -61,7 +61,7 @@ test.describe("Tutorial 03: Mesh Deformation - Phases 1-2 (Steps 1-22)", () => {
       page.locator('[data-testid="layer-0-mesh-overlay"]'),
     ).not.toBeVisible();
 
-    // UNDO/REDO
+    //                                                                      // undo
     await h.undo();
     await h.redo();
   });

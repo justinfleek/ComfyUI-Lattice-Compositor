@@ -13,9 +13,9 @@ import type { JSONValue } from "@/types/dataAsset";
 import type { LatticeProject } from "@/types/project";
 import { isFiniteNumber } from "@/utils/typeGuards";
 
-// ============================================================================
-// CONSTANTS
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                                                 // constants
+// ════════════════════════════════════════════════════════════════════════════
 
 const DB_NAME = "lattice-compositor";
 const DB_VERSION = 1;
@@ -36,9 +36,9 @@ const LOCAL_STORAGE_KEYS = {
   AUTOSAVE_ENABLED: "lattice:autosaveEnabled",
 } as const;
 
-// ============================================================================
-// TYPES
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                                     // types
+// ════════════════════════════════════════════════════════════════════════════
 
 export interface StoredProject {
   id: string;
@@ -96,9 +96,9 @@ export interface AIConversation {
   modifiedAt: number;
 }
 
-// ============================================================================
-// DEFAULT VALUES
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                         // default // values
+// ════════════════════════════════════════════════════════════════════════════
 
 const DEFAULT_SETTINGS: UserSettings = {
   theme: "dark",
@@ -113,9 +113,9 @@ const DEFAULT_SETTINGS: UserSettings = {
   keyboardShortcutsEnabled: true,
 };
 
-// ============================================================================
-// INDEXEDDB INITIALIZATION
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                               // indexeddb // initialization
+// ════════════════════════════════════════════════════════════════════════════
 
 let dbInstance: IDBDatabase | null = null;
 let dbInitPromise: Promise<IDBDatabase> | null = null;
@@ -163,7 +163,7 @@ function initDatabase(): Promise<IDBDatabase> {
         assetStore.createIndex("type", "type", { unique: false });
       }
 
-      // AI History store
+      //                                                                   // ai // h
       if (!db.objectStoreNames.contains(STORES.AI_HISTORY)) {
         const aiStore = db.createObjectStore(STORES.AI_HISTORY, {
           keyPath: "id",
@@ -186,9 +186,9 @@ async function getDB(): Promise<IDBDatabase> {
   return initDatabase();
 }
 
-// ============================================================================
-// PROJECT PERSISTENCE
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                    // project // persistence
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Generate a unique project ID based on main composition ID or random UUID
@@ -307,9 +307,9 @@ export async function listProjects(): Promise<StoredProject[]> {
   });
 }
 
-// ============================================================================
-// ASSET PERSISTENCE
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                      // asset // persistence
+// ════════════════════════════════════════════════════════════════════════════
 
 export async function saveAsset(
   asset: Omit<StoredAsset, "createdAt" | "size">,
@@ -404,9 +404,9 @@ export async function deleteProjectAssets(projectId: string): Promise<void> {
   });
 }
 
-// ============================================================================
-// AI CONVERSATION PERSISTENCE
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                         // ai // conversation // persistence
+// ════════════════════════════════════════════════════════════════════════════
 
 export async function saveAIConversation(
   conversation: AIConversation,
@@ -474,9 +474,9 @@ export async function deleteAIConversation(id: string): Promise<void> {
   });
 }
 
-// ============================================================================
-// LOCAL STORAGE - SETTINGS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                          // local // storage
+// ════════════════════════════════════════════════════════════════════════════
 
 export function getSettings(): UserSettings {
   try {
@@ -516,9 +516,9 @@ export function setSetting<K extends keyof UserSettings>(
   saveSettings({ [key]: value });
 }
 
-// ============================================================================
-// LOCAL STORAGE - RECENT PROJECTS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                          // local // storage
+// ════════════════════════════════════════════════════════════════════════════
 
 export function getRecentProjects(): RecentProject[] {
   try {
@@ -568,9 +568,9 @@ export function clearRecentProjects(): void {
   saveRecentProjects([]);
 }
 
-// ============================================================================
-// LOCAL STORAGE - LAST PROJECT
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                          // local // storage
+// ════════════════════════════════════════════════════════════════════════════
 
 export function getLastProjectId(): string {
   try {
@@ -595,9 +595,9 @@ export function setLastProjectId(id: string): void {
   }
 }
 
-// ============================================================================
-// STORAGE QUOTA & CLEANUP
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                          // storage // quota
+// ════════════════════════════════════════════════════════════════════════════
 
 export async function getStorageEstimate(): Promise<{
   usage: number;
@@ -697,9 +697,9 @@ export async function importData(
   return { projectsImported };
 }
 
-// ============================================================================
-// INITIALIZATION
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                            // initialization
+// ════════════════════════════════════════════════════════════════════════════
 
 export async function initPersistence(): Promise<void> {
   try {

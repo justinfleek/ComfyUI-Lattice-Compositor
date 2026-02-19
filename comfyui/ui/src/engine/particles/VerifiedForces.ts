@@ -13,9 +13,9 @@
 import { finite, pos, nneg, type Positive, type NonNegative } from "./VerifiedTypes";
 import type { ParticleBuffer } from "./VerifiedParticleBuffer";
 
-// ============================================================================
-// FORCE TYPES
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                                            // force // types
+// ════════════════════════════════════════════════════════════════════════════
 
 export const enum ForceType {
   Gravity = 0,
@@ -40,9 +40,9 @@ export interface ForceField {
   frequency?: number;
 }
 
-// ============================================================================
-// FALLOFF FUNCTIONS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                      // falloff // functions
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Calculate falloff multiplier
@@ -64,9 +64,9 @@ function calcFalloff(dist: number, start: number, end: number): number {
   return Math.max(0, Math.min(1, 1 - (3*t*t - 2*t*t*t)));
 }
 
-// ============================================================================
-// FORCE ACCUMULATION
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                     // force // accumulation
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Accumulate forces for all particles
@@ -184,7 +184,7 @@ export function accumulateForces(
       
       case ForceType.Drag: {
         // Drag: F = -(linear*v + quadratic*|v|*v)
-        // PROVEN: F·v ≤ 0 (drag opposes velocity) - Lean4 theorem drag_opposes_velocity
+        //                                                                    // proven
         // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??
         const lin = (typeof field.linearDrag === "number" && Number.isFinite(field.linearDrag)) ? field.linearDrag : 0.1;
         const quad = (typeof field.quadDrag === "number" && Number.isFinite(field.quadDrag)) ? field.quadDrag : 0.01;

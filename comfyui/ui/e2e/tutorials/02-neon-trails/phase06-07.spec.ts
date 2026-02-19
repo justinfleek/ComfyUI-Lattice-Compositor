@@ -43,7 +43,7 @@ test.describe("Tutorial 02: Neon Motion Trails - Phases 6-7 (Steps 83-135)", () 
     await page.waitForTimeout(2000);
     await h.stop();
 
-    // UNDO/REDO
+    //                                                                      // undo
     await h.undo();
     await h.redo();
   });
@@ -68,7 +68,7 @@ test.describe("Tutorial 02: Neon Motion Trails - Phases 6-7 (Steps 83-135)", () 
     await page.waitForTimeout(2000);
     await h.stop();
 
-    // UNDO/REDO
+    //                                                                      // undo
     await h.undo();
     await h.redo();
   });
@@ -112,7 +112,7 @@ test.describe("Tutorial 02: Neon Motion Trails - Phases 6-7 (Steps 83-135)", () 
     await h.setStrokeColor(1, "#00FFFF");
     await h.setStrokeColor(3, "#FFFF00");
 
-    // UNDO/REDO
+    //                                                                      // undo
     await h.undo();
     await h.redo();
   });

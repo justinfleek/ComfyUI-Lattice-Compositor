@@ -24,9 +24,9 @@ import type {
 } from '@/types/animation';
 import type { AutoOrientMode } from '@/types/project';
 
-// ============================================================================
-// SERIALIZATION HELPERS
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                                  // serialization // helpers
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Normalize values for JSON serialization compatibility
@@ -153,9 +153,9 @@ function deepEqual(a: unknown, b: unknown, path = ''): { equal: boolean; diff?: 
   return { equal: true };
 }
 
-// ============================================================================
-// ARBITRARY GENERATORS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                   // arbitrary // generators
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Generate a valid BezierHandle
@@ -391,9 +391,9 @@ const layerArb: fc.Arbitrary<Layer> = fc.record({
   data: solidDataArb,
 }) as fc.Arbitrary<Layer>;
 
-// ============================================================================
-// SERIALIZATION TESTS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                    // serialization // tests
+// ════════════════════════════════════════════════════════════════════════════
 
 describe('STRICT: Primitive Serialization', () => {
 
@@ -401,7 +401,7 @@ describe('STRICT: Primitive Serialization', () => {
     'number roundtrip preserves value exactly',
     (n) => {
       const result = roundtrip(n);
-      // BUG-035 FIX: JSON doesn't preserve -0, it becomes +0
+      //                                                                       // bug
       // This is expected JSON behavior, not a bug
       if (Object.is(n, -0)) {
         expect(result).toBe(0); // -0 becomes +0 in JSON
@@ -461,7 +461,7 @@ describe('STRICT: BezierHandle Serialization', () => {
   test.prop([bezierHandleArb])(
     'BezierHandle roundtrip preserves all fields',
     (handle) => {
-      // BUG-035 FIX: Normalize before comparing (JSON doesn't preserve -0)
+      //                                                                       // bug
       const normalized = normalizeNegativeZero(handle);
       const result = roundtrip(handle);
       const comparison = deepEqual(normalized, result);
@@ -481,7 +481,7 @@ describe('STRICT: Keyframe Serialization', () => {
   test.prop([numericKeyframeArb])(
     'numeric Keyframe roundtrip preserves all fields',
     (kf) => {
-      // BUG-036 FIX: Normalize before comparing (JSON doesn't preserve -0)
+      //                                                                       // bug
       const normalized = normalizeNegativeZero(kf);
       const result = roundtrip(kf);
       const comparison = deepEqual(normalized, result);
@@ -497,7 +497,7 @@ describe('STRICT: Keyframe Serialization', () => {
   test.prop([vectorKeyframeArb])(
     'vector Keyframe roundtrip preserves all fields',
     (kf) => {
-      // BUG-037 FIX: Normalize before comparing (JSON doesn't preserve -0)
+      //                                                                       // bug
       const normalized = normalizeNegativeZero(kf);
       const result = roundtrip(kf);
       const comparison = deepEqual(normalized, result);
@@ -517,7 +517,7 @@ describe('STRICT: AnimatableProperty Serialization', () => {
   test.prop([numericPropertyArb])(
     'AnimatableProperty roundtrip preserves all fields',
     (prop) => {
-      // BUG-038 FIX: Normalize before comparing (JSON doesn't preserve -0)
+      //                                                                       // bug
       const normalized = normalizeNegativeZero(prop);
       const result = roundtrip(prop);
       const comparison = deepEqual(normalized, result);
@@ -537,7 +537,7 @@ describe('STRICT: Transform Serialization', () => {
   test.prop([transformArb])(
     'LayerTransform roundtrip preserves all fields',
     (transform) => {
-      // BUG-039 FIX: Normalize before comparing (JSON doesn't preserve -0)
+      //                                                                       // bug
       const normalized = normalizeNegativeZero(transform);
       const result = roundtrip(transform);
       const comparison = deepEqual(normalized, result);
@@ -557,7 +557,7 @@ describe('STRICT: Layer Serialization', () => {
   test.prop([layerArb])(
     'Layer roundtrip preserves all fields',
     (layer) => {
-      // BUG-040 FIX: Normalize before comparing (JSON doesn't preserve -0)
+      //                                                                       // bug
       const normalized = normalizeNegativeZero(layer);
       const result = roundtrip(layer);
       const comparison = deepEqual(normalized, result);
@@ -574,9 +574,9 @@ describe('STRICT: Layer Serialization', () => {
 
 });
 
-// ============================================================================
-// PROJECT SERIALIZATION TESTS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                         // project // serialization // tests
+// ════════════════════════════════════════════════════════════════════════════
 
 describe('STRICT: Project Serialization', () => {
 
@@ -691,9 +691,9 @@ describe('STRICT: Project Serialization', () => {
 
 });
 
-// ============================================================================
-// EDGE CASE TESTS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                     // edge // case // tests
+// ════════════════════════════════════════════════════════════════════════════
 
 describe('STRICT: Serialization Edge Cases', () => {
 
@@ -773,9 +773,9 @@ describe('STRICT: Serialization Edge Cases', () => {
 
 });
 
-// ============================================================================
-// STRESS TEST
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                            // stress // test
+// ════════════════════════════════════════════════════════════════════════════
 
 describe('STRESS: Large Project Serialization', () => {
 

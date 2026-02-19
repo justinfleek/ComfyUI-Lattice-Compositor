@@ -35,9 +35,9 @@ import Numeric.Natural (Natural)
 
 import Straylight.Script.Config (StorePath (..), storePathToFilePath)
 
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 -- Firecracker
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 {- | Firecracker runtime configuration
 
@@ -68,9 +68,9 @@ instance FromDhall FirecrackerConfig
 loadFirecrackerConfig :: FilePath -> IO FirecrackerConfig
 loadFirecrackerConfig = inputFile auto
 
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 -- Cloud Hypervisor
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Cloud Hypervisor runtime configuration
 data CloudHypervisorConfig = CloudHypervisorConfig

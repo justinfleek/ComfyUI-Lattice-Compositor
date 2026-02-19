@@ -13,18 +13,18 @@ import {
   type WarpPinType,
 } from "@/types/meshWarp";
 
-// ============================================================
-// ARBITRARIES
-// ============================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                                               // arbitraries
+// ════════════════════════════════════════════════════════════════════════════
 
 const pinIdArb = fc.string({ minLength: 1, maxLength: 50 });
 const layerIdArb = fc.string({ minLength: 1, maxLength: 50 });
 const positionArb = fc.double({ min: -10000, max: 10000, noNaN: true });
 const pinTypeArb = fc.constantFrom<WarpPinType>("position", "starch", "overlap", "bend");
 
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
 // createDefaultWarpPin TESTS
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 describe("PROPERTY: createDefaultWarpPin", () => {
   it("returns WarpPin object with required fields", () => {
@@ -110,9 +110,9 @@ describe("PROPERTY: createDefaultWarpPin", () => {
   });
 });
 
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
 // createEmptyWarpMesh TESTS
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 describe("PROPERTY: createEmptyWarpMesh", () => {
   it("returns WarpMesh object with required fields", () => {

@@ -97,9 +97,9 @@ import type {
   ToolArgumentsFor,
 } from "./toolArgumentTypes";
 
-// ============================================================================
-// SANDBOX HELPERS
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                                        // sandbox // helpers
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Helper to update project state (sandbox or main store)
@@ -119,9 +119,9 @@ function updateProjectState(context: ExecutionContext): void {
   // Adding it here would create duplicate history entries and break undo/redo
 }
 
-// ============================================================================
-// TYPES
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                                     // types
+// ════════════════════════════════════════════════════════════════════════════
 
 export interface ExecutionContext {
   projectStore: ReturnType<typeof useProjectStore>;
@@ -148,9 +148,9 @@ function ensureCameraLayerData(layer: Layer): CameraLayerData {
   return layer.data as CameraLayerData;
 }
 
-// ============================================================================
-// MAIN EXECUTOR
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                          // main // executor
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Execute a tool call from the AI agent
@@ -185,7 +185,7 @@ export async function executeToolCall(
     const playbackStore = usePlaybackStore();
     const selectionStore = useSelectionStore();
 
-    // SECURITY: If sandbox mode, use sandbox state for writes
+    //                                                                  // security
     let sandboxProjectState: LatticeProject | null = null;
     if (sandboxId) {
       const sandbox = agentSandbox.getSandbox(sandboxId);
@@ -330,7 +330,7 @@ export async function executeToolCall(
       isStateMutating = false;
       break;
 
-    // AI Image Processing (async)
+    //                                                                   // ai // i
     case "decomposeImage":
       result = await executeDecomposeImage(context, toolCall);
       break;
@@ -352,7 +352,7 @@ export async function executeToolCall(
       isStateMutating = false;
       break;
 
-    // COMPASS Content Generation (async)
+    //                                                              // compass // c
     case "generateTextContent":
       result = await executeGenerateTextContent(context, toolCall);
       break;
@@ -387,9 +387,9 @@ export async function executeToolCall(
   }
 }
 
-// ============================================================================
-// LAYER MANAGEMENT HANDLERS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                           // layer // management // handlers
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Validated tool argument value - can be string, number, boolean, object, or array
@@ -504,7 +504,7 @@ function executeCreateLayer(
     nestedComp: "nestedComp",
     matte: "matte",
 
-    // AI/Generated layers
+    //                                                                        // ai
     depth: "depth",
     normal: "normal",
     generated: "generated",
@@ -643,9 +643,9 @@ function executeReorderLayers(
   };
 }
 
-// ============================================================================
-// PROPERTY MODIFICATION HANDLERS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                      // property // modification // handlers
+// ════════════════════════════════════════════════════════════════════════════
 
 function executeSetLayerProperty(
   context: ExecutionContext,
@@ -786,7 +786,7 @@ function executeSetLayerProperty(
   // This function modifies layer state directly (not through store actions),
   // so we must call pushHistory() explicitly for undo/redo support
   context.projectStore.pushHistory();
-  // SECURITY: In sandbox mode, update sandbox state instead
+  //                                                                  // security
   updateProjectState(context);
 
   return {
@@ -839,7 +839,7 @@ function executeSetLayerTransform(
   // This function modifies layer state directly (not through store actions),
   // so we must call pushHistory() explicitly for undo/redo support
   context.projectStore.pushHistory();
-  // SECURITY: In sandbox mode, update sandbox state instead
+  //                                                                  // security
   updateProjectState(context);
 
   return {
@@ -848,9 +848,9 @@ function executeSetLayerTransform(
   };
 }
 
-// ============================================================================
-// KEYFRAME ANIMATION HANDLERS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                         // keyframe // animation // handlers
+// ════════════════════════════════════════════════════════════════════════════
 
 function executeAddKeyframe(
   context: ExecutionContext,
@@ -1001,7 +1001,7 @@ function executeScaleKeyframeTiming(
   // Record modification and save to undo history (only if changes were made)
   if (scaledCount > 0) {
     projectStore.project.meta.modified = new Date().toISOString();
-    // SECURITY: In sandbox mode, update sandbox state instead
+    //                                                                  // security
   updateProjectState(context);
   }
 
@@ -1011,9 +1011,9 @@ function executeScaleKeyframeTiming(
   };
 }
 
-// ============================================================================
-// EXPRESSION HANDLERS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                    // expression // handlers
+// ════════════════════════════════════════════════════════════════════════════
 
 function executeSetExpression(
   context: ExecutionContext,
@@ -1045,7 +1045,7 @@ function executeSetExpression(
   // This function modifies layer state directly (not through store actions),
   // so we must call pushHistory() explicitly for undo/redo support
   context.projectStore.pushHistory();
-  // SECURITY: In sandbox mode, update sandbox state instead
+  //                                                                  // security
   updateProjectState(context);
 
   return {
@@ -1080,7 +1080,7 @@ function executeRemoveExpression(
   // This function modifies layer state directly (not through store actions),
   // so we must call pushHistory() explicitly for undo/redo support
   context.projectStore.pushHistory();
-  // SECURITY: In sandbox mode, update sandbox state instead
+  //                                                                  // security
   updateProjectState(context);
 
   return {
@@ -1089,9 +1089,9 @@ function executeRemoveExpression(
   };
 }
 
-// ============================================================================
-// EFFECT HANDLERS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                        // effect // handlers
+// ════════════════════════════════════════════════════════════════════════════
 
 function executeAddEffect(
   context: ExecutionContext,
@@ -1211,9 +1211,9 @@ function executeRemoveEffect(
   };
 }
 
-// ============================================================================
-// PARTICLE SYSTEM HANDLERS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                            // particle // system // handlers
+// ════════════════════════════════════════════════════════════════════════════
 
 function executeConfigureParticles(
   context: ExecutionContext,
@@ -1273,7 +1273,7 @@ function executeConfigureParticles(
   }
 
   // Record modification and save to undo history
-  // SECURITY: In sandbox mode, update sandbox state instead
+  //                                                                  // security
   updateProjectState(context);
 
   return {
@@ -1282,9 +1282,9 @@ function executeConfigureParticles(
   };
 }
 
-// ============================================================================
-// CAMERA SYSTEM HANDLERS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                              // camera // system // handlers
+// ════════════════════════════════════════════════════════════════════════════
 
 function executeApplyCameraTrajectory(
   context: ExecutionContext,
@@ -1504,7 +1504,7 @@ function executeAddCameraShake(
   };
 
   // Record modification and save to undo history
-  // SECURITY: In sandbox mode, update sandbox state instead
+  //                                                                  // security
   updateProjectState(context);
 
   return {
@@ -1631,7 +1631,7 @@ function executeSetCameraPathFollowing(
   };
 
   // Record modification and save to undo history
-  // SECURITY: In sandbox mode, update sandbox state instead
+  //                                                                  // security
   updateProjectState(context);
 
   return {
@@ -1686,7 +1686,7 @@ function executeSetCameraAutoFocus(
   };
 
   // Record modification and save to undo history
-  // SECURITY: In sandbox mode, update sandbox state instead
+  //                                                                  // security
   updateProjectState(context);
 
   return {
@@ -1697,9 +1697,9 @@ function executeSetCameraAutoFocus(
   };
 }
 
-// ============================================================================
-// TEXT HANDLERS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                          // text // handlers
+// ════════════════════════════════════════════════════════════════════════════
 
 function executeSetTextContent(
   context: ExecutionContext,
@@ -1737,7 +1737,7 @@ function executeSetTextContent(
   }
 
   // Record modification and save to undo history
-  // SECURITY: In sandbox mode, update sandbox state instead
+  //                                                                  // security
   updateProjectState(context);
 
   return {
@@ -1770,7 +1770,7 @@ function executeSetTextPath(
   }
 
   // Record modification and save to undo history
-  // SECURITY: In sandbox mode, update sandbox state instead
+  //                                                                  // security
   updateProjectState(context);
 
   return {
@@ -1781,9 +1781,9 @@ function executeSetTextPath(
   };
 }
 
-// ============================================================================
-// SPLINE HANDLERS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                        // spline // handlers
+// ════════════════════════════════════════════════════════════════════════════
 
 function executeSetSplinePoints(
   context: ExecutionContext,
@@ -1818,7 +1818,7 @@ function executeSetSplinePoints(
   }
 
   // Record modification and save to undo history
-  // SECURITY: In sandbox mode, update sandbox state instead
+  //                                                                  // security
   updateProjectState(context);
 
   return {
@@ -1827,9 +1827,9 @@ function executeSetSplinePoints(
   };
 }
 
-// ============================================================================
-// SPEED MAP HANDLERS (formerly Time Remapping)
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                  // speed // map // handlers
+// ════════════════════════════════════════════════════════════════════════════
 
 function executeSetSpeedMap(
   context: ExecutionContext,
@@ -1857,7 +1857,7 @@ function executeSetSpeedMap(
   }
 
   // Record modification and save to undo history
-  // SECURITY: In sandbox mode, update sandbox state instead
+  //                                                                  // security
   updateProjectState(context);
 
   return {
@@ -1874,9 +1874,9 @@ function _executeSetTimeRemap(
   return executeSetSpeedMap(context, args);
 }
 
-// ============================================================================
-// PLAYBACK HANDLERS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                      // playback // handlers
+// ════════════════════════════════════════════════════════════════════════════
 
 function executeSetCurrentFrame(
   context: ExecutionContext,
@@ -2005,9 +2005,9 @@ function executePlayPreview(
   };
 }
 
-// ============================================================================
-// AI IMAGE PROCESSING HANDLERS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                     // ai // image // processing // handlers
+// ════════════════════════════════════════════════════════════════════════════
 
 async function executeDecomposeImage(
   context: ExecutionContext,
@@ -2090,7 +2090,7 @@ async function executeDecomposeImage(
     createdLayerIds.push(layer.id);
   }
 
-  // SECURITY: In sandbox mode, update sandbox state instead
+  //                                                                  // security
   updateProjectState(context);
 
   return {
@@ -2300,7 +2300,7 @@ async function executeVectorizeImage(
     createdLayerIds.push(layer.id);
   }
 
-  // SECURITY: In sandbox mode, update sandbox state instead
+  //                                                                  // security
   updateProjectState(context);
 
   return {
@@ -2309,9 +2309,9 @@ async function executeVectorizeImage(
   };
 }
 
-// ============================================================================
-// UTILITY HANDLERS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                       // utility // handlers
+// ════════════════════════════════════════════════════════════════════════════
 
 function executeGetLayerInfo(
   context: ExecutionContext,
@@ -2449,9 +2449,9 @@ function executeGetProjectState(
   };
 }
 
-// ============================================================================
-// COMPASS CONTENT GENERATION HANDLERS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                              // compass // content // generation // handlers
+// ════════════════════════════════════════════════════════════════════════════
 
 async function executeGenerateTextContent(
   context: ExecutionContext,
@@ -2664,9 +2664,9 @@ async function executeGenerateVideo(
   }
 }
 
-// ============================================================================
-// UTILITY FUNCTIONS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                      // utility // functions
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Set a nested property value using dot notation path

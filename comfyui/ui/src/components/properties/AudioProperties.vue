@@ -329,7 +329,7 @@ const animationStore = useAnimationStore();
 const audioStore = useAudioStore();
 const projectStore = useProjectStore();
 
-// UI State
+//                                                                   // ui // s
 const expandedSections = ref(new Set(["peaks", "mappings"]));
 const expandedMappings = ref(new Set<string>());
 

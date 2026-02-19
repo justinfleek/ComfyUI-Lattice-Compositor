@@ -964,7 +964,7 @@ const props = withDefaults(defineProps<Props>(), {
 const emit =
   defineEmits<(e: "update", data: Partial<ParticleLayerData>) => void>();
 
-// UI State - persist expanded sections per layer
+//                                                                   // ui // s
 const expandedSectionsMap = ref<Map<string, Set<string>>>(new Map());
 const expandedEmittersMap = ref<Map<string, Set<string>>>(new Map());
 const forceTab = ref<"wells" | "vortices">("wells");
@@ -1166,7 +1166,7 @@ const audioBindings = computed(() => {
 });
 const particleCount = computed(() => props.particleCount);
 
-// LOD config with defaults
+//                                                                       // lod
 const lodConfig = computed(() =>
   layerData.value.lodConfig || {
     enabled: false,
@@ -1175,7 +1175,7 @@ const lodConfig = computed(() =>
   },
 );
 
-// DOF config with defaults
+//                                                                       // dof
 const dofConfig = computed(() =>
   layerData.value.dofConfig || {
     enabled: false,
@@ -1920,7 +1920,7 @@ function removeSubEmitter(id: string): void {
   emit("update", { subEmitters: subEmitters.value.filter((s) => s.id !== id) });
 }
 
-// LOD functions
+//                                                                       // lod
 function updateLODConfig(key: string, value: boolean | number[]): void {
   const updated = { ...lodConfig.value };
   if (key === "enabled") {
@@ -1933,7 +1933,7 @@ function updateLODConfig(key: string, value: boolean | number[]): void {
   emit("update", { lodConfig: updated });
 }
 
-// DOF functions
+//                                                                       // dof
 function updateDOFConfig(key: string, value: boolean | number): void {
   const updated = { ...dofConfig.value };
   if (key === "enabled") {
@@ -2083,9 +2083,9 @@ function hexToRgb(hex: string): [number, number, number] {
     : [255, 255, 255];
 }
 
-// ============================================================================
-// BAKE TO KEYFRAMES / TRAJECTORY EXPORT
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                                   // bake // to // keyframes
+// ════════════════════════════════════════════════════════════════════════════
 
 import {
   useParticleStore,

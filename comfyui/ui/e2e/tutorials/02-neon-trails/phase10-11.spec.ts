@@ -52,7 +52,7 @@ test.describe("Tutorial 02: Neon Motion Trails - Phases 10-11 (Steps 179-225)", 
     await h.configureEcho({ numberOfEchoes: 5 });
     await h.configureEcho({ numberOfEchoes: 8 }); // Reset
 
-    // UNDO/REDO
+    //                                                                      // undo
     await h.undo();
     await h.redo();
   });
@@ -82,7 +82,7 @@ test.describe("Tutorial 02: Neon Motion Trails - Phases 10-11 (Steps 179-225)", 
     await h.configureMotionBlur(360, -90, 16);
     await h.configureMotionBlur(180, -90, 16); // Standard
 
-    // UNDO/REDO
+    //                                                                      // undo
     await h.undo();
     await h.redo();
   });

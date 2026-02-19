@@ -21,9 +21,9 @@ import Lattice.FFI.HaskellToPureScript
   , psToHs
   )
 
--- ============================================================================
--- ROUND-TRIP PROPERTY TESTS
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                                     // round
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Test: HS → PS → HS round-trip
 -- 
@@ -34,13 +34,13 @@ prop_roundTripHSPS x =
   case psToHs (hsToPs x) of
     Right x' -> x === x'
     Left err -> property False
-      -- TODO: Better error reporting
+      --                                                                      // todo
 
--- ============================================================================
--- TYPE-SPECIFIC TESTS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                                      // type
+-- ════════════════════════════════════════════════════════════════════════════
 
--- NOTE: Type-specific tests will be generated from Lean4 Extractable
+--                                                                      // note
 -- instances. For now, this module provides the generic test framework.
 --
 -- Example generated tests:
@@ -48,23 +48,23 @@ prop_roundTripHSPS x =
 -- prop_roundTripHSPSPoint3 :: Point3 -> Property
 -- prop_roundTripHSPSPoint3 = prop_roundTripHSPS
 
--- ============================================================================
--- HSPEC TEST SUITE
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                    // hspec // test // suite
+-- ════════════════════════════════════════════════════════════════════════════
 
 spec :: Spec
 spec = do
   describe "HaskellToPureScript round-trip tests" $ do
     it "should round-trip Point3 values" $ do
-      -- TODO: Add specific test cases once Point3 is available
+      --                                                                      // todo
       pending
 
     it "should round-trip Vec3 values" $ do
-      -- TODO: Add specific test cases once Vec3 is available
+      --                                                                      // todo
       pending
 
--- ============================================================================
--- QUICKCHECK PROPERTY TESTS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                           // quickcheck // property // tests
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- Run property tests with: quickCheck prop_roundTripHSPS

@@ -19,9 +19,9 @@ import {
   MAX_DESCRIPTION_LENGTH,
 } from "../shared-validation";
 
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Effect Category
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export const EffectCategorySchema = z.enum([
   "blur-sharpen",
@@ -40,9 +40,9 @@ export const EffectCategorySchema = z.enum([
 
 export type EffectCategory = z.infer<typeof EffectCategorySchema>;
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Effect Parameter Type
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export const EffectParameterTypeSchema = z.enum([
   "number",
@@ -60,9 +60,9 @@ export const EffectParameterTypeSchema = z.enum([
 
 export type EffectParameterType = z.infer<typeof EffectParameterTypeSchema>;
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Effect Parameter Option
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export const EffectParameterOptionSchema = z.object({
   label: z.string().min(1).max(200).trim(),
@@ -71,9 +71,9 @@ export const EffectParameterOptionSchema = z.object({
 
 export type EffectParameterOption = z.infer<typeof EffectParameterOptionSchema>;
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Effect Parameter
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export const EffectParameterSchema = z.object({
   id: entityId,
@@ -118,9 +118,9 @@ export const EffectParameterSchema = z.object({
 
 export type EffectParameter = z.infer<typeof EffectParameterSchema>;
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Effect Definition
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 // Base schema for EffectParameter without refinements (for omit/extend)
 const EffectParameterBaseSchema = z.object({
@@ -150,9 +150,9 @@ export const EffectDefinitionSchema = z.object({
 
 export type EffectDefinition = z.infer<typeof EffectDefinitionSchema>;
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Effect
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export const EffectSchema = z.object({
   id: entityId,
@@ -166,9 +166,9 @@ export const EffectSchema = z.object({
 
 export type Effect = z.infer<typeof EffectSchema>;
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Effect Instance
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export const EffectInstanceSchema = z.object({
   id: entityId,
@@ -185,9 +185,9 @@ export const EffectInstanceSchema = z.object({
 
 export type EffectInstance = z.infer<typeof EffectInstanceSchema>;
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Mesh Deform Effect Instance
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export const MeshDeformEffectInstanceSchema = EffectInstanceSchema.extend({
   effectKey: z.literal("mesh-deform"),

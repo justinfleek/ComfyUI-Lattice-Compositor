@@ -19,9 +19,9 @@ import { useLayerStore } from "../layerStore";
 import { useAnimationStore } from "../animationStore";
 import { generateKeyframeId } from "@/utils/uuid5";
 
-// ============================================================================
-// KEYFRAME CREATION
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                                      // keyframe // creation
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Add a keyframe to a property at the specified frame.
@@ -112,9 +112,9 @@ export function addKeyframe<T>(
   return keyframe;
 }
 
-// ============================================================================
-// KEYFRAME REMOVAL
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                       // keyframe // removal
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Remove a keyframe by ID.
@@ -168,9 +168,9 @@ export function clearKeyframes(
   projectStore.pushHistory();
 }
 
-// ============================================================================
-// PROPERTY UPDATE
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                        // property // update
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Update an entire AnimatableProperty by path, including keyframes.
@@ -242,7 +242,7 @@ export function updateLayerProperty(
   if (propertyData.keyframes !== undefined) {
     // Ensure keyframes have valid structure
     property.keyframes = propertyData.keyframes.map((kf) => {
-      // ALWAYS regenerate keyframe ID for determinism - same layer/property/frame/value should always produce same ID
+      //                                                                    // always
       // Preserving existing IDs breaks determinism if those IDs were non-deterministic
       // Explicit check: kf.value is PropertyValue (never null/undefined per type system)
       const valueStr = typeof kf.value === "object" && kf.value !== null && "x" in kf.value && "y" in kf.value
@@ -274,7 +274,7 @@ export function updateLayerProperty(
     property.keyframes.sort((a, b) => a.frame - b.frame);
   }
   if (propertyData.expression !== undefined) {
-    // SECURITY: Block custom expressions from this API path
+    //                                                                  // security
     // Custom expressions contain user code that must be validated asynchronously.
     // They can only enter through:
     // 1. Project load (pre-validates all expressions)
@@ -306,9 +306,9 @@ export function updateLayerProperty(
   return true;
 }
 
-// ============================================================================
-// KEYFRAME MOVEMENT
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                      // keyframe // movement
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Move a keyframe to a new frame position.
@@ -508,9 +508,9 @@ export function moveKeyframes(
   projectStore.pushHistory();
 }
 
-// ============================================================================
-// KEYFRAME VALUE UPDATES
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                              // keyframe // value // updates
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Update a keyframe's value.

@@ -17,9 +17,9 @@ import { defineStore } from "pinia";
 import type { PropertyExpression } from "@/types/animation";
 import type { PropertyDriver, PropertyPath } from "@/services/propertyDriver";
 
-// ============================================================================
-// MODULE IMPORTS
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                                         // module // imports
+// ════════════════════════════════════════════════════════════════════════════
 
 // Types (re-export for consumers)
 export type { ExpressionStoreAccess, ExpressionState } from "./types";
@@ -54,9 +54,9 @@ import {
 // Types for internal use
 import type { ExpressionStoreAccess, ExpressionState } from "./types";
 
-// ============================================================================
-// STORE DEFINITION
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                       // store // definition
+// ════════════════════════════════════════════════════════════════════════════
 
 export const useExpressionStore = defineStore("expression", {
   state: (): ExpressionState => ({
@@ -65,9 +65,9 @@ export const useExpressionStore = defineStore("expression", {
   }),
 
   actions: {
-    // ========================================================================
-    // EXPRESSION CRUD
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                        // expression // crud
+    // ════════════════════════════════════════════════════════════════════════════
 
     /**
      * Set a property expression
@@ -200,9 +200,9 @@ export const useExpressionStore = defineStore("expression", {
       );
     },
 
-    // ========================================================================
-    // PROPERTY DRIVERS
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                       // property // drivers
+    // ════════════════════════════════════════════════════════════════════════════
 
     /**
      * Initialize the property driver system
@@ -323,8 +323,8 @@ export const useExpressionStore = defineStore("expression", {
   },
 });
 
-// ============================================================================
-// TYPE EXPORTS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                           // type // exports
+// ════════════════════════════════════════════════════════════════════════════
 
 export type ExpressionStoreType = ReturnType<typeof useExpressionStore>;

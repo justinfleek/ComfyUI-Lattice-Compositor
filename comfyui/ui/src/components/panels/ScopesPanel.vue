@@ -100,7 +100,7 @@ interface ParadeResult {
   blue: WaveformResult;
 }
 
-// UI state
+//                                                                        // ui
 const activeScope = ref<"histogram" | "waveform" | "vectorscope" | "parade">(
   "histogram",
 );

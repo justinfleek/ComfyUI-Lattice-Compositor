@@ -41,9 +41,9 @@ import { isFiniteNumber, isNumberArray } from "@/utils/typeGuards";
  * @see AUDIT/SECURITY_ARCHITECTURE.md for full security analysis
  */
 
-// ============================================================
-// TIME EXPRESSIONS
-// ============================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                                       // time // expressions
+// ════════════════════════════════════════════════════════════════════════════
 
 export const timeExpressions = {
   timeRamp(
@@ -119,9 +119,9 @@ export const timeExpressions = {
   },
 };
 
-// ============================================================
-// MATH EXPRESSIONS
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                       // math // expressions
+// ════════════════════════════════════════════════════════════════════════════
 
 export const mathExpressions = {
   lerp(a: number, b: number, t: number): number {
@@ -223,9 +223,9 @@ export const mathExpressions = {
   },
 };
 
-// ============================================================
-// EXPRESSION EASE FUNCTIONS
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                           // expression // ease // functions
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Ease function for expressions (count-up animations)
@@ -315,9 +315,9 @@ export function expressionEaseOut(
   return (vMin as number) + ((vMax as number) - (vMin as number)) * eased;
 }
 
-// ============================================================
-// EXPRESSION EVALUATOR
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                   // expression // evaluator
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Evaluate an expression on a property
@@ -435,7 +435,7 @@ export function evaluateCustomExpression(
   code: string,
   ctx: ExpressionContext,
 ): number | number[] | string {
-  // SECURITY: Type check - code must be a string
+  //                                                                  // security
   // Prevents objects with malicious .trim() or valueOf() from being passed
   if (typeof code !== "string") {
     console.warn("[SECURITY] Expression code is not a string:", typeof code);
@@ -447,14 +447,14 @@ export function evaluateCustomExpression(
     return ctx.value;
   }
 
-  // SECURITY: All expression evaluation goes through SES
+  //                                                                  // security
   // evaluateInSES() handles: length limit, SES check, sandbox evaluation
   return evaluateInSES(code, ctx);
 }
 
-// =============================================================================
-// LEGACY PROXY+WITH SANDBOX - REMOVED FOR SECURITY
-// =============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                           // legacy // proxy
+// ════════════════════════════════════════════════════════════════════════════
 //
 // The previous Proxy+with sandbox was REMOVED because it was bypassable.
 //
@@ -465,7 +465,7 @@ export function evaluateCustomExpression(
 //
 // The ONLY secure way to evaluate untrusted expressions is SES.
 // If SES fails to load, expressions are DISABLED, not degraded.
-// =============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 // Helper to create thisComp object
 function _createThisCompObject(ctx: ExpressionContext) {

@@ -10,7 +10,7 @@
 { pkgs, lib, ... }:
 let
   # Build pure-sarcasm from source
-  # NOTE: This is experimental and may need adjustments based on actual build process
+  #                                                                      // note
   pure-sarcasm = pkgs.buildNpmPackage rec {
     pname = "pure-sarcasm";
     version = "0.1.0"; # Update when actual version is known

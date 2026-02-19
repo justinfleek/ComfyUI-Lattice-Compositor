@@ -478,9 +478,9 @@ const {
   viewportTransform,
 });
 
-// ============================================================
-// MARQUEE SELECTION (Phase 8 Integration)
-// ============================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                                      // marquee // selection
+// ════════════════════════════════════════════════════════════════════════════
 
 // Enable marquee selection only when using select tool
 const marqueeEnabled = computed(() => selectionStore.currentTool === "select");
@@ -633,7 +633,7 @@ const hasDepthMap = computed(() => {
     if (l.type === "depth" && l.data) {
       // Type narrowing: l.type === "depth" ensures l.data is DepthLayerData
       // Check assetId instead of runtime depthMap property (which isn't in type definition)
-      // CODE IS TRUTH: assetId !== null indicates depth map asset is assigned
+      //                                                       // code // is // truth
       const depthData = l.data;
       return depthData.assetId !== null && depthData.assetId !== "";
     }

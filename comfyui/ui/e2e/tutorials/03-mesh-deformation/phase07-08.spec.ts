@@ -39,7 +39,7 @@ test.describe("Tutorial 03: Mesh Deformation - Phases 7-8 (Steps 77-115)", () =>
     await h.linkPins(0, 4, 1); // Link left shoulder to torso
     await h.linkPins(0, 5, 1); // Link right shoulder to torso
 
-    // UNDO/REDO
+    //                                                                      // undo
     await h.undo();
     await h.redo();
   });
@@ -82,7 +82,7 @@ test.describe("Tutorial 03: Mesh Deformation - Phases 7-8 (Steps 77-115)", () =>
     await h.movePinTo(0, 5, 1040, 700);
     await h.movePinTo(0, 6, 1040, 850);
 
-    // UNDO/REDO
+    //                                                                      // undo
     await h.undo();
     await h.redo();
   });

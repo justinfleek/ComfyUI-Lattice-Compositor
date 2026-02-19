@@ -58,9 +58,9 @@ describe('Tutorial 09: Massive Particle Simulation - Particle Storm', () => {
     vi.clearAllMocks();
   });
 
-  // ============================================================================
-  // PHASE 1: MEMORY BUDGET CALCULATION (Steps 1-50)
-  // ============================================================================
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  //                                                                // phase // 1
+  // ════════════════════════════════════════════════════════════════════════════
 
   describe('Phase 1: Memory Budget Calculation (Steps 1-50)', () => {
     test('Step 1-25: Calculate maximum particles for 1GB VRAM budget', async () => {
@@ -80,7 +80,7 @@ describe('Tutorial 09: Massive Particle Simulation - Particle Storm', () => {
 
       const system = (particleLayer as any).particleSystem;
       
-      // PROVEN: Memory budget calculations are correct
+      //                                                                    // proven
       // Each particle uses ~84 bytes in SOA layout
       // 1M particles = ~84MB (well within 1GB budget)
       const state = system.getState();
@@ -154,15 +154,15 @@ describe('Tutorial 09: Massive Particle Simulation - Particle Storm', () => {
         particleLayer.update(layer!, i, 1/30, new Map());
       }
 
-      // PROVEN: Memory bounds maintained with multiple emitters
+      //                                                                    // proven
       const state = (particleLayer as any).particleSystem.getState();
       expect(state.particleCount).toBeLessThanOrEqual(500000);
     });
   });
 
-  // ============================================================================
-  // PHASE 2: WEBGPU PERFORMANCE TESTING (Steps 51-100)
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                // phase // 2
+  // ════════════════════════════════════════════════════════════════════════════
 
   describe('Phase 2: WebGPU Performance Testing (Steps 51-100)', () => {
     test('Step 51-75: Benchmark WebGPU compute shader performance', async () => {
@@ -221,7 +221,7 @@ describe('Tutorial 09: Massive Particle Simulation - Particle Storm', () => {
       const avgTime = frameTimes.reduce((a, b) => a + b, 0) / frameTimes.length;
       const maxTime = Math.max(...frameTimes);
 
-      // PROVEN: WebGPU provides significant performance boost
+      //                                                                    // proven
       // Target: < 16ms per frame for 60fps
       expect(avgTime).toBeLessThan(16);
       expect(maxTime).toBeLessThan(33); // Allow occasional spikes
@@ -263,7 +263,7 @@ describe('Tutorial 09: Massive Particle Simulation - Particle Storm', () => {
       // Check if WebGPU is available
       const webgpuAvailable = system.isGPUPhysicsEnabled();
       
-      // PROVEN: System uses WebGPU when available for better performance
+      //                                                                    // proven
       // If WebGPU not available, falls back to CPU gracefully
       expect(typeof webgpuAvailable).toBe('boolean');
 
@@ -277,9 +277,9 @@ describe('Tutorial 09: Massive Particle Simulation - Particle Storm', () => {
     });
   });
 
-  // ============================================================================
-  // PHASE 3: SCALING TO MILLIONS (Steps 101-150)
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                // phase // 3
+  // ════════════════════════════════════════════════════════════════════════════
 
   describe('Phase 3: Scaling to Millions (Steps 101-150)', () => {
     test('Step 101-125: Test with 500K particles', async () => {
@@ -316,7 +316,7 @@ describe('Tutorial 09: Massive Particle Simulation - Particle Storm', () => {
       const endTime = performance.now();
       const avgTime = (endTime - startTime) / 60;
 
-      // PROVEN: System handles 500K particles efficiently
+      //                                                                    // proven
       expect(avgTime).toBeLessThan(33); // Allow more time for massive counts
 
       const state = (particleLayer as any).particleSystem.getState();
@@ -357,7 +357,7 @@ describe('Tutorial 09: Massive Particle Simulation - Particle Storm', () => {
       const endTime = performance.now();
       const avgTime = (endTime - startTime) / 30;
 
-      // PROVEN: System handles 1M particles (may be slower but still functional)
+      //                                                                    // proven
       expect(avgTime).toBeLessThan(100); // More lenient for 1M particles
 
       const state = (particleLayer as any).particleSystem.getState();
@@ -365,9 +365,9 @@ describe('Tutorial 09: Massive Particle Simulation - Particle Storm', () => {
     });
   });
 
-  // ============================================================================
-  // PHASE 4: SOA LAYOUT EFFICIENCY (Steps 151-200)
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                // phase // 4
+  // ════════════════════════════════════════════════════════════════════════════
 
   describe('Phase 4: SOA Layout Efficiency (Steps 151-200)', () => {
     test('Step 151-175: Verify SOA layout provides performance benefits', async () => {
@@ -401,7 +401,7 @@ describe('Tutorial 09: Massive Particle Simulation - Particle Storm', () => {
         particleLayer.update(layer!, i, 1/30, new Map());
       }
 
-      // PROVEN: SOA layout provides cache-friendly access patterns
+      //                                                                    // proven
       // This is verified by the performance benchmarks above
       const state = (particleLayer as any).particleSystem.getState();
       expect(state.particleCount).toBeGreaterThan(0);
@@ -439,7 +439,7 @@ describe('Tutorial 09: Massive Particle Simulation - Particle Storm', () => {
         particleLayer.update(layer!, i, 1/30, new Map());
       }
 
-      // PROVEN: SOA to AOS conversion is efficient
+      //                                                                    // proven
       const system = (particleLayer as any).particleSystem;
       const mesh = system.getMesh();
       expect(mesh).toBeDefined();
@@ -449,9 +449,9 @@ describe('Tutorial 09: Massive Particle Simulation - Particle Storm', () => {
     });
   });
 
-  // ============================================================================
-  // PHASE 5: DETERMINISM AT SCALE (Steps 201-250)
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                // phase // 5
+  // ════════════════════════════════════════════════════════════════════════════
 
   describe('Phase 5: Determinism at Scale (Steps 201-250)', () => {
     test('Step 201-225: Verify deterministic behavior with 100K particles', async () => {
@@ -496,7 +496,7 @@ describe('Tutorial 09: Massive Particle Simulation - Particle Storm', () => {
       const state2 = (particleLayer2 as any).particleSystem.getState();
       const count2 = state2.particleCount;
 
-      // PROVEN: Deterministic even at scale
+      //                                                                    // proven
       expect(count1).toBe(count2);
     });
 
@@ -542,15 +542,15 @@ describe('Tutorial 09: Massive Particle Simulation - Particle Storm', () => {
       }
       const stateScrub = (particleLayer as any).particleSystem.getState();
 
-      // PROVEN: Frame caching works at scale
+      //                                                                    // proven
       // (Within tolerance due to caching intervals)
       expect(Math.abs(stateForward.particleCount - stateScrub.particleCount)).toBeLessThan(100);
     });
   });
 
-  // ============================================================================
-  // PHASE 6: COMPLEX SIMULATIONS AT SCALE (Steps 251-300)
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                // phase // 6
+  // ════════════════════════════════════════════════════════════════════════════
 
   describe('Phase 6: Complex Simulations at Scale (Steps 251-300)', () => {
     test('Step 251-275: Test multiple force fields with 100K particles', async () => {
@@ -618,7 +618,7 @@ describe('Tutorial 09: Massive Particle Simulation - Particle Storm', () => {
       const endTime = performance.now();
       const avgTime = (endTime - startTime) / 60;
 
-      // PROVEN: Complex forces work efficiently at scale
+      //                                                                    // proven
       expect(avgTime).toBeLessThan(33);
 
       const state = (particleLayer as any).particleSystem.getState();
@@ -673,7 +673,7 @@ describe('Tutorial 09: Massive Particle Simulation - Particle Storm', () => {
       const endTime = performance.now();
       const avgTime = (endTime - startTime) / 60;
 
-      // PROVEN: Spatial hashing provides O(1) neighbor queries at scale
+      //                                                                    // proven
       expect(avgTime).toBeLessThan(50); // Flocking is more expensive
 
       const state = system.getState();
@@ -681,9 +681,9 @@ describe('Tutorial 09: Massive Particle Simulation - Particle Storm', () => {
     });
   });
 
-  // ============================================================================
-  // PHASE 7: COMPLETE PARTICLE STORM EFFECT (Steps 301-350)
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                // phase // 7
+  // ════════════════════════════════════════════════════════════════════════════
 
   describe('Phase 7: Complete Particle Storm Effect (Steps 301-350)', () => {
     test('Step 301-350: Create massive particle storm visualization', async () => {
@@ -798,7 +798,7 @@ describe('Tutorial 09: Massive Particle Simulation - Particle Storm', () => {
       const connectionMesh = system.getConnectionMesh();
       expect(connectionMesh).toBeDefined();
 
-      // PROVEN: Massive particle simulation works beautifully
+      //                                                                    // proven
       // All verified properties maintained at scale
       // Performance remains acceptable even with 500K particles
     });

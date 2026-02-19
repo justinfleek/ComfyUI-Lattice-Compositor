@@ -67,9 +67,9 @@ import Dhall (FromDhall (..), auto, input, inputFile)
 import GHC.Generics (Generic)
 import Numeric.Natural (Natural)
 
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 -- Store paths
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 {- | A Nix store path. Newtype ensures you can't accidentally pass
 an arbitrary FilePath where a store path is expected.
@@ -91,9 +91,9 @@ storePathToFilePath (StorePath t) = T.unpack t
 drvPathToFilePath :: DrvPath -> FilePath
 drvPathToFilePath (DrvPath t) = T.unpack t
 
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 -- System types
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | System triple (e.g., "x86_64-linux")
 newtype System = System {unSystem :: Text}
@@ -105,9 +105,9 @@ newtype Arch = Arch {unArch :: Text}
     deriving stock (Eq, Ord, Show, Generic)
     deriving newtype (FromDhall)
 
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 -- Resource types
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Memory size in MiB
 newtype MemMiB = MemMiB {unMemMiB :: Natural}
@@ -124,9 +124,9 @@ newtype Port = Port {unPort :: Natural}
     deriving stock (Eq, Ord, Show, Generic)
     deriving newtype (FromDhall, Num)
 
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 -- Device types
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | PCI address (e.g., "0000:01:00.0")
 newtype PciAddress = PciAddress {unPciAddress :: Text}
@@ -138,9 +138,9 @@ newtype DevicePath = DevicePath {unDevicePath :: Text}
     deriving stock (Eq, Ord, Show, Generic)
     deriving newtype (FromDhall)
 
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 -- Container types
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | OCI image reference (e.g., "docker.io/library/ubuntu:24.04")
 newtype ImageRef = ImageRef {unImageRef :: Text}
@@ -152,9 +152,9 @@ newtype ContainerId = ContainerId {unContainerId :: Text}
     deriving stock (Eq, Ord, Show, Generic)
     deriving newtype (FromDhall)
 
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 -- Config loading utilities
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 {- | Load a config from a Dhall expression (e.g., embedded in binary)
 

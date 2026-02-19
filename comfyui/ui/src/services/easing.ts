@@ -23,7 +23,7 @@ export const easings = {
   linear: (t: number): number => t,
 
   // Sine easing
-  // FIX: Handle boundary conditions explicitly for floating point precision
+  //                                                                       // fix
   easeInSine: (t: number): number => {
     if (t === 0) return 0;
     if (t === 1) return 1;
@@ -79,7 +79,7 @@ export const easings = {
       : (Math.sqrt(1 - (-2 * t + 2) ** 2) + 1) / 2,
 
   // Back (overshoot)
-  // FIX: Handle boundary conditions explicitly for floating point precision
+  //                                                                       // fix
   easeInBack: (t: number): number => {
     if (t === 0) return 0;
     if (t === 1) return 1;

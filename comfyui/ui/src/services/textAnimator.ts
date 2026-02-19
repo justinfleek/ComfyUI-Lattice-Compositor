@@ -84,9 +84,9 @@ function createTextAnimatorBaseContext(
   };
 }
 
-// ============================================================================
-// UTILITY FUNCTIONS
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                                      // utility // functions
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Generate deterministic ID for text animator properties
@@ -193,9 +193,9 @@ export function getAnimatableValue<T>(
   return prop.value;
 }
 
-// ============================================================================
-// DEFAULT VALUES
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                         // default // values
+// ════════════════════════════════════════════════════════════════════════════
 
 export const DEFAULT_RANGE_SELECTOR: TextRangeSelector = {
   mode: "percent",
@@ -235,9 +235,9 @@ export const DEFAULT_EXPRESSION_SELECTOR: TextExpressionSelector = {
 
 export const DEFAULT_ANIMATOR_PROPERTIES: TextAnimatorProperties = {};
 
-// ============================================================================
-// CREATE ANIMATOR
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                        // create // animator
+// ════════════════════════════════════════════════════════════════════════════
 
 export function createTextAnimator(name?: string, layerId?: string): TextAnimator {
   // Generate deterministic animator ID if layerId provided
@@ -268,9 +268,9 @@ export function createTextAnimator(name?: string, layerId?: string): TextAnimato
   };
 }
 
-// ============================================================================
-// ANIMATOR PRESETS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                       // animator // presets
+// ════════════════════════════════════════════════════════════════════════════
 
 export interface TextAnimatorPreset {
   type: TextAnimatorPresetType;
@@ -559,9 +559,9 @@ export const TEXT_ANIMATOR_PRESETS: Record<
   },
 };
 
-// ============================================================================
-// HELPER: Create animatable property with keyframes
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                                    // helper
+// ════════════════════════════════════════════════════════════════════════════
 
 export function createAnimatablePropWithKeyframes<T>(
   value: T,
@@ -601,9 +601,9 @@ export function createAnimatablePropWithKeyframes<T>(
   };
 }
 
-// ============================================================================
-// APPLY PRESET
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                           // apply // preset
+// ════════════════════════════════════════════════════════════════════════════
 
 export function applyTextAnimatorPreset(
   presetType: TextAnimatorPresetType,
@@ -616,9 +616,9 @@ export function applyTextAnimatorPreset(
   return preset.create(duration);
 }
 
-// ============================================================================
-// RANGE SELECTOR CALCULATION
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                          // range // selector // calculation
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Calculate the influence (0-1) for a character at a given index
@@ -777,9 +777,9 @@ function applyShape(
   return ease.low / 100 + value * easeRange;
 }
 
-// ============================================================================
-// WIGGLY SELECTOR CALCULATION (Tutorial 7)
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                         // wiggly // selector // calculation
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Calculate wiggly influence for a character
@@ -866,9 +866,9 @@ export function calculateWigglyOffset(
   return { x: x * amount, y: y * amount };
 }
 
-// ============================================================================
-// EXPRESSION SELECTOR CALCULATION (Tutorial 7)
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                     // expression // selector // calculation
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Evaluate expression selector for a character
@@ -886,19 +886,19 @@ export function calculateExpressionInfluence(
 
   const time = frame / fps;
 
-  // SECURITY: Validate expression is a string
+  //                                                                  // security
   if (typeof expressionSelector.amountExpression !== "string") {
     return rangeValue;
   }
 
   const expr = expressionSelector.amountExpression.trim();
 
-  // SECURITY: Empty expression = passthrough
+  //                                                                  // security
   if (!expr) {
     return rangeValue;
   }
 
-  // SECURITY: Length limit to prevent payload attacks (10KB max)
+  //                                                                  // security
   if (expr.length > 10240) {
     console.warn("[TextAnimator] Expression too long (max 10KB)");
     return rangeValue;
@@ -917,7 +917,7 @@ export function calculateExpressionInfluence(
   };
 
   // Evaluate through central sesEvaluator (handles SES sandbox, length limit)
-  // NOTE: No DoS protection - expressions CAN hang with infinite loops
+  //                                                                      // note
   // The contextWithTextVars includes ExpressionContext + text animator vars
   const result = evaluateSimpleExpression(
     expr,
@@ -933,9 +933,9 @@ export function calculateExpressionInfluence(
   return Math.max(0, Math.min(100, result)) / 100;
 }
 
-// ============================================================================
-// SELECTOR MODE COMBINATION (Tutorial 7)
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                           // selector // mode // combination
+// ════════════════════════════════════════════════════════════════════════════
 
 type SelectorMode =
   | "add"
@@ -971,9 +971,9 @@ export function combineSelectorValues(
   }
 }
 
-// ============================================================================
-// COMPREHENSIVE CHARACTER INFLUENCE (Tutorial 7)
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                   // comprehensive // character // influence
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Calculate the complete influence for a character considering all selectors
@@ -1048,9 +1048,9 @@ export function calculateCompleteCharacterInfluence(
   return Math.max(0, Math.min(1, influence));
 }
 
-// ============================================================================
-// CREATE SELECTOR HELPERS (Tutorial 7)
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                             // create // selector // helpers
+// ════════════════════════════════════════════════════════════════════════════
 
 export function createWigglySelector(
   overrides?: Partial<TextWigglySelector>,
@@ -1078,9 +1078,9 @@ export function createExpressionSelector(
   };
 }
 
-// ============================================================================
-// EXPRESSION PRESETS (Tutorial 7)
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                     // expression // presets
+// ════════════════════════════════════════════════════════════════════════════
 
 export const EXPRESSION_PRESETS = {
   // Wave animation - characters move in sine wave
@@ -1113,8 +1113,8 @@ export const EXPRESSION_PRESETS = {
   alternating: "textIndex % 2 === 0 ? 100 : 0",
 };
 
-// ============================================================================
-// EXPORT PRESETS LIST
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                 // export // presets // list
+// ════════════════════════════════════════════════════════════════════════════
 
 export const TEXT_ANIMATOR_PRESET_LIST = Object.values(TEXT_ANIMATOR_PRESETS);

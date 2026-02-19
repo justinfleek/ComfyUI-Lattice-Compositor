@@ -29,9 +29,9 @@ import type { CameraKeyframe } from "@/types/camera";
 // Access project store for composition settings
 const projectStore = useProjectStore();
 
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Props & Emits
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 interface Props {
   layers: Layer[];
@@ -47,9 +47,9 @@ const emit = defineEmits<{
   exported: [result: ExportResult];
 }>();
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // State
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 const activeTab = ref<"target" | "output" | "generation" | "comfyui">(
   "target",
@@ -106,9 +106,9 @@ function getOverallProgress(): number {
   return safeNonNegativeDefault(overallProgress, 0, "exportProgress.overallProgress");
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Computed
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 const targetInfo = computed(() => EXPORT_TARGET_INFO[selectedTarget.value]);
 
@@ -211,14 +211,14 @@ const controlTypes: { value: ControlType; label: string }[] = [
   { value: "normal", label: "Normal Map" },
 ];
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Methods
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 function selectTarget(target: ExportTarget) {
   selectedTarget.value = target;
 
-  // DON'T override composition settings automatically
+  //                                                                       // don
   // Only apply preset if user explicitly requests it via useCompositionSettings toggle
   // The composition settings are the source of truth for the export dimensions
 
@@ -368,9 +368,9 @@ function close() {
   emit("close");
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Lifecycle
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 onMounted(() => {
   // Initialize from composition settings - THIS IS THE SOURCE OF TRUTH

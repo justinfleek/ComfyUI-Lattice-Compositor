@@ -5,10 +5,10 @@
 Uses typed CMake options. Compare to raw string flags:
 
 @
--- OLD: raw strings, typos invisible
+--                                                                       // old
 cmakeFlags = ["-DBUILD_STATIC_LIBS=ON", "-DBUILD_SHARED_LIBS=OFF"]
 
--- NEW: typed, compiler-checked
+--                                                                       // new
 cmake defaults
     { buildStaticLibs = Just True
     , buildSharedLibs = Just False

@@ -27,7 +27,7 @@ export { ParticleSpringSystem } from "./ParticleSpringSystem";
 export { GPUSpringSystem } from "./GPUSpringSystem";
 export type { Spring, SpringConstraint, SpringSystemConfig } from "./ParticleSpringSystem";
 
-// SPH Fluid system
+//                                                                  // sph // f
 export { ParticleSPHSystem } from "./ParticleSPHSystem";
 export { GPUSPHSystem } from "./GPUSPHSystem";
 export type { SPHConfig } from "./ParticleSPHSystem";

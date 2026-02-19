@@ -128,9 +128,9 @@ export abstract class BaseLayer implements LayerInstance {
   /** Flag to track if effects need processing */
   protected effectsDirty: boolean = false;
 
-  // ============================================================================
-  // MASK & MATTE SYSTEM
-  // ============================================================================
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  //                                                                      // mask
+  // ════════════════════════════════════════════════════════════════════════════
 
   /** Masks applied to this layer (vector cutouts) */
   protected masks: LayerMask[] = [];
@@ -155,9 +155,9 @@ export abstract class BaseLayer implements LayerInstance {
   /** Preserve transparency - only paint on existing pixels */
   protected preserveTransparency: boolean = false;
 
-  // ============================================================================
-  // MOTION PATH VISUALIZATION
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                           // motion // path // visualization
+  // ════════════════════════════════════════════════════════════════════════════
 
   /** Motion path line visualization */
   // Proper optional type - undefined when motion path not created
@@ -180,9 +180,9 @@ export abstract class BaseLayer implements LayerInstance {
   /** Whether 3D axis gizmo is visible */
   protected showAxisGizmo: boolean = false;
 
-  // ============================================================================
-  // MOTION BLUR
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                            // motion // blur
+  // ════════════════════════════════════════════════════════════════════════════
 
   /** Motion blur enabled (layer switch) */
   protected motionBlur: boolean = false;
@@ -294,9 +294,9 @@ export abstract class BaseLayer implements LayerInstance {
     }
   }
 
-  // ============================================================================
-  // OBJECT ACCESS
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                          // object // access
+  // ════════════════════════════════════════════════════════════════════════════
 
   /**
    * Get the Three.js object representing this layer
@@ -305,9 +305,9 @@ export abstract class BaseLayer implements LayerInstance {
     return this.group;
   }
 
-  // ============================================================================
-  // FRAME EVALUATION
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                       // frame // evaluation
+  // ════════════════════════════════════════════════════════════════════════════
 
   /**
    * Evaluate all animated properties at the given frame
@@ -619,9 +619,9 @@ export abstract class BaseLayer implements LayerInstance {
    */
   protected abstract onEvaluateFrame(frame: number): void;
 
-  // ============================================================================
-  // EVALUATED STATE APPLICATION (NEW - SINGLE SOURCE OF TRUTH)
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                         // evaluated // state // application
+  // ════════════════════════════════════════════════════════════════════════════
 
   /**
    * Apply pre-evaluated state from MotionEngine
@@ -738,13 +738,13 @@ export abstract class BaseLayer implements LayerInstance {
   ): void {
     // Default: fall back to legacy evaluation for backwards compatibility
     // Subclasses should override this to use evaluated state directly
-    // NOTE: This is a transitional measure - eventually all layers should
+    //                                                                      // note
     // implement proper onApplyEvaluatedState and not call onEvaluateFrame
   }
 
-  // ============================================================================
-  // PROPERTY UPDATES
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                       // property // updates
+  // ════════════════════════════════════════════════════════════════════════════
 
   /**
    * Update layer properties
@@ -843,9 +843,9 @@ export abstract class BaseLayer implements LayerInstance {
    */
   protected abstract onUpdate(properties: Partial<Layer>): void;
 
-  // ============================================================================
-  // VISIBILITY
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                // visibility
+  // ════════════════════════════════════════════════════════════════════════════
 
   /**
    * Set layer visibility
@@ -870,9 +870,9 @@ export abstract class BaseLayer implements LayerInstance {
     return this.layerData;
   }
 
-  // ============================================================================
-  // DRIVEN VALUES (Expressions/Links)
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                          // driven // values
+  // ════════════════════════════════════════════════════════════════════════════
 
   /**
    * Set driven values from property drivers
@@ -903,9 +903,9 @@ export abstract class BaseLayer implements LayerInstance {
     return Number.isFinite(baseValue) ? baseValue : 0;
   }
 
-  // ============================================================================
-  // AUDIO REACTIVE VALUES
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                               // audio // reactive // values
+  // ════════════════════════════════════════════════════════════════════════════
 
   /**
    * Set audio reactive values from audio analysis
@@ -979,9 +979,9 @@ export abstract class BaseLayer implements LayerInstance {
     return result;
   }
 
-  // ============================================================================
-  // EFFECTS
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                   // effects
+  // ════════════════════════════════════════════════════════════════════════════
 
   /**
    * Update the effects stack for this layer
@@ -1065,9 +1065,9 @@ export abstract class BaseLayer implements LayerInstance {
     return this.layerStyles;
   }
 
-  // ============================================================================
-  // VISUAL MODIFIERS (Color Adjustments + Blur)
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                       // visual // modifiers
+  // ════════════════════════════════════════════════════════════════════════════
 
   /**
    * Check if any visual audio modifiers are active (color or blur)
@@ -1236,7 +1236,7 @@ export abstract class BaseLayer implements LayerInstance {
         layerId: this.id,
       };
 
-      // STEP 1: Apply layer styles FIRST (before effects)
+      //                                                                 // step // 1
       // Layer styles include: drop shadow, stroke, glow, bevel/emboss, overlays
       let styledCanvas = sourceCanvas;
       if (hasStyles && typeof this.layerStyles === "object" && this.layerStyles !== null) {
@@ -1246,7 +1246,7 @@ export abstract class BaseLayer implements LayerInstance {
         styledCanvas = renderLayerStyles(sourceCanvas, this.layerStyles);
       }
 
-      // STEP 2: Apply effects on styled content
+      //                                                                 // step // 2
       // Pass audio modifiers for glow, glitch, RGB split intensity control
       let processedCanvas = styledCanvas;
       if (hasEffects) {
@@ -1262,7 +1262,7 @@ export abstract class BaseLayer implements LayerInstance {
         processedCanvas = result.canvas;
       }
 
-      // STEP 3: Apply audio-reactive color adjustments
+      //                                                                 // step // 3
       if (hasColorMods) {
         processedCanvas = this.applyColorAdjustments(processedCanvas);
       }
@@ -1331,9 +1331,9 @@ export abstract class BaseLayer implements LayerInstance {
     // Subclasses should override to update their material/texture
   }
 
-  // ============================================================================
-  // MOTION BLUR PROCESSING
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                              // motion // blur // processing
+  // ════════════════════════════════════════════════════════════════════════════
 
   /**
    * Check if motion blur should be applied
@@ -1564,9 +1564,9 @@ export abstract class BaseLayer implements LayerInstance {
     }
   }
 
-  // ============================================================================
-  // MASK PROCESSING
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                        // mask // processing
+  // ════════════════════════════════════════════════════════════════════════════
 
   /**
    * Check if this layer has any enabled masks
@@ -1793,9 +1793,9 @@ export abstract class BaseLayer implements LayerInstance {
     throw new Error(`[BaseLayer] evaluateEffects not implemented for layer type "${this.type}". Subclasses must override this method for custom effect handling`);
   }
 
-  // ============================================================================
-  // PARENTING
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                 // parenting
+  // ════════════════════════════════════════════════════════════════════════════
 
   /**
    * Set parent layer reference
@@ -1861,9 +1861,9 @@ export abstract class BaseLayer implements LayerInstance {
     this.compositionFps = Number.isFinite(fps) && fps > 0 ? fps : 16;
   }
 
-  // ============================================================================
-  // BLEND MODES
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                            // blend // modes
+  // ════════════════════════════════════════════════════════════════════════════
 
   /**
    * Apply blend mode to layer materials
@@ -1873,9 +1873,9 @@ export abstract class BaseLayer implements LayerInstance {
     applyBlendModeToGroup(this.group, mode);
   }
 
-  // ============================================================================
-  // MOTION PATH VISUALIZATION
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                           // motion // path // visualization
+  // ════════════════════════════════════════════════════════════════════════════
 
   /**
    * Compute motion path from position keyframes
@@ -2072,9 +2072,9 @@ export abstract class BaseLayer implements LayerInstance {
     return length > 0;
   }
 
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
   // 3D AXIS GIZMO
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
 
   /**
    * Create 3D axis gizmo at anchor point
@@ -2238,9 +2238,9 @@ export abstract class BaseLayer implements LayerInstance {
     axisGizmoTyped.position.set(-originVal.x, originVal.y, -z);
   }
 
-  // ============================================================================
-  // BOUNDS
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                    // bounds
+  // ════════════════════════════════════════════════════════════════════════════
 
   /**
    * Get the bounding box of this layer
@@ -2261,9 +2261,9 @@ export abstract class BaseLayer implements LayerInstance {
     return center;
   }
 
-  // ============================================================================
-  // DISPOSAL
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                  // disposal
+  // ════════════════════════════════════════════════════════════════════════════
 
   /**
    * Dispose layer resources

@@ -4,9 +4,9 @@
  * Extracted from project.ts for better modularity.
  */
 
-// ============================================================
-// ASSET TYPE DEFINITIONS
-// ============================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                              // asset // type // definitions
+// ════════════════════════════════════════════════════════════════════════════
 
 /** Asset types supported by the compositor */
 export type AssetType =
@@ -58,9 +58,9 @@ export interface ModelBoundingBox {
   size: { x: number; y: number; z: number };
 }
 
-// ============================================================
-// ASSET REFERENCE
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                        // asset // reference
+// ════════════════════════════════════════════════════════════════════════════
 
 export interface AssetReference {
   id: string;
@@ -107,11 +107,11 @@ export interface AssetReference {
     opacity?: string; // Asset ID for opacity map
   };
 
-  // HDRI metadata
+  //                                                                      // hdri
   hdriExposure?: number;
   hdriRotation?: number;
 
-  // SVG metadata (for extrusion)
+  //                                                                       // svg
   svgPaths?: number; // Number of paths in SVG
   svgViewBox?: { x: number; y: number; width: number; height: number };
 
@@ -130,9 +130,9 @@ export interface AssetReference {
   };
 }
 
-// ============================================================
-// DATA ASSET REFERENCE
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                // data // asset // reference
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Reference to a data asset (JSON, CSV, TSV) for expressions

@@ -20,9 +20,9 @@ import {
 } from "./export/wanMoveExport";
 import { exportATITrackCoordsJSON } from "./export/atiExport";
 
-// ============================================================================
-// CAMERA MATRIX EXPORT (camera-comfyUI compatible)
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                                // camera // matrix // export
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Camera pose as 4x4 transformation matrix
@@ -127,9 +127,9 @@ export function exportCameraTrajectory(
   };
 }
 
-// ============================================================================
-// TRAJECTORY EXPORT (Wan-Move / ATI compatible)
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                      // trajectory // export
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Point trajectory format for Wan-Move
@@ -383,9 +383,9 @@ export function extractSplineTrajectories(
 }
 
 
-// ============================================================================
-// TTM (Time-to-Move) EXPORT
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                                       // ttm
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Per-layer TTM export data
@@ -579,9 +579,9 @@ export function exportTTMLayer(
   };
 }
 
-// ============================================================================
-// LIGHT-X EXPORT
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                                     // light
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Light-X camera motion types
@@ -653,9 +653,9 @@ export function detectMotionStyle(cameras: Camera3D[]): LightXMotionStyle {
   return isSmooth ? "gradual" : "direct";
 }
 
-// ============================================================================
-// UNIFIED EXPORT FUNCTION
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                             // unified // export // function
+// ════════════════════════════════════════════════════════════════════════════
 
 export type ModelTarget =
   | "camera-comfyui"
@@ -686,7 +686,7 @@ export interface UnifiedExportOptions {
   // Extended callback for full 3D transform data (optional, for 3D exports)
   getTransformAtFrame?: (layer: Layer, frame: number) => TransformAtFrame;
 
-  // TTM-specific options (Time-to-Move)
+  //                                                                       // ttm
   ttmModel?: "wan" | "cogvideox" | "svd";
   ttmTweakIndex?: number; // Dual-clock denoising tweak parameter
   ttmTstrongIndex?: number; // Dual-clock denoising tstrong parameter
@@ -731,9 +731,9 @@ export interface UnifiedExportResult<T extends ModelTarget = ModelTarget> {
 export async function exportForModel(
   options: UnifiedExportOptions,
 ): Promise<UnifiedExportResult> {
-  // ============================================================================
-  // VALIDATION - Throw explicit errors for invalid inputs
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                // validation
+  // ════════════════════════════════════════════════════════════════════════════
   
   // Validate required inputs
   if (!options.layers || !Array.isArray(options.layers)) {
@@ -928,7 +928,7 @@ export async function exportForModel(
     }
 
     case "ttm": {
-      // MULTI-LAYER SUPPORT: Find ALL animated layers, not just the first
+      //                                                                     // multi
       const animatedLayers = layers.filter(
         (l) => l.transform.position.animated,
       );
@@ -1234,9 +1234,9 @@ export async function exportForModel(
   }
 }
 
-// ============================================================================
-// NPY BINARY EXPORT (for true Wan-Move compatibility)
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                   // npy // binary // export
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Create NPY file header for float32 array
@@ -1262,7 +1262,7 @@ export function createNpyHeader(
   const padLen = 64 - ((10 + headerBytes.length) % 64);
   const paddedHeader = `${headerStr + " ".repeat(padLen - 1)}\n`;
 
-  // NPY magic number + version
+  //                                                                       // npy
   const magic = new Uint8Array([
     0x93, 0x4e, 0x55, 0x4d, 0x50, 0x59, 0x01, 0x00,
   ]);

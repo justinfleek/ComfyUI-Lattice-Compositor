@@ -138,7 +138,7 @@ export async function evaluateWithTimeout(
 
   return new Promise((resolve) => {
     const timer = setTimeout(() => {
-      // TIMEOUT: Expression took too long (probably infinite loop)
+      //                                                                   // timeout
       pending.delete(id);
       console.warn("[WorkerEvaluator] Expression timeout - terminating worker");
 

@@ -17,7 +17,7 @@
 #
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 #
-# USAGE:
+#                                                                     // usage
 #
 #   # Basic: evaluate a typed package
 #   straylight.eval "Straylight.Packages.Nvidia.nccl" {}
@@ -30,7 +30,7 @@
 #   nvidia.nccl   # → derivation
 #   nvidia.cudnn  # → derivation
 #
-# SETUP:
+#                                                                     // setup
 #
 #   # In your flake:
 #   wasm-infra = import ./nix/prelude/wasm-plugin.nix { ... };

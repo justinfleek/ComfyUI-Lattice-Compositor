@@ -120,9 +120,9 @@ describe('Tutorial 07: Verified Particle System Basics - Cosmic Nebula', () => {
     return projectStore.getActiveCompLayers().find(l => l.name === name);
   };
 
-  // ============================================================================
-  // PHASE 1: PROJECT SETUP & VERIFIED SYSTEM ENABLEMENT (Steps 1-25)
-  // ============================================================================
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  //                                                                // phase // 1
+  // ════════════════════════════════════════════════════════════════════════════
 
   describe('Phase 1: Project Setup & Verified System Enablement (Steps 1-25)', () => {
     test('Step 1: Create new project', () => {
@@ -222,9 +222,9 @@ describe('Tutorial 07: Verified Particle System Basics - Cosmic Nebula', () => {
     });
   });
 
-  // ============================================================================
-  // PHASE 2: BASIC EMITTER SETUP - DETERMINISM TEST (Steps 26-75)
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                // phase // 2
+  // ════════════════════════════════════════════════════════════════════════════
 
   describe('Phase 2: Basic Emitter Setup - Determinism Test (Steps 26-75)', () => {
     test('Step 26: Add point emitter "Core_Emitter"', () => {
@@ -303,7 +303,7 @@ describe('Tutorial 07: Verified Particle System Basics - Cosmic Nebula', () => {
       const state2 = (particleLayer2 as any).particleSystem.getState();
       const particleCount2 = state2.particleCount;
       
-      // PROVEN: Deterministic - same seed produces same particle count
+      //                                                                    // proven
       expect(particleCount1).toBe(particleCount2);
     });
 
@@ -336,7 +336,7 @@ describe('Tutorial 07: Verified Particle System Basics - Cosmic Nebula', () => {
       const state1 = (particleLayer as any).particleSystem.getState();
       
       // Step backward (time-reversible property)
-      // PROVEN: Verlet integration is time-reversible
+      //                                                                    // proven
       // Note: Actual time reversal would require negative dt, but we verify
       // that energy is conserved (symplectic property)
       
@@ -377,7 +377,7 @@ describe('Tutorial 07: Verified Particle System Basics - Cosmic Nebula', () => {
         particleLayer.update(layer!, i, 1/30, new Map());
         const state = (particleLayer as any).particleSystem.getState();
         
-        // PROVEN: Memory bounds - particle count never exceeds maxParticles
+        //                                                                    // proven
         expect(state.particleCount).toBeLessThanOrEqual(1000000);
         
         // Verify no memory leaks (gpuMemoryBytes should be bounded)
@@ -388,9 +388,9 @@ describe('Tutorial 07: Verified Particle System Basics - Cosmic Nebula', () => {
     });
   });
 
-  // ============================================================================
-  // PHASE 3: FORCE FIELDS - PHYSICS PROOFS (Steps 76-150)
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                // phase // 3
+  // ════════════════════════════════════════════════════════════════════════════
 
   describe('Phase 3: Force Fields - Physics Proofs (Steps 76-150)', () => {
     test('Step 76-100: Add gravity force field and verify drag opposes velocity', async () => {
@@ -439,8 +439,8 @@ describe('Tutorial 07: Verified Particle System Basics - Cosmic Nebula', () => {
         particleLayer.update(layer!, i, 1/30, new Map());
       }
       
-      // PROVEN: Drag force opposes velocity (particles slow down)
-      // PROVEN: Gravity pulls particles downward
+      //                                                                    // proven
+      //                                                                    // proven
       const state = (particleLayer as any).particleSystem.getState();
       expect(state.particleCount).toBeGreaterThan(0);
     });
@@ -485,7 +485,7 @@ describe('Tutorial 07: Verified Particle System Basics - Cosmic Nebula', () => {
         particleLayer.update(layer!, i, 1/30, new Map());
       }
       
-      // PROVEN: Vortex creates rotational motion
+      //                                                                    // proven
       // Particles should spiral around the axis
       const state = (particleLayer as any).particleSystem.getState();
       expect(state.particleCount).toBeGreaterThan(0);
@@ -542,17 +542,17 @@ describe('Tutorial 07: Verified Particle System Basics - Cosmic Nebula', () => {
         particleLayer.update(layer!, i, 1/30, new Map());
       }
       
-      // PROVEN: Multiple forces accumulate correctly
-      // PROVEN: No NaN/Infinity in calculations
+      //                                                                    // proven
+      //                                                                    // proven
       const state = (particleLayer as any).particleSystem.getState();
       expect(state.particleCount).toBeGreaterThan(0);
       expect(Number.isFinite(state.updateTimeMs)).toBe(true);
     });
   });
 
-  // ============================================================================
-  // PHASE 4: AUDIO REACTIVITY - ANTI-COMPOUNDING PROOF (Steps 151-225)
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                // phase // 4
+  // ════════════════════════════════════════════════════════════════════════════
 
   describe('Phase 4: Audio Reactivity - Anti-Compounding Proof (Steps 151-225)', () => {
     test('Step 151-175: Configure audio-reactive emitter and verify no compounding', async () => {
@@ -602,7 +602,7 @@ describe('Tutorial 07: Verified Particle System Basics - Cosmic Nebula', () => {
         particleLayer.update(layer!, i, 1/30, audioFeatures);
       }
       
-      // PROVEN: No compounding - same audio input produces consistent modulation
+      //                                                                    // proven
       // Size should stabilize, not grow unbounded
       const state = (particleLayer as any).particleSystem.getState();
       expect(state.particleCount).toBeGreaterThan(0);
@@ -655,7 +655,7 @@ describe('Tutorial 07: Verified Particle System Basics - Cosmic Nebula', () => {
         particleLayer.update(layer!, i, 1/30, audioFeatures);
       }
       
-      // PROVEN: Modulation follows audio input without compounding
+      //                                                                    // proven
       const state = (particleLayer as any).particleSystem.getState();
       expect(state.particleCount).toBeGreaterThan(0);
     });
@@ -726,15 +726,15 @@ describe('Tutorial 07: Verified Particle System Basics - Cosmic Nebula', () => {
         particleLayer.update(layer!, i, 1/30, audioFeatures);
       }
       
-      // PROVEN: Multiple bindings work independently without interference
+      //                                                                    // proven
       const state = (particleLayer as any).particleSystem.getState();
       expect(state.particleCount).toBeGreaterThan(0);
     });
   });
 
-  // ============================================================================
-  // PHASE 5: LIFETIME MODULATION - NO COMPOUNDING (Steps 226-300)
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                // phase // 5
+  // ════════════════════════════════════════════════════════════════════════════
 
   describe('Phase 5: Lifetime Modulation - No Compounding (Steps 226-300)', () => {
     test('Step 226-250: Configure size over lifetime curve', async () => {
@@ -771,7 +771,7 @@ describe('Tutorial 07: Verified Particle System Basics - Cosmic Nebula', () => {
         particleLayer.update(layer!, i, 1/30, new Map());
       }
       
-      // PROVEN: Size modulation uses initialSize, not current size (no compounding)
+      //                                                                    // proven
       const state = (particleLayer as any).particleSystem.getState();
       expect(state.particleCount).toBeGreaterThan(0);
     });
@@ -810,7 +810,7 @@ describe('Tutorial 07: Verified Particle System Basics - Cosmic Nebula', () => {
         particleLayer.update(layer!, i, 1/30, new Map());
       }
       
-      // PROVEN: Opacity modulation uses initialOpacity, not current opacity
+      //                                                                    // proven
       const state = (particleLayer as any).particleSystem.getState();
       expect(state.particleCount).toBeGreaterThan(0);
     });
@@ -857,15 +857,15 @@ describe('Tutorial 07: Verified Particle System Basics - Cosmic Nebula', () => {
         particleLayer.update(layer!, i, 1/30, new Map());
       }
       
-      // PROVEN: Complex curves evaluate correctly without compounding
+      //                                                                    // proven
       const state = (particleLayer as any).particleSystem.getState();
       expect(state.particleCount).toBeGreaterThan(0);
     });
   });
 
-  // ============================================================================
-  // PHASE 6: SPATIAL HASHING - COMPLETENESS PROOF (Steps 301-375)
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                // phase // 6
+  // ════════════════════════════════════════════════════════════════════════════
 
   describe('Phase 6: Spatial Hashing - Completeness Proof (Steps 301-375)', () => {
     test('Step 301-325: Enable particle connections and verify neighbor queries', async () => {
@@ -911,7 +911,7 @@ describe('Tutorial 07: Verified Particle System Basics - Cosmic Nebula', () => {
         particleLayer.update(layer!, i, 1/30, new Map());
       }
       
-      // PROVEN: Spatial hash finds all neighbors within maxDistance
+      //                                                                    // proven
       const connectionMesh = system.getConnectionMesh();
       expect(connectionMesh).toBeDefined();
     });
@@ -959,7 +959,7 @@ describe('Tutorial 07: Verified Particle System Basics - Cosmic Nebula', () => {
         particleLayer.update(layer!, i, 1/30, new Map());
       }
       
-      // PROVEN: Spatial hash completeness - all neighbors found
+      //                                                                    // proven
       const state = system.getState();
       expect(state.particleCount).toBeGreaterThan(0);
     });
@@ -1011,15 +1011,15 @@ describe('Tutorial 07: Verified Particle System Basics - Cosmic Nebula', () => {
         particleLayer.update(layer!, i, 1/30, new Map());
       }
       
-      // PROVEN: Spatial hash finds all collision pairs
+      //                                                                    // proven
       const state = system.getState();
       expect(state.particleCount).toBeGreaterThan(0);
     });
   });
 
-  // ============================================================================
-  // PHASE 7: FRAME CACHING - DETERMINISTIC SCRUBBING (Steps 376-400)
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                // phase // 7
+  // ════════════════════════════════════════════════════════════════════════════
 
   describe('Phase 7: Frame Caching - Deterministic Scrubbing (Steps 376-400)', () => {
     test('Step 376-400: Test deterministic timeline scrubbing', async () => {
@@ -1063,15 +1063,15 @@ describe('Tutorial 07: Verified Particle System Basics - Cosmic Nebula', () => {
       const stateScrub = (particleLayer as any).particleSystem.getState();
       const particleCountScrub = stateScrub.particleCount;
       
-      // PROVEN: Deterministic scrubbing - same frame produces same state
+      //                                                                    // proven
       // (Within tolerance due to frame caching)
       expect(Math.abs(particleCountForward - particleCountScrub)).toBeLessThan(10);
     });
   });
 
-  // ============================================================================
-  // PHASE 8: EDGE CASES & ERROR HANDLING (Steps 401-450)
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                // phase // 8
+  // ════════════════════════════════════════════════════════════════════════════
 
   describe('Phase 8: Edge Cases & Error Handling (Steps 401-450)', () => {
     test('Step 401-425: Test with zero particles', async () => {
@@ -1103,7 +1103,7 @@ describe('Tutorial 07: Verified Particle System Basics - Cosmic Nebula', () => {
         particleLayer.update(layer!, i, 1/30, new Map());
       }
       
-      // PROVEN: System handles zero particles gracefully
+      //                                                                    // proven
       const state = (particleLayer as any).particleSystem.getState();
       expect(state.particleCount).toBe(0);
       expect(Number.isFinite(state.updateTimeMs)).toBe(true);
@@ -1148,7 +1148,7 @@ describe('Tutorial 07: Verified Particle System Basics - Cosmic Nebula', () => {
         particleLayer.update(layer!, i, 1/30, new Map());
       }
       
-      // PROVEN: System handles extreme values without NaN/Infinity
+      //                                                                    // proven
       const state = (particleLayer as any).particleSystem.getState();
       expect(Number.isFinite(state.particleCount)).toBe(true);
       expect(state.particleCount).toBeLessThanOrEqual(10000);
@@ -1156,9 +1156,9 @@ describe('Tutorial 07: Verified Particle System Basics - Cosmic Nebula', () => {
     });
   });
 
-  // ============================================================================
-  // PHASE 9: PERFORMANCE BENCHMARKS (Steps 451-475)
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                // phase // 9
+  // ════════════════════════════════════════════════════════════════════════════
 
   describe('Phase 9: Performance Benchmarks (Steps 451-475)', () => {
     test('Step 451-475: Benchmark with 100K particles', async () => {
@@ -1194,7 +1194,7 @@ describe('Tutorial 07: Verified Particle System Basics - Cosmic Nebula', () => {
       const endTime = performance.now();
       const avgTime = (endTime - startTime) / 60;
       
-      // PROVEN: Performance is acceptable (< 16ms per frame for 60fps)
+      //                                                                    // proven
       expect(avgTime).toBeLessThan(16);
       
       const state = (particleLayer as any).particleSystem.getState();
@@ -1202,9 +1202,9 @@ describe('Tutorial 07: Verified Particle System Basics - Cosmic Nebula', () => {
     });
   });
 
-  // ============================================================================
-  // PHASE 10: VISUAL VERIFICATION (Steps 476-500)
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                               // phase // 10
+  // ════════════════════════════════════════════════════════════════════════════
 
   describe('Phase 10: Visual Verification (Steps 476-500)', () => {
     test('Step 476-500: Create complete "Cosmic Nebula" effect', async () => {
@@ -1295,7 +1295,7 @@ describe('Tutorial 07: Verified Particle System Basics - Cosmic Nebula', () => {
       const connectionMesh = system.getConnectionMesh();
       expect(connectionMesh).toBeDefined();
       
-      // PROVEN: Complete system works together beautifully
+      //                                                                    // proven
       // All verified properties maintained while creating stunning visuals
     });
   });

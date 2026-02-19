@@ -796,7 +796,7 @@ interface Preferences {
     includeAlpha: boolean;
   };
 
-  // AI
+  //                                                                        // ai
   ai: {
     model: string;
     showToolCalls: boolean;

@@ -20,9 +20,9 @@ import { useAnimationStore } from "../animationStore";
 import { useKeyframeStore } from "./index";
 import { generateKeyframeId } from "@/utils/uuid5";
 
-// ============================================================================
-// KEYFRAME CLIPBOARD (COPY/PASTE)
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                                     // keyframe // clipboard
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Copy keyframes to clipboard.

@@ -48,7 +48,7 @@ test.describe("Tutorial 03: Mesh Deformation - Phases 11-13 (Steps 146-185)", ()
     await h.setExpression('loopOut("pingpong")');
     await h.closeExpressionEditor();
 
-    // UNDO/REDO
+    //                                                                      // undo
     await h.undo();
     await h.redo();
   });

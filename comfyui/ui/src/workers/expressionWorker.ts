@@ -10,7 +10,7 @@
  */
 
 // Worker-side SES initialization
-// SES types are declared in types/ses-ambient.d.ts
+//                                                                       // ses
 import type { SESCompartmentConstructor, HardenFunction } from "@/types/ses-ambient";
 
 let sesReady = false;
@@ -127,7 +127,7 @@ async function evaluate(req: EvalRequest): Promise<EvalResponse> {
       ...safeMath,
       random: seededRandom,
 
-      // SECURITY: Explicitly block dangerous intrinsics
+      //                                                                  // security
       // Even though SES sandboxes these, we block them for defense-in-depth
       Function: undefined,
       eval: undefined,

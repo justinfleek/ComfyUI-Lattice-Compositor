@@ -57,7 +57,7 @@ export class ParticleBuffer {
   readonly initialMass: Float32Array;
   
   // Random offset for deterministic modulation curves (4 bytes)
-  // PROVEN: Same particle ID + seed → same randomOffset
+  //                                                                    // proven
   // Used for "random" and "randomCurve" modulation types
   readonly randomOffset: Float32Array;
   
@@ -184,16 +184,16 @@ export class ParticleBuffer {
     this.colorB[i] = unit(b);
     this.colorA[i] = unit(a);
     
-    // CRITICAL: Store initial values for anti-compounding
+    //                                                                  // critical
     // Type proof: speed ∈ ℝ₀₊, size, mass ∈ ℝ₊
     const speed = Math.sqrt(vx*vx + vy*vy + vz*vz);
     this.initialSize[i] = pos(size);
     this.initialSpeed[i] = nneg(speed);
     this.initialMass[i] = pos(mass);
     
-    // CRITICAL: Store random offset for deterministic modulation curves
+    //                                                                  // critical
     // Type proof: randomOffset ∈ [0, 1] → UnitInterval
-    // PROVEN: Same particle ID + seed → same randomOffset (deterministic)
+    //                                                                    // proven
     this.randomOffset[i] = unit(randomOffset);
     
     // Emitter ID - Type proof: emitterId ∈ ℕ → UInt16

@@ -9,7 +9,7 @@ import { interpolateProperty } from '@/services/interpolation';
 describe('animation.ts edge cases - BUG FIXES VERIFIED', () => {
   describe('NaN frame handling - FIXED', () => {
     test('createKeyframe with NaN frame throws error', () => {
-      // BUG FIX: Now throws instead of silently creating invalid keyframe
+      //                                                                // bug // fix
       expect(() => createKeyframe(NaN, 100)).toThrow('Invalid keyframe frame');
     });
 

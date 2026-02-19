@@ -17,11 +17,11 @@
 #
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 #
-# FEATURE REQUIREMENTS:
+#                                                   // feature // requirements
 #   - Building WASM plugins: ghc-wasm-meta input (available)
 #   - Loading WASM plugins: builtins.wasm (requires straylight-nix)
 #
-# USAGE:
+#                                                                     // usage
 #   # From Nix, evaluate typed expressions:
 #   straylight.eval "Straylight.Packages.Nvidia.nccl" {}
 #   straylight.eval "Straylight.Build.withFlags" { pkg = myPkg; flags = ["-O3"]; }
@@ -87,7 +87,7 @@ let
       moduleFiles = map moduleToPath allModules;
 
       # Generate linker flags to export each function
-      # GHC WASM doesn't automatically export foreign export ccall symbols,
+      #                                                               // ghc // wasm
       # so we need to explicitly tell the linker to export them.
       exportFlags = map (e: "'-optl-Wl,--export=${e}'") exports;
     in
@@ -116,7 +116,7 @@ let
         # -optl-Wl,--export=<name>: Export our foreign export ccall functions
         # -O2: Optimize
         # 
-        # NOTE: We do NOT use -no-hs-main because:
+        #                                                                      // note
         # 1. GHC WASM reactor modules need the RTS initialization code that -no-hs-main excludes
         # 2. The _initialize export will call hs_init() when properly linked
         # 3. We export hs_init for explicit initialization by the host
@@ -170,7 +170,7 @@ let
       "Straylight.Nix.Packages.Spdlog"
       "Straylight.Nix.Packages.Catch2"
       "Straylight.Nix.Packages.AbseilCpp"
-      # NVIDIA SDK
+      #                                                             // nvidia // sdk
       "Straylight.Nix.Packages.Nvidia"
       # Test packages for typed actions
       "Straylight.Nix.Packages.Jq"
@@ -188,7 +188,7 @@ let
       "spdlog"
       "catch2"
       "abseil_cpp"
-      # NVIDIA SDK
+      #                                                             // nvidia // sdk
       "nvidia_nccl"
       "nvidia_cudnn"
       "nvidia_tensorrt"
@@ -616,7 +616,7 @@ let
   # 3. Resolves dependency names to actual packages
   # 4. Calls the appropriate builder (cmake, autotools, etc.)
   #
-  # FEATURE REQUIREMENT: builtins.wasm (straylight-nix)
+  #                                                    // feature // requirement
   #
   loadWasmPackages =
     {
@@ -689,13 +689,13 @@ in
     # Feature detection
     features
 
-    # WASM plugin building (requires ghc-wasm-meta)
+    #                                                                      // wasm
     buildWasmPlugin
 
     # The compiled straylight WASM module (internal)
     straylightWasm
 
-    # WASM plugin loading (requires straylight-nix with builtins.wasm)
+    #                                                                      // wasm
     buildFromSpec
     loadWasmPackages
 
@@ -704,7 +704,7 @@ in
     actionsToShell
     ;
 
-  # NOTE: The straylight interface (straylight.eval, straylight.import) is in ./straylight.nix
+  #                                                                      // note
   # Import it directly:
   #   straylight = import ./prelude/straylight.nix { inherit lib pkgs; wasmFile = ...; };
 }

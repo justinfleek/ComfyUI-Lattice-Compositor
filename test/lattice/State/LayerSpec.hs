@@ -56,9 +56,9 @@ import Lattice.Types.LayerDataSpline
   , AnimatableControlPoint(..)
   )
 
--- ============================================================================
--- TEST DATA HELPERS
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                   // test // data // helpers
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Create a simple test layer
 createTestLayer :: Text -> LayerType -> Layer
@@ -162,9 +162,9 @@ createTestSplineLayer layerId animated =
   in
     baseLayer { layerData = Just (LayerDataSpline splineData) }
 
--- ============================================================================
--- HIERARCHY QUERY TESTS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                               // hierarchy // query // tests
+-- ════════════════════════════════════════════════════════════════════════════
 
 spec :: TestTree
 spec = testGroup "Layer State Functions"

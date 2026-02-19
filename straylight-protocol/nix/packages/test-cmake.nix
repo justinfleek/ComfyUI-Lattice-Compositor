@@ -30,7 +30,7 @@ pkgs.stdenv.mkDerivation {
   # This demonstrates incremental adoption: one phase uses typed actions,
   # while the rest of the package remains traditional mkDerivation
   preConfigure = interpret [
-    # CMake configure with typed flags
+    #                                                                        // cm
     {
       action = "toolRun";
       pkg = "${pkgs.cmake}/bin/cmake";
@@ -45,7 +45,7 @@ pkgs.stdenv.mkDerivation {
   ];
 
   buildPhase = interpret [
-    # CMake build
+    #                                                                        // cm
     {
       action = "toolRun";
       pkg = "${pkgs.cmake}/bin/cmake";
@@ -54,7 +54,7 @@ pkgs.stdenv.mkDerivation {
   ];
 
   installPhase = interpret [
-    # CMake install
+    #                                                                        // cm
     {
       action = "toolRun";
       pkg = "${pkgs.cmake}/bin/cmake";

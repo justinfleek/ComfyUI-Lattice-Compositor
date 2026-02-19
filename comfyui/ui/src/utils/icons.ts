@@ -81,7 +81,7 @@ export const ICON_NAMES = {
   redo: "PhArrowClockwise",
   refresh: "PhArrowsClockwise",
 
-  // UI Elements
+  //                                                                   // ui // e
   gear: "PhGear",
   gearSix: "PhGearSix",
   sliders: "PhSliders",

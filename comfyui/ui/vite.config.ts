@@ -159,7 +159,7 @@ export default defineConfig({
       "/lattice": "http://localhost:8188",
       "/api": "http://localhost:8188",
     },
-    // SECURITY: Add security headers in development
+    //                                                                  // security
     headers: {
       "X-Content-Type-Options": "nosniff",
       "X-Frame-Options": "SAMEORIGIN",

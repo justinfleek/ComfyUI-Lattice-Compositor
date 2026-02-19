@@ -75,7 +75,7 @@ test.describe("Tutorial 03: Mesh Deformation - Phases 3-4 (Steps 23-50)", () => 
     await h.selectPin(0, 0);
     await h.movePinTo(0, 0, 980, 320);
 
-    // UNDO/REDO
+    //                                                                      // undo
     await h.undo();
     await h.redo();
   });

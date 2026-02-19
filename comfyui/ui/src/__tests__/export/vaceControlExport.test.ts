@@ -40,9 +40,9 @@ function makeControlPoint(x: number, y: number, opts?: {
 
 describe("PathFollower", () => {
   describe("Duration of 0 (BUG FIXED)", () => {
-    // BUG WAS: vaceControlExport.ts line 287
+    //                                                                // bug // was
     // When duration=0, rawProgress = localFrame / 0 = NaN
-    // FIX APPLIED: Added guard for duration <= 0 at line ~256
+    //                                                            // fix // applied
 
     it("should handle duration=0 without crashing", () => {
       const config = createPathFollower("test", [

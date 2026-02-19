@@ -63,7 +63,7 @@ const isBeat = computed(() => {
   return isBeatAtFrame(audioAnalysis.value, currentFrame.value);
 });
 
-// HPSS values
+//                                                                      // hpss
 // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ??/?.
 const harmonic = computed(() => {
   const analysis = audioAnalysis.value;

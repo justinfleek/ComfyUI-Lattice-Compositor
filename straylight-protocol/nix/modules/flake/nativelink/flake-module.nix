@@ -11,7 +11,7 @@
 # Deploy to Fly.io for cheap always-on RE, or vast.ai for GPU burst.
 # Images pushed via skopeo to ghcr.io - no Docker daemon required.
 #
-# NOTE: This module requires inputs.nix2gpu.flakeModule to be imported
+#                                                                      // note
 # separately (in _main.nix) to avoid infinite recursion.
 #
 { inputs }:
@@ -94,7 +94,7 @@ in
       }:
       let
         # Get nativelink binary from flake input
-        # NOTE: Use inputs.*.packages.${system} directly, NOT inputs'
+        #                                                                      // note
         # inputs' causes infinite recursion in flake-parts
         nativelink =
           inputs.nativelink.packages.${system}.default or inputs.nativelink.packages.${system}.nativelink
@@ -624,7 +624,7 @@ in
             };
           };
 
-          # CAS container (content-addressed storage with LZ4 compression)
+          #                                                                       // cas
           nativelink-cas = {
             systemPackages = [
               nativelink

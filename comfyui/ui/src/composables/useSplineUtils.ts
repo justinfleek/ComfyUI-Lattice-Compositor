@@ -7,9 +7,9 @@
 
 import type { ControlPoint, EvaluatedControlPoint } from "@/types/project";
 
-// ============================================================
-// BEZIER CURVE EVALUATION
-// ============================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                             // bezier // curve // evaluation
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Evaluate a cubic bezier curve at parameter t
@@ -105,9 +105,9 @@ export function bezierArcLength(
   return length;
 }
 
-// ============================================================
-// PATH OPERATIONS
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                        // path // operations
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Find the closest point on a bezier path to a given position
@@ -232,9 +232,9 @@ export function findPointAtPosition<
   );
 }
 
-// ============================================================
-// SVG PATH GENERATION
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                 // svg // path // generation
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Generate SVG path data for a spline
@@ -310,9 +310,9 @@ export function generateCurvePreview(
   return `M ${prevPoint.x},${prevPoint.y} C ${h1x},${h1y} ${h2x},${h2y} ${newPoint.x},${newPoint.y}`;
 }
 
-// ============================================================
-// COORDINATE TRANSFORMATION
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                              // coordinate // transformation
+// ════════════════════════════════════════════════════════════════════════════
 
 export interface LayerTransformValues {
   position: { x: number; y: number };
@@ -391,9 +391,9 @@ export function transformPointToLayer(
   };
 }
 
-// ============================================================
-// PATH SMOOTHING
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                         // path // smoothing
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Smooth control point handles to create a more natural curve
@@ -524,9 +524,9 @@ function perpendicularDistance(
   return Math.sqrt((point.x - projX) ** 2 + (point.y - projY) ** 2);
 }
 
-// ============================================================
-// COMPOSABLE EXPORT
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                      // composable // export
+// ════════════════════════════════════════════════════════════════════════════
 
 export function useSplineUtils() {
   return {
@@ -539,7 +539,7 @@ export function useSplineUtils() {
     findClosestPointOnPath,
     findPointAtPosition,
 
-    // SVG generation
+    //                                                                       // svg
     generateSplinePath,
     generateCurvePreview,
 

@@ -39,9 +39,9 @@ import qualified Data.Vector as V
 import System.Environment (getArgs)
 import Prelude hiding (FilePath, lines, unlines, unwords, words)
 
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 -- Data Types
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Version info extracted from container
 data NvidiaVersions = NvidiaVersions
@@ -68,9 +68,9 @@ data ExtractionMode
     | ShowHelp
     deriving (Show)
 
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 -- Main
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 main :: IO ()
 main = do
@@ -124,9 +124,9 @@ printHelp = do
     putStrLn "  nvidia-sdk-extract tritonserver nvcr.io/nvidia/tritonserver:25.11-py3 ./triton"
     putStrLn "  nvidia-sdk-extract installer cuda_13.0.2_580.95.05_linux.run ./cuda"
 
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 -- Container Extraction (CUDA, cuDNN, NCCL, TensorRT)
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Target libraries to extract from container
 targetLibs :: [Text]
@@ -242,9 +242,9 @@ extractTrtLlmBackend containerRoot outputDir = do
         mkdirP (outputDir </> "backends")
         copyDir trtLlmDir (outputDir </> "backends/tensorrtllm")
 
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 -- Tarball Extraction
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 extractFromTarball :: Text -> FilePath -> Int -> Sh ()
 extractFromTarball url outputDir stripComponents = do
@@ -285,9 +285,9 @@ extractFromTarball url outputDir stripComponents = do
 
         echoErr $ ":: Done! Extracted to " <> toTextIgnore outputDir
 
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 -- Installer Extraction (FHS Sandbox via Bwrap)
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Run CUDA .run installer in an FHS sandbox using typed Bwrap
 extractFromInstaller :: Text -> FilePath -> Sh ()
@@ -318,7 +318,7 @@ extractFromInstaller installerPath outputDir = do
                 -- Bind installer and output (read-write)
                 & Bwrap.roBind (unpack installerPath) "/installer.run"
                 & Bwrap.bind absOutputDir "/output"
-                -- FHS paths that installer expects
+                --                                                                       // fhs
                 & Bwrap.dir "/usr"
                 & Bwrap.dir "/usr/bin"
                 & Bwrap.dir "/usr/lib"
@@ -363,9 +363,9 @@ extractFromInstaller installerPath outputDir = do
 
     echoErr $ ":: Done! CUDA toolkit extracted to " <> toTextIgnore outputDir
 
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 -- Tritonserver Extraction
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 extractTritonserver :: Text -> FilePath -> Sh ()
 extractTritonserver imageRef outputDir = do
@@ -456,9 +456,9 @@ copyPythonPackages containerRoot outputDir = do
         when exists $ do
             copyDirContents pyDir outputDir
 
--- ============================================================================
--- NCCL Extraction
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                                 // nccl // e
+-- ════════════════════════════════════════════════════════════════════════════
 
 extractNccl :: Text -> FilePath -> Sh ()
 extractNccl imageRef outputDir = do
@@ -506,9 +506,9 @@ extractNccl imageRef outputDir = do
 
     echoErr $ ":: Done! NCCL extracted to " <> toTextIgnore outputDir
 
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 -- Helper Functions
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Get version info from container config using typed Crane wrapper
 getContainerVersions :: Text -> Sh NvidiaVersions

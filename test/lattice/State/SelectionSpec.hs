@@ -33,18 +33,18 @@ import Lattice.State.Selection
   , ControlPointSelection(..)
   )
 
--- ============================================================================
--- TEST DATA HELPERS
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                   // test // data // helpers
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Create test control point selection
 createTestControlPointSelection :: Text -> Int -> Maybe Text -> ControlPointSelection
 createTestControlPointSelection layerId pointIndex mGroupId =
   ControlPointSelection layerId pointIndex mGroupId
 
--- ============================================================================
--- TESTS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                                     // tests
+-- ════════════════════════════════════════════════════════════════════════════
 
 spec :: TestTree
 spec = testGroup "Selection State Functions"

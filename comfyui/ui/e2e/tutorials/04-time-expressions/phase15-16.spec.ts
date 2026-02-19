@@ -82,7 +82,7 @@ test.describe("Tutorial 04: Expressions - Phases 15-16 (Steps 338-385)", () => {
     `,
     );
 
-    // UNDO/REDO
+    //                                                                      // undo
     await h.undo();
     await h.redo();
   });

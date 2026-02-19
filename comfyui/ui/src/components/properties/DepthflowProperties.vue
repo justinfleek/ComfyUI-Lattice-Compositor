@@ -536,7 +536,7 @@ const isPreviewPlaying = ref(false);
 const previewFrame = ref(0);
 const previewAnimationId = ref<number | null>(null);
 
-// UI State
+//                                                                   // ui // s
 const expandedSections = ref(new Set(["source", "preset", "camera"]));
 const presetIntensity = ref(1.0);
 const previewSize = 200;

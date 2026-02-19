@@ -70,7 +70,7 @@ test.describe("Tutorial 04: Time Remapping - Phases 3-4 (Steps 43-82)", () => {
     await h.setSpeedMapValue(0, 120);
     // 60 comp frames show 120 source frames = 200% speed
 
-    // UNDO/REDO
+    //                                                                      // undo
     await h.undo();
     await h.redo();
   });

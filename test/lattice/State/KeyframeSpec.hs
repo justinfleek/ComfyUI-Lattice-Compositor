@@ -25,9 +25,9 @@ import Lattice.State.Keyframe
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit (testCase, assertEqual, assertBool)
 
--- ============================================================================
--- TEST HELPERS
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                           // test // helpers
+-- ════════════════════════════════════════════════════════════════════════════
 
 createTestKeyframe :: Int -> Value -> Keyframe Value
 createTestKeyframe frame value = Keyframe "kf1" frame value
@@ -41,9 +41,9 @@ createTestTransform mSepDims = LayerTransform Nothing Nothing Nothing Nothing No
 createTestLayer :: Text -> LayerTransform -> Maybe (AnimatableProperty Value) -> [AnimatableProperty Value] -> Layer
 createTestLayer id_ transform opacity properties = Layer id_ transform opacity properties
 
--- ============================================================================
--- TEST SUITE
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                             // test // suite
+-- ════════════════════════════════════════════════════════════════════════════
 
 spec :: TestTree
 spec =

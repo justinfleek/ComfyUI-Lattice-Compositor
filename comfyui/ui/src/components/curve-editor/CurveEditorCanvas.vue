@@ -152,7 +152,7 @@ import { useKeyframeStore } from "@/stores/keyframeStore";
 import type { Keyframe, PropertyValue } from "@/types/project";
 
 // ═══════════════════════════════════════════════════════════════════
-// CONSTANTS - Curve Colors
+//                                                                 // constants
 // ═══════════════════════════════════════════════════════════════════
 
 const CURVE_COLORS: Record<string, string> = {
@@ -168,7 +168,7 @@ const CURVE_COLORS: Record<string, string> = {
 };
 
 // ═══════════════════════════════════════════════════════════════════
-// TYPES
+//                                                                     // types
 // ═══════════════════════════════════════════════════════════════════
 
 interface CurveData {
@@ -181,7 +181,7 @@ interface CurveData {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// PROPS & EMITS
+//                                                                     // props
 // ═══════════════════════════════════════════════════════════════════
 
 const props = defineProps<{
@@ -201,7 +201,7 @@ const selectionStore = useSelectionStore();
 const keyframeStore = useKeyframeStore();
 
 // ═══════════════════════════════════════════════════════════════════
-// REFS
+//                                                                      // refs
 // ═══════════════════════════════════════════════════════════════════
 
 const containerRef = ref<HTMLDivElement | null>(null);
@@ -209,14 +209,14 @@ const canvasAreaRef = ref<HTMLDivElement | null>(null);
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 
 // ═══════════════════════════════════════════════════════════════════
-// VIEWPORT STATE (Zoom & Pan)
+//                                                         // viewport // state
 // ═══════════════════════════════════════════════════════════════════
 
 const zoomLevel = ref(5.0); // Pixels per frame
 const scrollOffset = ref(0); // Frame at left edge
 
 // ═══════════════════════════════════════════════════════════════════
-// COORDINATE TRANSFORMS
+//                                                  // coordinate // transforms
 // ═══════════════════════════════════════════════════════════════════
 
 function frameToPixel(frame: number): number {
@@ -240,19 +240,19 @@ function pixelToValue(pixel: number, height: number): number {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// COMPUTED - Selection
+//                                                                  // computed
 // ═══════════════════════════════════════════════════════════════════
 
 const selectedKeyframeIds = computed(() => selectionStore.selectedKeyframeIds);
 
 // ═══════════════════════════════════════════════════════════════════
-// COMPUTED - Playhead Position
+//                                                                  // computed
 // ═══════════════════════════════════════════════════════════════════
 
 const playheadPx = computed(() => frameToPixel(props.currentFrame));
 
 // ═══════════════════════════════════════════════════════════════════
-// COMPUTED - Collect All Curves (with Separated Dimensions)
+//                                                                  // computed
 // ═══════════════════════════════════════════════════════════════════
 
 const allCurves = computed<CurveData[]>(() => {
@@ -361,7 +361,7 @@ const visibleCurves = computed(() => {
 });
 
 // ═══════════════════════════════════════════════════════════════════
-// COMPUTED - Value Range (Auto-scale Y axis)
+//                                                                  // computed
 // ═══════════════════════════════════════════════════════════════════
 
 const valueRange = computed(() => {
@@ -398,7 +398,7 @@ const valueRange = computed(() => {
 });
 
 // ═══════════════════════════════════════════════════════════════════
-// COMPUTED - Y-Axis Labels & Units
+//                                                                  // computed
 // ═══════════════════════════════════════════════════════════════════
 
 const yAxisUnit = computed(() => {
@@ -438,7 +438,7 @@ const yAxisLabels = computed(() => {
 });
 
 // ═══════════════════════════════════════════════════════════════════
-// COMPUTED - Selected Keyframe Data for Value Editing
+//                                                                  // computed
 // ═══════════════════════════════════════════════════════════════════
 
 interface SelectedKeyframeInfo {
@@ -537,7 +537,7 @@ function updateSelectedKeyframeValue(e: Event) {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// SPEED GRAPH MATH - Calculate derivative
+//                                                    // speed // graph // math
 // ═══════════════════════════════════════════════════════════════════
 
 function calculateSpeedAtFrame(curve: CurveData, frame: number): number {
@@ -623,7 +623,7 @@ function cubicBezierValue(
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// DRAWING
+//                                                                   // drawing
 // ═══════════════════════════════════════════════════════════════════
 
 function draw() {
@@ -756,7 +756,7 @@ function drawValueCurve(
   }
 }
 
-// SPEED GRAPH - The "Bell Curve" (derivative visualization)
+//                                                            // speed // graph
 function drawSpeedCurve(
   ctx: CanvasRenderingContext2D,
   curve: CurveData,
@@ -788,7 +788,7 @@ function drawSpeedCurve(
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// POSITIONING HELPERS
+//                                                    // positioning // helpers
 // ═══════════════════════════════════════════════════════════════════
 
 function getKeyframeStyle(_curve: CurveData, kf: Keyframe<PropertyValue>) {
@@ -863,7 +863,7 @@ function isEasingInterpolation(interpolation: string): boolean {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// ZOOM & PAN CONTROLS
+//                                                                      // zoom
 // ═══════════════════════════════════════════════════════════════════
 
 function handleWheel(event: WheelEvent) {
@@ -903,7 +903,7 @@ function setGraphMode(mode: "value" | "speed") {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// INTERACTION - Dragging
+//                                                               // interaction
 // ═══════════════════════════════════════════════════════════════════
 
 let isDragging = false;
@@ -1022,7 +1022,7 @@ function selectKeyframe(id: string, event: MouseEvent) {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// LIFECYCLE
+//                                                                 // lifecycle
 // ═══════════════════════════════════════════════════════════════════
 
 watch(

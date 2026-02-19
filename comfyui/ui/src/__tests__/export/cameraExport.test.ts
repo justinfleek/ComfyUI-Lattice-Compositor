@@ -218,7 +218,7 @@ describe("exportToAEScript fps parameter (BUG FIXED)", () => {
     
     expect(script).toContain("Depth of Field");
     expect(script).toContain("500"); // focusDistance
-    // NOTE: AE's "ADBE Camera Aperture" uses pixels, not f-stop
+    //                                                                      // note
     // The implementation outputs depthOfField.aperture (50) not fStop (2.8)
     expect(script).toContain("50"); // aperture in pixels (not fStop)
   });

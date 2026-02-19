@@ -21,9 +21,9 @@ import { useProjectStore } from "@/stores/projectStore";
 import { logAuditEntry } from "../../security/auditLog";
 import { uuid5, UUID5_NAMESPACES } from "@/utils/uuid5";
 
-// ============================================================================
-// TYPES
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                                                     // types
+// ════════════════════════════════════════════════════════════════════════════
 
 export interface SandboxState {
   /** Unique sandbox ID */
@@ -77,9 +77,9 @@ export interface SandboxDiff {
   }>;
 }
 
-// ============================================================================
-// SANDBOX MANAGER
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                        // sandbox // manager
+// ════════════════════════════════════════════════════════════════════════════
 
 class AgentSandbox {
   private sandboxes: Map<string, SandboxState> = new Map();
@@ -221,7 +221,7 @@ class AgentSandbox {
       }
     }
 
-    // TODO: Deep diff for property changes (simplified for now)
+    //                                                                      // todo
     const propertiesChanged: SandboxDiff["propertiesChanged"] = [];
 
     return {
@@ -353,8 +353,8 @@ class AgentSandbox {
   }
 }
 
-// ============================================================================
-// SINGLETON EXPORT
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                       // singleton // export
+// ════════════════════════════════════════════════════════════════════════════
 
 export const agentSandbox = new AgentSandbox();

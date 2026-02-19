@@ -58,9 +58,9 @@ describe('Tutorial 10: Deterministic Scrubbing - Time Travel Particles', () => {
     vi.clearAllMocks();
   });
 
-  // ============================================================================
-  // PHASE 1: BASIC SCRUBBING TEST (Steps 1-50)
-  // ============================================================================
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  //                                                                // phase // 1
+  // ════════════════════════════════════════════════════════════════════════════
 
   describe('Phase 1: Basic Scrubbing Test (Steps 1-50)', () => {
     test('Step 1-25: Forward scrubbing produces consistent results', async () => {
@@ -104,7 +104,7 @@ describe('Tutorial 10: Deterministic Scrubbing - Time Travel Particles', () => {
       const state2 = (particleLayer as any).particleSystem.getState();
       const count2 = state2.particleCount;
 
-      // PROVEN: Forward scrubbing is deterministic
+      //                                                                    // proven
       expect(count1).toBe(count2);
     });
 
@@ -146,15 +146,15 @@ describe('Tutorial 10: Deterministic Scrubbing - Time Travel Particles', () => {
       const stateBackward = (particleLayer as any).particleSystem.getState();
       const countBackward = stateBackward.particleCount;
 
-      // PROVEN: Backward scrubbing restores correct state
+      //                                                                    // proven
       // Frame 0 should have fewer particles than frame 150
       expect(countBackward).toBeLessThan(countForward);
     });
   });
 
-  // ============================================================================
-  // PHASE 2: FRAME CACHE VERIFICATION (Steps 51-100)
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                // phase // 2
+  // ════════════════════════════════════════════════════════════════════════════
 
   describe('Phase 2: Frame Cache Verification (Steps 51-100)', () => {
     test('Step 51-75: Verify frames are cached at intervals', async () => {
@@ -190,7 +190,7 @@ describe('Tutorial 10: Deterministic Scrubbing - Time Travel Particles', () => {
         particleLayer.update(layer!, i, 1/30, new Map());
       }
 
-      // PROVEN: Frame cache stores snapshots at intervals
+      //                                                                    // proven
       // Cache stats should show cached frames
       const cacheStats = system.getCacheStats();
       expect(cacheStats).toBeDefined();
@@ -235,15 +235,15 @@ describe('Tutorial 10: Deterministic Scrubbing - Time Travel Particles', () => {
       particleLayer.update(layer!, 100, 1/30, new Map());
       const state2 = system.getState();
 
-      // PROVEN: Cache hit restores state quickly
+      //                                                                    // proven
       // State should be restored from cache (may not match exactly due to cache intervals)
       expect(state2.particleCount).toBeGreaterThan(0);
     });
   });
 
-  // ============================================================================
-  // PHASE 3: RANDOM SCRUBBING (Steps 101-150)
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                // phase // 3
+  // ════════════════════════════════════════════════════════════════════════════
 
   describe('Phase 3: Random Scrubbing (Steps 101-150)', () => {
     test('Step 101-125: Random frame jumps maintain determinism', async () => {
@@ -284,7 +284,7 @@ describe('Tutorial 10: Deterministic Scrubbing - Time Travel Particles', () => {
         states.push(state.particleCount);
       }
 
-      // PROVEN: Random scrubbing produces consistent results
+      //                                                                    // proven
       // Each frame should have a consistent particle count
       expect(states.length).toBe(frames.length);
       expect(states.every(count => count >= 0)).toBe(true);
@@ -326,7 +326,7 @@ describe('Tutorial 10: Deterministic Scrubbing - Time Travel Particles', () => {
         counts.push(state.particleCount);
       }
 
-      // PROVEN: Same frame produces same state
+      //                                                                    // proven
       // All counts should be the same (or very close due to cache intervals)
       const firstCount = counts[0];
       const allSame = counts.every(count => Math.abs(count - firstCount) < 10);
@@ -334,9 +334,9 @@ describe('Tutorial 10: Deterministic Scrubbing - Time Travel Particles', () => {
     });
   });
 
-  // ============================================================================
-  // PHASE 4: CACHE EFFICIENCY (Steps 151-200)
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                // phase // 4
+  // ════════════════════════════════════════════════════════════════════════════
 
   describe('Phase 4: Cache Efficiency (Steps 151-200)', () => {
     test('Step 151-175: Verify cache doesn\'t grow unbounded', async () => {
@@ -372,7 +372,7 @@ describe('Tutorial 10: Deterministic Scrubbing - Time Travel Particles', () => {
         particleLayer.update(layer!, i, 1/30, new Map());
       }
 
-      // PROVEN: Cache has bounded size (scrub_bounded theorem)
+      //                                                                    // proven
       const cacheStats = system.getCacheStats();
       expect(cacheStats.cachedFrames).toBeLessThan(100); // Cache should be bounded
     });
@@ -419,14 +419,14 @@ describe('Tutorial 10: Deterministic Scrubbing - Time Travel Particles', () => {
       const endTime = performance.now();
       const avgTime = (endTime - startTime) / 100;
 
-      // PROVEN: Cache lookup is fast (O(1) or O(log n))
+      //                                                                    // proven
       expect(avgTime).toBeLessThan(5); // Should be very fast
     });
   });
 
-  // ============================================================================
-  // PHASE 5: COMPLEX SCRUBBING SCENARIOS (Steps 201-250)
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                // phase // 5
+  // ════════════════════════════════════════════════════════════════════════════
 
   describe('Phase 5: Complex Scrubbing Scenarios (Steps 201-250)', () => {
     test('Step 201-225: Test scrubbing with audio reactivity', async () => {
@@ -485,7 +485,7 @@ describe('Tutorial 10: Deterministic Scrubbing - Time Travel Particles', () => {
       }
       const state2 = system.getState();
 
-      // PROVEN: Scrubbing with audio reactivity is deterministic
+      //                                                                    // proven
       expect(Math.abs(state1.particleCount - state2.particleCount)).toBeLessThan(10);
     });
 
@@ -541,14 +541,14 @@ describe('Tutorial 10: Deterministic Scrubbing - Time Travel Particles', () => {
       }
       const state2 = system.getState();
 
-      // PROVEN: Scrubbing with force fields is deterministic
+      //                                                                    // proven
       expect(Math.abs(state1.particleCount - state2.particleCount)).toBeLessThan(10);
     });
   });
 
-  // ============================================================================
-  // PHASE 6: COMPLETE TIME TRAVEL EFFECT (Steps 251-300)
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                // phase // 6
+  // ════════════════════════════════════════════════════════════════════════════
 
   describe('Phase 6: Complete Time Travel Effect (Steps 251-300)', () => {
     test('Step 251-300: Create complete time travel particle visualization', async () => {
@@ -631,7 +631,7 @@ describe('Tutorial 10: Deterministic Scrubbing - Time Travel Particles', () => {
       const cacheStats = system.getCacheStats();
       expect(cacheStats.cachedFrames).toBeGreaterThan(0);
 
-      // PROVEN: Complete time travel effect works perfectly
+      //                                                                    // proven
       // Deterministic scrubbing maintains correctness
       // Frame caching provides efficient playback control
     });

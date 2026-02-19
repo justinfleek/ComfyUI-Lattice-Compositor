@@ -12,9 +12,9 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
-// ============================================================================
-// OPACITY RANGE CONTRACT: Internal (0-100) vs Canvas (0-1)
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                              // opacity // range // contract
+// ════════════════════════════════════════════════════════════════════════════
 
 describe("Opacity Range Contracts", () => {
   /**
@@ -89,9 +89,9 @@ describe("Opacity Range Contracts", () => {
   });
 });
 
-// ============================================================================
-// VACE CONTROL EXPORT OPACITY TESTS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                             // vace // control // export // opacity // tests
+// ════════════════════════════════════════════════════════════════════════════
 
 describe("VACE Control Export Opacity", () => {
   /**
@@ -138,10 +138,10 @@ describe("VACE Control Export Opacity", () => {
     it("should NOT apply opacity directly (BUG prevention)", () => {
       const state = { opacity: 50, visible: true };
 
-      // BUG: This is WRONG - would make element nearly invisible
+      //                                                                       // bug
       // mockCtx.globalAlpha = state.opacity; // 50 > 1, but canvas clamps to 1
 
-      // CORRECT: Divide by 100
+      //                                                                   // correct
       mockCtx.globalAlpha = state.opacity / 100;
 
       // The bug would have resulted in globalAlpha = 1 (clamped from 50)
@@ -173,9 +173,9 @@ describe("VACE Control Export Opacity", () => {
   });
 });
 
-// ============================================================================
-// LAYER OPACITY HANDLING
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                              // layer // opacity // handling
+// ════════════════════════════════════════════════════════════════════════════
 
 describe("Layer Opacity Handling", () => {
   /**
@@ -237,9 +237,9 @@ describe("Layer Opacity Handling", () => {
   });
 });
 
-// ============================================================================
-// VISIBILITY AND OPACITY INTERACTION
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                               // visibility // and // opacity // interaction
+// ════════════════════════════════════════════════════════════════════════════
 
 describe("Visibility and Opacity Interaction", () => {
   /**
@@ -293,9 +293,9 @@ describe("Visibility and Opacity Interaction", () => {
   });
 });
 
-// ============================================================================
-// REGRESSION PREVENTION
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                  // regression // prevention
+// ════════════════════════════════════════════════════════════════════════════
 
 describe("Opacity Bug Regression Prevention", () => {
   /**

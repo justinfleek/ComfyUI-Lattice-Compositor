@@ -9,9 +9,9 @@ import type { BezierHandle, InterpolationType } from "@/types/project";
 import { findPropertyByPath } from "./helpers";
 import { useProjectStore } from "../projectStore";
 
-// ============================================================================
-// KEYFRAME INTERPOLATION
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                                 // keyframe // interpolation
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Set keyframe interpolation type.
@@ -99,9 +99,9 @@ export function setKeyframeControlMode(
   projectStore.pushHistory();
 }
 
-// ============================================================================
-// HANDLE WITH CONTROL MODE (BREAK HANDLES)
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                         // handle // with // control // mode
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Set keyframe bezier handle with control mode awareness.

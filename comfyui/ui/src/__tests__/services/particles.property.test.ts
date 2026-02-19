@@ -16,9 +16,9 @@ import { SeededRandom } from '@/services/particles/SeededRandom';
 import { ParticleSystem, createDefaultSystemConfig, createDefaultEmitterConfig } from '@/services/particleSystem';
 import type { ParticleSystemConfig, EmitterConfig } from '@/services/particleSystem';
 
-// ============================================================================
-// STRICT SEEDED RANDOM TESTS
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                       // strict // seeded // random // tests
+// ════════════════════════════════════════════════════════════════════════════
 
 describe('STRICT: SeededRandom Determinism', () => {
   test.prop([
@@ -145,9 +145,9 @@ describe('STRICT: SeededRandom Determinism', () => {
   });
 });
 
-// ============================================================================
-// STRICT PARTICLE SYSTEM DETERMINISM TESTS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                      // strict // particle // system // determinism // tests
+// ════════════════════════════════════════════════════════════════════════════
 
 describe('STRICT: Particle System Determinism', () => {
   test.prop([
@@ -276,9 +276,9 @@ describe('STRICT: Particle System Determinism', () => {
   });
 });
 
-// ============================================================================
-// STRICT SCRUB DETERMINISM TESTS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                   // strict // scrub // determinism // tests
+// ════════════════════════════════════════════════════════════════════════════
 
 describe('STRICT: Scrub Determinism', () => {
   test.prop([
@@ -379,9 +379,9 @@ describe('STRICT: Scrub Determinism', () => {
   });
 });
 
-// ============================================================================
-// STRICT PHYSICS TESTS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                // strict // physics // tests
+// ════════════════════════════════════════════════════════════════════════════
 
 describe('STRICT: Particle Physics', () => {
   test.prop([
@@ -500,9 +500,9 @@ describe('STRICT: Particle Physics', () => {
   });
 });
 
-// ============================================================================
-// STRESS TESTS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                           // stress // tests
+// ════════════════════════════════════════════════════════════════════════════
 
 describe('STRESS: Particle System Under Load', () => {
   test.prop([
@@ -542,13 +542,13 @@ describe('STRESS: Particle System Under Load', () => {
   });
 });
 
-// ============================================================================
-// BUG REGRESSION TESTS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                // bug // regression // tests
+// ════════════════════════════════════════════════════════════════════════════
 
-// ============================================================================
-// REAL PRODUCTION TESTS - Test invariants, not just bug fixes
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                               // real // production // tests
+// ════════════════════════════════════════════════════════════════════════════
 
 describe('INVARIANT: spriteIndex always valid', () => {
   // The invariant: for ANY configuration, spriteIndex must be 0 ≤ x < totalFrames
@@ -592,7 +592,7 @@ describe('INVARIANT: spriteIndex always valid', () => {
     for (let i = 0; i < steps; i++) {
       system.step(1/30);
 
-      // THE INVARIANT: spriteIndex is always valid
+      //                                                          // the // invariant
       for (const p of system.getParticles()) {
         expect(Number.isFinite(p.spriteIndex)).toBe(true);
         expect(p.spriteIndex).toBeGreaterThanOrEqual(0);
@@ -650,7 +650,7 @@ describe('INVARIANT: Scrubbing produces identical results', () => {
     }
     const state2 = system2.getParticles().map(p => ({ x: p.x, y: p.y, vx: p.vx, vy: p.vy }));
 
-    // THE INVARIANT: States must be identical
+    //                                                          // the // invariant
     expect(state1.length).toBe(state2.length);
     for (let i = 0; i < state1.length; i++) {
       expect(state1[i].x).toBe(state2[i].x);
@@ -688,7 +688,7 @@ describe('INVARIANT: Particles never have NaN/Infinity', () => {
     for (let i = 0; i < steps; i++) {
       system.step(1/30);
 
-      // THE INVARIANT: All particle values must be finite
+      //                                                          // the // invariant
       for (const p of system.getParticles()) {
         expect(Number.isFinite(p.x)).toBe(true);
         expect(Number.isFinite(p.y)).toBe(true);
@@ -726,15 +726,15 @@ describe('INVARIANT: Particle count never exceeds maxParticles', () => {
     for (let i = 0; i < steps; i++) {
       system.step(1/30);
       
-      // THE INVARIANT: Never exceed maxParticles
+      //                                                          // the // invariant
       expect(system.getParticles().length).toBeLessThanOrEqual(maxParticles);
     }
   });
 });
 
-// ============================================================================
-// PARTICLE FRAME CACHE MEMORY SAFETY (BUG-085 FIX)
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                            // particle // frame // cache // memory // safety
+// ════════════════════════════════════════════════════════════════════════════
 
 import { ParticleFrameCacheSystem } from '@/engine/particles/ParticleFrameCache';
 
@@ -761,13 +761,13 @@ describe('INVARIANT: ParticleFrameCache memory is bounded', () => {
     const bytesPerCache = maxParticles * BYTES_PER_PARTICLE;
     const maxPossibleCaches = Math.floor((maxMemoryMB * MB) / bytesPerCache);
 
-    // THE INVARIANT: maxCacheSize never exceeds what memory budget allows
+    //                                                          // the // invariant
     expect(stats.maxCacheSize).toBeLessThanOrEqual(Math.max(10, maxPossibleCaches));
     
-    // THE INVARIANT: maxCacheSize is at least 10 for usability
+    //                                                          // the // invariant
     expect(stats.maxCacheSize).toBeGreaterThanOrEqual(10);
 
-    // THE INVARIANT: Memory budget is respected
+    //                                                          // the // invariant
     expect(stats.maxMemoryMB).toBe(maxMemoryMB);
   });
 
@@ -816,11 +816,11 @@ describe('INVARIANT: ParticleFrameCache memory is bounded', () => {
     const bytesPerCache = maxParticles * BYTES_PER_PARTICLE;
     const memorySafeCacheSize = Math.max(10, Math.floor((maxMemoryMB * MB) / bytesPerCache));
 
-    // THE INVARIANT: Cache size is the minimum of requested and memory-safe
+    //                                                          // the // invariant
     const expectedSize = Math.min(requestedCacheSize, memorySafeCacheSize);
     expect(stats.maxCacheSize).toBe(expectedSize);
     
-    // THE INVARIANT: Never exceed memory budget (except for minimum 10)
+    //                                                          // the // invariant
     if (stats.maxCacheSize > 10) {
       expect(stats.maxCacheSize * bytesPerCache).toBeLessThanOrEqual(maxMemoryMB * MB);
     }

@@ -15,7 +15,7 @@ import { describe, test, expect } from 'vitest';
 function calculateWindStrength(wind: { x?: number; y?: number } | undefined): number {
   if (!wind) return 0;
   
-  // BUG FIX: Explicit pattern matching to prevent NaN
+  //                                                                // bug // fix
   const windX = (wind.x !== null && wind.x !== undefined && typeof wind.x === "number" && Number.isFinite(wind.x)) ? wind.x : 0;
   const windY = (wind.y !== null && wind.y !== undefined && typeof wind.y === "number" && Number.isFinite(wind.y)) ? wind.y : 0;
   return Math.sqrt(windX ** 2 + windY ** 2);
@@ -25,7 +25,7 @@ function calculateWindStrength(wind: { x?: number; y?: number } | undefined): nu
 function calculateWindDirection(wind: { x?: number; y?: number } | undefined): number {
   if (!wind) return 0;
   
-  // BUG FIX: Explicit pattern matching to prevent NaN
+  //                                                                // bug // fix
   const windX = (wind.x !== null && wind.x !== undefined && typeof wind.x === "number" && Number.isFinite(wind.x)) ? wind.x : 0;
   const windY = (wind.y !== null && wind.y !== undefined && typeof wind.y === "number" && Number.isFinite(wind.y)) ? wind.y : 0;
   return Math.atan2(windY, windX) * (180 / Math.PI);

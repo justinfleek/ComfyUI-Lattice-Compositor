@@ -49,9 +49,9 @@ Object.defineProperty(global, "localStorage", {
   writable: true,
 });
 
-// ============================================================================
-// ARBITRARIES
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                                               // arbitraries
+// ════════════════════════════════════════════════════════════════════════════
 
 const arbRenderingBackend = fc.constantFrom<RenderingBackend>(
   "auto",
@@ -85,9 +85,9 @@ const arbPartialPreferences = fc.record({
   lodEnabled: fc.option(fc.boolean(), { nil: undefined }),
 });
 
-// ============================================================================
-// TESTS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                                     // tests
+// ════════════════════════════════════════════════════════════════════════════
 
 describe("Particle Preferences Store - Property Tests", () => {
   beforeEach(() => {
@@ -352,7 +352,7 @@ describe("Particle Preferences Store - Property Tests", () => {
       const store = useParticlePreferencesStore();
       store.updatePreferences({ renderingBackend: "cpu" });
 
-      // CPU backend should not support high particle counts
+      //                                                                       // cpu
       expect(store.supportsHighParticleCounts).toBe(false);
     });
   });
@@ -410,7 +410,7 @@ describe("Preference Invariants", () => {
         const store = useParticlePreferencesStore();
         store.updatePreferences({ targetFPS: value as 30 | 60 });
 
-        // FPS should be one of the valid values
+        //                                                                       // fps
         expect([30, 60]).toContain(store.preferences.targetFPS);
       }),
     );

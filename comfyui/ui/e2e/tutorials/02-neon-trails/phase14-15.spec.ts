@@ -27,7 +27,7 @@ test.describe("Tutorial 02: Neon Motion Trails - Phases 14-15 (Steps 273-325)", 
     await h.isolateOpacity();
     await h.setPropertyValue("opacity", "25");
 
-    // UNDO/REDO
+    //                                                                      // undo
     await h.undo();
     await h.redo();
   });

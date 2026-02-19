@@ -201,10 +201,10 @@ jq_ opts filterExpr files = run_ "jq" (buildArgs opts [] ++ [filterExpr] ++ map 
 This is the safe way to pass dynamic values into jq:
 
 @
--- SAFE: pattern is properly escaped by jq
+--                                                                      // safe
 jqWithArgs defaults [Arg "pat" userInput] "select(.x | contains($pat))" files
 
--- UNSAFE: shell injection risk!
+--                                                                    // unsafe
 bash $ "jq 'select(.x | contains(\"" <> userInput <> "\"))' file"
 @
 -}

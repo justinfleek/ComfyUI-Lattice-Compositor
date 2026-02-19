@@ -35,9 +35,9 @@ function getHeapUsed(): number {
   return 0;
 }
 
-// ============================================================================
-// TYPE-SAFE GARBAGE COLLECTION HELPERS
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                                                      // type
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Type-safe interface for Node.js global with exposed GC
@@ -63,7 +63,7 @@ function isGCAvailable(): boolean {
  */
 function forceGC(): void {
   if (!isGCAvailable()) {
-    // GC not available - this is expected in browser environments
+    //                                                                        // gc
     // Test should be skipped or run with node --expose-gc
     return;
   }
@@ -251,7 +251,7 @@ describe('Memory: Effect Processing', () => {
   });
 
   test.skip('processing 1000 effect stacks does not leak', async () => {
-    // TODO: Implement when effect processing API is available
+    //                                                                      // todo
     // This requires canvas/ImageData creation which may not be available in Node.js
     const projectStore = useProjectStore();
     await waitForGC();
@@ -281,7 +281,7 @@ describe('Memory: Effect Processing', () => {
 
 describe('Memory: Resource Cleanup', () => {
   test.skip('canvas pool releases memory', async () => {
-    // TODO: Implement when canvas pool API is available
+    //                                                                      // todo
     await waitForGC();
     const initialHeap = getHeapUsed();
 

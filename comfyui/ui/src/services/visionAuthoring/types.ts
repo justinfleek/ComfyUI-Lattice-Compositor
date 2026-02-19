@@ -17,9 +17,9 @@ import type {
 // Re-export for use in this module
 export type ControlPoint = ProjectControlPoint;
 
-// ============================================================================
-// SCENE CONTEXT (Input to AI)
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                                          // scene // context
+// ════════════════════════════════════════════════════════════════════════════
 
 export interface SceneContext {
   readonly compositionId: string;
@@ -43,9 +43,9 @@ export interface SegmentationMask {
   readonly confidence: number;
 }
 
-// ============================================================================
-// MOTION INTENT TYPES (AI Output)
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                 // motion // intent // types
+// ════════════════════════════════════════════════════════════════════════════
 
 export type CameraMotionType =
   | "dolly" // Forward/backward
@@ -146,9 +146,9 @@ export interface LayerMotionIntent {
   readonly suggestedPath?: ControlPoint[]; // For follow_path
 }
 
-// ============================================================================
-// MOTION INTENT RESULT (Full AI Response)
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                // motion // intent // result
+// ════════════════════════════════════════════════════════════════════════════
 
 export interface MotionIntentResult {
   readonly description: string; // Human-readable summary
@@ -160,9 +160,9 @@ export interface MotionIntentResult {
   readonly rawResponse?: string; // Original AI response for debugging
 }
 
-// ============================================================================
-// POINT SUGGESTION (Specific to trajectory/path suggestion)
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                       // point // suggestion
+// ════════════════════════════════════════════════════════════════════════════
 
 export interface PointSuggestion {
   readonly x: number; // Pixel X
@@ -195,9 +195,9 @@ export interface DepthLayer {
   readonly suggestedParallax: number; // Suggested parallax amount
 }
 
-// ============================================================================
-// KEYFRAME BATCH (Translation Output)
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                         // keyframe // batch
+// ════════════════════════════════════════════════════════════════════════════
 
 export interface KeyframeBatch {
   readonly layerId: string;
@@ -264,9 +264,9 @@ export interface NewSplineSpec {
   readonly closed: boolean;
 }
 
-// ============================================================================
-// VISION MODEL CONFIGURATION
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                          // vision // model // configuration
+// ════════════════════════════════════════════════════════════════════════════
 
 export type VisionModelId =
   | "qwen-vl"
@@ -287,9 +287,9 @@ export interface VisionModelConfig {
   readonly temperature?: number;
 }
 
-// ============================================================================
-// DEPTH ESTIMATION
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                       // depth // estimation
+// ════════════════════════════════════════════════════════════════════════════
 
 export type DepthModelId =
   | "depth-anything-v2"
@@ -305,9 +305,9 @@ export interface DepthEstimationResult {
   readonly confidence: number;
 }
 
-// ============================================================================
-// SEGMENTATION
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                              // segmentation
+// ════════════════════════════════════════════════════════════════════════════
 
 export type SegmentationModelId =
   | "sam"

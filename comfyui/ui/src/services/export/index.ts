@@ -42,12 +42,12 @@ export {
   camera3DToMatrix4x4,
   // Conversion function for WanVideoWrapper-compatible exports
   convertPointTrajectoriesToWanMove,
-  // NPY utilities
+  //                                                                       // npy
   createNpyHeader,
   // Light-X
   detectMotionStyle,
   exportCameraTrajectory,
-  // TTM (Time-to-Move)
+  //                                                                       // ttm
   exportTTMLayer,
   // Wan-Move trajectories
   extractLayerTrajectory,
@@ -87,7 +87,7 @@ export {
   interpolateCameraAtFrame,
   mapToWan22FunCamera,
 } from "./cameraExportFormats";
-// ATI (Any-point Trajectory Inference) Export - WanVideoWrapper compatible
+//                                                                       // ati
 export {
   ATI_FIXED_FRAMES,
   type ATIExportResult,
@@ -163,7 +163,7 @@ export {
   renderPoseFrame,
 } from "./poseExport";
 
-// VACE Control Video Export (shapes following splines)
+//                                                                 // vace // c
 export {
   calculateDurationForSpeed,
   calculateSpeed,

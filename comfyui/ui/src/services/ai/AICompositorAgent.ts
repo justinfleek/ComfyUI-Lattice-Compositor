@@ -58,9 +58,9 @@ import { hardenedScopeManager } from "./security/hardenedScopeManager";
 
 const logger = createLogger("AICompositorAgent");
 
-// ============================================================================
-// SECURITY: High-Risk Tool Definitions
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                                                  // security
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Tools that make backend calls and consume significant resources.
@@ -102,9 +102,9 @@ export type ConfirmationCallback = (request: {
   maxCalls: number;
 }) => Promise<boolean>;
 
-// ============================================================================
-// TYPES
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                                     // types
+// ════════════════════════════════════════════════════════════════════════════
 
 export interface AIMessage {
   role: "user" | "assistant" | "system" | "tool";
@@ -121,7 +121,7 @@ export interface AIAgentConfig {
   maxIterations: number; // Max tool call iterations per request
   autoVerify: boolean; // Automatically verify changes after applying
 
-  // SECURITY: Rate limiting for high-risk backend tools
+  //                                                                  // security
   /** Maximum backend tool calls per session (default: 2) */
   maxBackendCallsPerSession: number;
   /** Require user confirmation for high-risk tools (default: true) */
@@ -137,13 +137,13 @@ export interface AIAgentState {
   lastError: string | null;
   iterationCount: number;
 
-  // SECURITY: Track high-risk tool usage
+  //                                                                  // security
   /** Count of backend tool calls this session */
   backendCallCount: number;
   /** List of backend tools called this session (for logging) */
   backendCallsThisSession: string[];
 
-  // SECURITY: Agent security framework
+  //                                                                  // security
   /** Current session ID */
   sessionId: string;
   /** Active sandbox ID (if executing in sandbox) */
@@ -159,22 +159,22 @@ const DEFAULT_CONFIG: AIAgentConfig = {
   maxIterations: 10,
   autoVerify: true,
 
-  // SECURITY: Conservative defaults for backend tools
+  //                                                                  // security
   maxBackendCallsPerSession: 2, // Prevent runaway backend calls
   requireConfirmationForBackendTools: true, // User must approve
   checkVRAMBeforeBackendTools: true, // Check memory before expensive ops
 };
 
-// ============================================================================
-// AI COMPOSITOR AGENT
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                 // ai // compositor // agent
+// ════════════════════════════════════════════════════════════════════════════
 
 export class AICompositorAgent {
   private config: AIAgentConfig;
   private state: AIAgentState;
   private abortController: AbortController | null = null;
 
-  // SECURITY: Callback for user confirmation of high-risk operations
+  //                                                                  // security
   private confirmationCallback: ConfirmationCallback | null = null;
 
   constructor(config: Partial<AIAgentConfig> = {}) {
@@ -186,10 +186,10 @@ export class AICompositorAgent {
       messages: [],
       lastError: null,
       iterationCount: 0,
-      // SECURITY: Initialize backend call tracking
+      //                                                                  // security
       backendCallCount: 0,
       backendCallsThisSession: [],
-      // SECURITY: Initialize agent security framework
+      //                                                                  // security
       sessionId,
       activeSandboxId: null,
       pendingActionPlanId: null,
@@ -228,9 +228,9 @@ export class AICompositorAgent {
     );
   }
 
-  // ==========================================================================
-  // PUBLIC API
-  // ==========================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                             // public // api
+  // ════════════════════════════════════════════════════════════════════════════
 
   /**
    * Process a user instruction
@@ -257,14 +257,14 @@ export class AICompositorAgent {
         timestamp: Date.now(),
       });
 
-      // SECURITY: Create sandbox for agent execution
+      //                                                                  // security
       const sandbox = agentSandbox.createSandbox(this.state.sessionId);
       this.state.activeSandboxId = sandbox.id;
 
-      // SECURITY: Create rollback point before agent actions
+      //                                                                  // security
       agentRollback.createRollbackPoint(this.state.sessionId);
 
-      // SECURITY: Use minimal serialization by default to reduce attack surface
+      //                                                                  // security
       // Only use full serialization when the request explicitly needs text content
       const serializationMode = getRecommendedSerializationMode(instruction);
       const projectState =
@@ -299,7 +299,7 @@ export class AICompositorAgent {
         error instanceof Error ? error.message : "Unknown error";
       this.state.lastError = errorMessage;
 
-      // SECURITY: Rollback sandbox on error
+      //                                                                  // security
       if (this.state.activeSandboxId) {
         try {
           agentSandbox.rollbackSandbox(this.state.activeSandboxId);
@@ -347,9 +347,9 @@ export class AICompositorAgent {
     return [...this.state.messages];
   }
 
-  // ==========================================================================
-  // PRIVATE METHODS
-  // ==========================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                        // private // methods
+  // ════════════════════════════════════════════════════════════════════════════
 
   private addMessage(message: AIMessage): void {
     this.state.messages.push(message);
@@ -368,7 +368,7 @@ export class AICompositorAgent {
     instruction: string,
     projectState: string,
   ): string {
-    // SECURITY: Wrap project state in boundary tags
+    //                                                                  // security
     const wrappedState = wrapInSecurityBoundary(projectState);
 
     return `${SYSTEM_PROMPT}
@@ -423,10 +423,10 @@ ${instruction}
 
       // Check if response contains tool calls
       if (response.toolCalls && response.toolCalls.length > 0) {
-        // SECURITY: Extract reasoning (required for explainability)
+        //                                                                  // security
         const reasoning = response.reasoning || response.content || "No reasoning provided";
 
-        // SECURITY: Create action plan for user review
+        //                                                                  // security
         const actionReasonings = response.actionReasonings || response.toolCalls.map(() => reasoning);
         const actionPlan = actionApproval.createActionPlan(
           this.state.sessionId,
@@ -438,7 +438,7 @@ ${instruction}
 
         this.state.pendingActionPlanId = actionPlan.id;
 
-        // SECURITY: Track provenance
+        //                                                                  // security
         const toolCallsForProvenance = response.toolCalls || [];
         const provenanceId = provenanceTracker.recordDecision(
           this.state.sessionId,
@@ -456,7 +456,7 @@ ${instruction}
           [], // Results will be added after execution
         );
 
-        // SECURITY: Wait for user approval before executing
+        //                                                                  // security
         // In production, this would be async - UI would show approval dialog
         // For now, we'll throw an error that includes the plan ID for UI handling
         throw new Error(
@@ -778,7 +778,7 @@ Format your response as:
     const results: ToolResult[] = [];
 
     for (const call of toolCalls) {
-      // SECURITY: Log ALL tool calls to persistent audit log
+      //                                                                  // security
       // Extract arguments by removing 'name' and 'id' fields
       const { name, id, ...args } = call;
       // Convert args to Record<string, JSONValue> for audit log
@@ -798,11 +798,11 @@ Format your response as:
       await logToolCall(name, argsRecord);
       logger.debug(`[SECURITY] Tool call: ${name}`, args);
 
-      // SECURITY: Check if this is a high-risk backend tool
+      //                                                                  // security
       const highRiskInfo = HIGH_RISK_BACKEND_TOOLS.get(call.name);
 
       if (highRiskInfo) {
-        // SECURITY: Check persistent rate limits (source of truth)
+        //                                                                  // security
         const rateLimitStatus = checkRateLimit(call.name);
         if (!rateLimitStatus.canCall) {
           const errorMsg = `[SECURITY] Rate limit exceeded: ${rateLimitStatus.blockedReason}`;
@@ -814,7 +814,7 @@ Format your response as:
         // Get memory summary once - needed by both VRAM check and confirmation dialog
         const memSummary = getMemorySummary();
 
-        // SECURITY: VRAM check
+        //                                                                  // security
         if (this.config.checkVRAMBeforeBackendTools) {
           const memCheck = canAllocate(highRiskInfo.vramEstimateMB);
 
@@ -842,7 +842,7 @@ Format your response as:
           }
         }
 
-        // SECURITY: User confirmation required for high-risk operations
+        //                                                                  // security
         if (this.config.requireConfirmationForBackendTools) {
           if (!this.confirmationCallback) {
             const errorMsg =
@@ -874,7 +874,7 @@ Format your response as:
           logger.info(`[SECURITY] User approved ${call.name}`);
         }
 
-        // SECURITY: Record to persistent rate limits (this is the source of truth)
+        //                                                                  // security
         await recordToolCall(call.name);
 
         // Also update in-memory state for quick access within session
@@ -958,9 +958,9 @@ Format your response as:
   }
 }
 
-// ============================================================================
-// SINGLETON INSTANCE
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                     // singleton // instance
+// ════════════════════════════════════════════════════════════════════════════
 
 let agentInstance: AICompositorAgent | null = null;
 

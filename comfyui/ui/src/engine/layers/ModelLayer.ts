@@ -296,7 +296,7 @@ export class ModelLayer extends BaseLayer {
         loader.load(
           url,
           (object: THREE.Group) => {
-            // FBX files often contain animations
+            //                                                                       // fbx
             if (object.animations && object.animations.length > 0) {
               this.animationClips = object.animations;
               this.setupAnimations(object);
@@ -344,7 +344,7 @@ export class ModelLayer extends BaseLayer {
    * Note: USD support in Three.js is limited. This is a placeholder for future implementation.
    */
   private async loadUSD(url: string): Promise<THREE.Object3D> {
-    // USD/USDZ support requires additional libraries or custom implementation
+    //                                                                       // usd
     // For now, we'll try to use USDZLoader if available, or create a placeholder
     try {
       // Dynamic import to avoid bundle bloat if not used
@@ -495,9 +495,9 @@ export class ModelLayer extends BaseLayer {
     };
   }
 
-  // ============================================================================
-  // ANIMATION
-  // ============================================================================
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  //                                                                 // animation
+  // ════════════════════════════════════════════════════════════════════════════
 
   /**
    * Setup animation mixer and actions
@@ -603,9 +603,9 @@ export class ModelLayer extends BaseLayer {
     this.mixer.update(deltaTime * speed);
   }
 
-  // ============================================================================
-  // MATERIAL OVERRIDES
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                     // material // overrides
+  // ════════════════════════════════════════════════════════════════════════════
 
   /**
    * Apply material override to all meshes
@@ -706,9 +706,9 @@ export class ModelLayer extends BaseLayer {
     });
   }
 
-  // ============================================================================
-  // HELPERS
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                   // helpers
+  // ════════════════════════════════════════════════════════════════════════════
 
   /**
    * Update bounding box helper visibility
@@ -757,9 +757,9 @@ export class ModelLayer extends BaseLayer {
     }
   }
 
-  // ============================================================================
-  // SETTERS
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                   // setters
+  // ════════════════════════════════════════════════════════════════════════════
 
   /**
    * Set model scale
@@ -809,9 +809,9 @@ export class ModelLayer extends BaseLayer {
     this.setCompositionFps(fps);
   }
 
-  // ============================================================================
-  // ACCESSORS
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                 // accessors
+  // ════════════════════════════════════════════════════════════════════════════
 
   /**
    * Get the loaded model object
@@ -851,9 +851,9 @@ export class ModelLayer extends BaseLayer {
     return this.loadError;
   }
 
-  // ============================================================================
-  // ABSTRACT IMPLEMENTATIONS
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                               // abstract // implementations
+  // ════════════════════════════════════════════════════════════════════════════
 
   protected onEvaluateFrame(frame: number): void {
     // Use composition fps for correct animation timing (not hardcoded 30fps)

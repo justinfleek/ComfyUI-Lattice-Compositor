@@ -86,7 +86,7 @@ export class VerifiedGPUParticleSystem {
   private config: GPUParticleSystemConfig;
   private renderer: THREE.WebGLRenderer | null = null;
   
-  // VERIFIED CORE COMPONENTS
+  //                                            // verified // core // components
   private particles: ParticleBuffer; // SOA layout (88 bytes/particle)
   private rng: SeededRandom; // Deterministic Mulberry32
   private audioSystem: AudioReactivitySystem; // Anti-compounding
@@ -165,8 +165,8 @@ export class VerifiedGPUParticleSystem {
   constructor(config: Partial<GPUParticleSystemConfig> = {}) {
     this.config = { ...createDefaultConfig(), ...config };
     
-    // ENFORCE REALISTIC BOUNDS: 3-5M particles max to prevent system crashes
-    // PROVEN: Memory budget calculations ensure we never exceed VRAM
+    //                                            // enforce // realistic // bounds
+    //                                                                    // proven
     const MAX_SAFE_PARTICLES = 5_000_000; // 5M absolute maximum
     const RECOMMENDED_MAX = 3_000_000; // 3M recommended maximum
     
@@ -196,7 +196,7 @@ export class VerifiedGPUParticleSystem {
     // Initialize verified core components
     this.particles = new ParticleBuffer(safeMaxParticles);
     
-    // PROVEN: Deterministic RNG (Lean4 theorem rng_deterministic)
+    //                                                                    // proven
     // Type proof: randomSeed ∈ ℕ ∪ {undefined} → seed ∈ ℕ
     // Lean4: theorem seed_valid : ∀ s : Option Nat, validateSeed s ∈ Nat
     const configSeed = this.config.randomSeed;
@@ -208,13 +208,13 @@ export class VerifiedGPUParticleSystem {
     ) ? configSeed : 12345;
     this.rng = new SeededRandom(randomSeed);
     
-    // PROVEN: Anti-compounding audio reactivity (Lean4 theorem no_compounding)
+    //                                                                    // proven
     this.audioSystem = new AudioReactivitySystem();
     
-    // PROVEN: Deterministic frame caching (Lean4 theorems scrub_bounded, forward_scrub_bounded)
+    //                                                                    // proven
     this.frameCache = new VerifiedFrameCache(30, 100); // Cache every 30 frames, max 100 snapshots
     
-    // PROVEN: Spatial hash completeness (Lean4 theorem spatial_hash_complete)
+    //                                                                    // proven
     const cellSize = Number.isFinite(this.config.spatialHashCellSize) && this.config.spatialHashCellSize > 0
       ? this.config.spatialHashCellSize
       : 50;
@@ -234,7 +234,7 @@ export class VerifiedGPUParticleSystem {
     // These will work with verified core components
     
     // Initialize modulation system for lifetime curves
-    // PROVEN: Uses verified RNG for deterministic curve evaluation
+    //                                                                    // proven
     this.modulationSystem = new ParticleModulationCurves(
       () => this.rng.next(),
       256
@@ -248,9 +248,9 @@ export class VerifiedGPUParticleSystem {
     this.legacyAudioSystem.setBindings(this.config.audioBindings);
   }
   
-  // ============================================================================
-  // INITIALIZATION
-  // ============================================================================
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  //                                                            // initialization
+  // ════════════════════════════════════════════════════════════════════════════
   
   /**
    * Initialize GPU resources. Must be called before simulation.
@@ -265,7 +265,7 @@ export class VerifiedGPUParticleSystem {
     this.createParticleMesh();
     
     // Create modulation textures (after material exists so we can set uniforms)
-    // PROVEN: Matches GPUParticleSystem behavior exactly
+    //                                                                    // proven
     this.createModulationTextures();
     
     // Initialize texture system with material/geometry
@@ -377,9 +377,9 @@ export class VerifiedGPUParticleSystem {
     this.trailSystem.initialize();
   }
   
-  // ============================================================================
-  // THREE.JS RENDERING
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                     // three
+  // ════════════════════════════════════════════════════════════════════════════
   
   /**
    * Create Three.js particle mesh
@@ -542,9 +542,9 @@ export class VerifiedGPUParticleSystem {
     return this.particleMesh;
   }
   
-  // ============================================================================
-  // EMITTER MANAGEMENT
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                     // emitter // management
+  // ════════════════════════════════════════════════════════════════════════════
   
   addEmitter(config: EmitterConfig): void {
     this.emitters.set(config.id, {
@@ -554,7 +554,7 @@ export class VerifiedGPUParticleSystem {
       velocity: new THREE.Vector3(),
     });
     
-    // PROVEN: Register base values for anti-compounding (Lean4 theorem no_compounding)
+    //                                                                    // proven
     this.audioSystem.registerEmitter(
       this.emitters.size - 1, // Use index as emitter ID
       config.initialSpeed,
@@ -628,9 +628,9 @@ export class VerifiedGPUParticleSystem {
     this.splineProvider = provider;
   }
   
-  // ============================================================================
-  // FORCE FIELD MANAGEMENT
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                              // force // field // management
+  // ════════════════════════════════════════════════════════════════════════════
   
   addForceField(config: ForceFieldConfig): void {
     this.forceFields.set(config.id, config);
@@ -647,9 +647,9 @@ export class VerifiedGPUParticleSystem {
     this.forceFields.delete(id);
   }
   
-  // ============================================================================
-  // SUB-EMITTER MANAGEMENT
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                       // sub
+  // ════════════════════════════════════════════════════════════════════════════
   
   addSubEmitter(config: SubEmitterConfig): void {
     this.subEmitters.set(config.id, config);
@@ -673,9 +673,9 @@ export class VerifiedGPUParticleSystem {
     }
   }
   
-  // ============================================================================
-  // SIMULATION STEP
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                        // simulation // step
+  // ════════════════════════════════════════════════════════════════════════════
   
   /**
    * Step the particle simulation forward
@@ -778,7 +778,7 @@ export class VerifiedGPUParticleSystem {
       frequency: f.noiseSpeed,
     }));
     
-    // PROVEN: Accumulate forces (drag opposes velocity, falloff in [0,1])
+    //                                                                    // proven
     accumulateForces(
       this.particles,
       verifiedFields,
@@ -788,7 +788,7 @@ export class VerifiedGPUParticleSystem {
       this.state.simulationTime
     );
     
-    // PROVEN: Verlet integration (symplectic, time-reversible)
+    //                                                                    // proven
     integrateVerlet(
       this.particles,
       this.accX,
@@ -810,19 +810,19 @@ export class VerifiedGPUParticleSystem {
     if (!this.webgpuCompute) return;
     
     // Check if previous frame's GPU readback is ready
-    // PROVEN: Deterministic - same inputs → same GPU results → same readback
+    //                                                                    // proven
     if (this.gpuReadbackReady && this.pendingGPUReadback) {
       // Verify promise is resolved (state machine ensures buffers are mapped)
       // Note: gpuReadbackReady is only set to true after copyToStaging promise resolves
       try {
         // Use GPU results from previous frame
-        // PROVEN: GPU compute is deterministic (same inputs → same outputs)
+        //                                                                    // proven
         this.webgpuCompute.readbackToParticleBuffer(this.particles, this.particles.count);
         this.gpuReadbackReady = false;
         this.pendingGPUReadback = null;
       } catch (error) {
         // Readback failed or buffers not ready - fall back to CPU
-        // PROVEN: CPU fallback is deterministic, so overall system remains deterministic
+        //                                                                    // proven
         console.warn("GPU readback failed, using CPU fallback:", error);
         this.stepCPU(dt);
         this.gpuReadbackReady = false;
@@ -830,7 +830,7 @@ export class VerifiedGPUParticleSystem {
       }
     } else {
       // First frame or readback not ready - use CPU step
-      // PROVEN: CPU step is deterministic
+      //                                                                    // proven
       this.stepCPU(dt);
     }
     
@@ -866,7 +866,7 @@ export class VerifiedGPUParticleSystem {
     this.webgpuCompute.execute(this.particles.count);
     
     // Start async readback for next frame (non-blocking)
-    // PROVEN: This readback will be used in the next call to stepWebGPU
+    //                                                                    // proven
     this.pendingGPUReadback = this.webgpuCompute.copyToStaging(this.particles.count)
       .then(() => {
         this.gpuReadbackReady = true;
@@ -906,7 +906,7 @@ export class VerifiedGPUParticleSystem {
       // Get emitter index for audio reactivity
       const emitterIndex = Array.from(this.emitters.keys()).indexOf(id);
       
-      // PROVEN: Get modulated emission rate from base values (no compounding)
+      //                                                                    // proven
       // Audio reactivity uses base values, not current values
       // For emission rate, use current emitter value (audio modulation applied at emitter level)
       let emissionRate = emitter.emissionRate;
@@ -932,7 +932,7 @@ export class VerifiedGPUParticleSystem {
       const toEmit = Math.floor(emitter.accumulator);
       emitter.accumulator -= toEmit;
       
-      // BUG-099 FIX: Cap spawns per frame to prevent browser freeze
+      //                                                                       // bug
       // If browser pauses (dt=10s), don't try to spawn 1M particles
       const MAX_SPAWN_PER_FRAME = 10000;
       const cappedToEmit = Math.min(toEmit, MAX_SPAWN_PER_FRAME);
@@ -944,17 +944,17 @@ export class VerifiedGPUParticleSystem {
       }
       
       // Handle burst emission on beat
-      // PROVEN: Deterministic beat detection using frame-based audio analysis
+      //                                                                    // proven
       // Same frame + same analysis → same beat detection result
       if (emitter.burstOnBeat) {
         // Use frameCount for deterministic beat detection (matches audio analysis frame indexing)
-        // PROVEN: frameCount increments deterministically with each step()
+        //                                                                    // proven
         const currentFrame = this.state.frameCount;
         const isBeat = isBeatAtFrame(this.audioAnalysis, currentFrame);
         
         if (isBeat) {
           // Emit burst on beat
-          // PROVEN: beatEmissionMultiplier is deterministic (from emitter config)
+          //                                                                    // proven
           const beatMultiplier = Number.isFinite(emitter.beatEmissionMultiplier) && emitter.beatEmissionMultiplier > 0
             ? emitter.beatEmissionMultiplier
             : 5; // Default multiplier
@@ -1015,7 +1015,7 @@ export class VerifiedGPUParticleSystem {
     // Get emission direction
     const dir = getEmissionDirection(emitter, () => this.rng.next());
     
-    // PROVEN: Use base values for initial speed/size (no compounding)
+    //                                                                    // proven
     // Get base values from registered emitter (stored at emitter creation)
     const baseSpeed = emitter.initialSpeed; // Base value never changes
     const baseSize = emitter.initialSize; // Base value never changes
@@ -1060,7 +1060,7 @@ export class VerifiedGPUParticleSystem {
     const b = emitter.colorStart[2] + (emitter.colorEnd[2] - emitter.colorStart[2]) * colorT;
     const a = emitter.colorStart[3];
     
-    // PROVEN: Generate deterministic random offset for modulation curves
+    //                                                                    // proven
     // Same particle ID + seed → same randomOffset (deterministic)
     // Used for "random" and "randomCurve" modulation types
     // Type proof: rng.next() returns [0, 1) → unit() ensures [0, 1]
@@ -1101,7 +1101,7 @@ export class VerifiedGPUParticleSystem {
         const lifeRatio = this.particles.age[i] / Math.max(this.particles.lifetime[i], 0.001);
         const clampedLifeRatio = Math.max(0, Math.min(1, lifeRatio));
         
-        // PROVEN: Retrieve deterministic random offset for this particle
+        //                                                                    // proven
         // Same particle → same randomOffset throughout lifetime (deterministic)
         const randomOffset = this.particles.randomOffset[i];
         
@@ -1172,7 +1172,7 @@ export class VerifiedGPUParticleSystem {
   private updateRendering(): void {
     if (!this.instancedGeometry) return;
     
-    // PROVEN: Efficient SOA→AOS conversion
+    //                                                                    // proven
     updateInstanceBuffers(this.particles, this.instancedGeometry);
   }
   
@@ -1263,7 +1263,7 @@ export class VerifiedGPUParticleSystem {
       if (this.spatialHash.needsRebuild(positions)) {
         this.spatialHash.rebuild(positions);
         
-        // PROVEN: Rebuild adapter when spatial hash is rebuilt
+        //                                                                    // proven
         // Adapter maintains compatibility with collision/flocking systems
         // Create adapter if it doesn't exist, or rebuild it with current AOS buffer
         if (!this.spatialHashAdapter) {
@@ -1271,7 +1271,7 @@ export class VerifiedGPUParticleSystem {
         }
         
         // Rebuild adapter with current particle buffer
-        // PROVEN: Adapter.rebuild() preserves completeness guarantee
+        //                                                                    // proven
         this.spatialHashAdapter.rebuild(aosBuffer);
         
         // Update subsystems with rebuilt adapter
@@ -1285,7 +1285,7 @@ export class VerifiedGPUParticleSystem {
     }
     
     // Apply flocking (using extracted module and shared spatial hash)
-    // PROVEN: Matches GPUParticleSystem step() order (flocking before collisions)
+    //                                                                    // proven
     // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.
     if (this.flockingSystem != null && typeof this.flockingSystem === "object" && typeof this.flockingSystem.isEnabled === "function" && this.flockingSystem.isEnabled()) {
       const dt = this.config.deltaTimeMode === "fixed"
@@ -1366,7 +1366,7 @@ export class VerifiedGPUParticleSystem {
       }
     }
     
-    // PROVEN: Modulate particle sizes using initialSize (no compounding)
+    //                                                                    // proven
     if (audioLevels.size > 0) {
       this.audioSystem.modulateParticleSizes(this.particles, audioLevels);
     }
@@ -1386,9 +1386,9 @@ export class VerifiedGPUParticleSystem {
     }
   }
   
-  // ============================================================================
-  // STATE & QUERIES
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                     // state
+  // ════════════════════════════════════════════════════════════════════════════
   
   /**
    * Get current system state
@@ -1401,9 +1401,9 @@ export class VerifiedGPUParticleSystem {
     };
   }
   
-  // ============================================================================
-  // GPU PHYSICS CONTROL
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                 // gpu // physics // control
+  // ════════════════════════════════════════════════════════════════════════════
   
   setGPUPhysicsEnabled(enabled: boolean): void {
     // WebGPU is always enabled if available
@@ -1414,9 +1414,9 @@ export class VerifiedGPUParticleSystem {
     return this.webgpuAvailable && this.webgpuCompute !== null;
   }
   
-  // ============================================================================
-  // SUBSYSTEM INTEGRATION
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                  // subsystem // integration
+  // ════════════════════════════════════════════════════════════════════════════
   
   initializeConnections(config: ConnectionConfig): void {
     this.connectionSystem = new ParticleConnectionSystem(
@@ -1452,7 +1452,7 @@ export class VerifiedGPUParticleSystem {
       config,
     );
     
-    // PROVEN: Create or reuse adapter for collision system
+    //                                                                    // proven
     // Adapter bridges VerifiedSpatialHash to SpatialHashGrid interface
     // Preserves completeness guarantee and deterministic behavior
     if (!this.spatialHashAdapter) {
@@ -1467,7 +1467,7 @@ export class VerifiedGPUParticleSystem {
       config,
     );
     
-    // PROVEN: Create or reuse adapter for flocking system
+    //                                                                    // proven
     // Adapter bridges VerifiedSpatialHash to SpatialHashGrid interface
     // Preserves completeness guarantee and deterministic behavior
     if (!this.spatialHashAdapter) {
@@ -1503,9 +1503,9 @@ export class VerifiedGPUParticleSystem {
     return null;
   }
   
-  // ============================================================================
-  // FRAME CACHING (Deterministic Scrubbing)
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                          // frame // caching
+  // ════════════════════════════════════════════════════════════════════════════
   
   /**
    * Cache current state for deterministic scrubbing
@@ -1736,9 +1736,9 @@ export class VerifiedGPUParticleSystem {
     this.reset();
   }
   
-  // ============================================================================
-  // AUDIO INTEGRATION
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                      // audio // integration
+  // ════════════════════════════════════════════════════════════════════════════
   
   /**
    * Set audio feature value
@@ -1816,9 +1816,9 @@ export class VerifiedGPUParticleSystem {
     }
   }
   
-  // ============================================================================
-  // PARTICLE DATA EXPORT
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                // particle // data // export
+  // ════════════════════════════════════════════════════════════════════════════
   
   /**
    * Get all currently active particles with their full state
@@ -1916,9 +1916,9 @@ export class VerifiedGPUParticleSystem {
     return trajectories;
   }
   
-  // ============================================================================
-  // TEXTURE & RENDERING FEATURES (Full Implementation)
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                   // texture
+  // ════════════════════════════════════════════════════════════════════════════
   
   /**
    * Load particle texture from URL or data URI
@@ -2180,9 +2180,9 @@ export class VerifiedGPUParticleSystem {
     }
   }
   
-  // ============================================================================
-  // CONFIGURATION
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                             // configuration
+  // ════════════════════════════════════════════════════════════════════════════
   
   /**
    * Get current configuration
@@ -2197,9 +2197,9 @@ export class VerifiedGPUParticleSystem {
     };
   }
   
-  // ============================================================================
-  // EVENT SYSTEM
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                           // event // system
+  // ════════════════════════════════════════════════════════════════════════════
   
   /**
    * Register event handler
@@ -2248,9 +2248,9 @@ export class VerifiedGPUParticleSystem {
     }
   }
   
-  // ============================================================================
-  // CLEANUP
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                   // cleanup
+  // ════════════════════════════════════════════════════════════════════════════
   
   dispose(): void {
     // Dispose Three.js resources

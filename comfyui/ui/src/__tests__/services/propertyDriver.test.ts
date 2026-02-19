@@ -14,7 +14,7 @@ function applyRemap(
   outMin: number,
   outMax: number,
 ): number {
-  // BUG-003 FIX: Prevent division by zero when inMin === inMax
+  //                                                                       // bug
   const inRange = inMax - inMin;
   if (inRange === 0) {
     // If input range is zero, return midpoint of output range

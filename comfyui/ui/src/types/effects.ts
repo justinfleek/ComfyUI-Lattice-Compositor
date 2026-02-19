@@ -2952,11 +2952,11 @@ export const EFFECT_DEFINITIONS: Record<string, EffectDefinition> = {
     ],
   },
 
-  // ============================================================================
-  // EXPRESSION CONTROLS
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  //                                                    // expression // controls
   // These are special "effects" that provide controllable values for expressions
   // They don't process pixels - they expose animatable parameters
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
 
   "slider-control": {
     name: "Slider Control",

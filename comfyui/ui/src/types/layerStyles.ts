@@ -1,18 +1,18 @@
-// ============================================================
-// LAYER STYLES TYPE DEFINITIONS
-// ============================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                    // layer // styles // type // definitions
+// ════════════════════════════════════════════════════════════════════════════
 //
 // Industry-standard layer styles for Lattice Compositor
 // Each style renders in a fixed order (shadow → glow → bevel → overlay → stroke)
 // Separate from effects[] - styles apply BEFORE effects
 //
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 import type { AnimatableProperty, BlendMode } from "./project";
 
-// ============================================================
-// CORE TYPES
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                             // core // types
+// ════════════════════════════════════════════════════════════════════════════
 
 /** RGBA color with alpha */
 export interface RGBA {
@@ -40,9 +40,9 @@ export interface ContourCurve {
   points: Array<{ x: number; y: number }>; // 0-1 normalized
 }
 
-// ============================================================
-// BASE STYLE INTERFACE
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                // base // style // interface
+// ════════════════════════════════════════════════════════════════════════════
 
 /** Base interface for all layer styles */
 export interface BaseLayerStyle {
@@ -54,9 +54,9 @@ export interface BaseLayerStyle {
   opacity: AnimatableProperty<number>;
 }
 
-// ============================================================
-// DROP SHADOW
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                            // drop // shadow
+// ════════════════════════════════════════════════════════════════════════════
 
 export interface DropShadowStyle extends BaseLayerStyle {
   /** Shadow color */
@@ -81,9 +81,9 @@ export interface DropShadowStyle extends BaseLayerStyle {
   layerKnocksOut?: boolean;
 }
 
-// ============================================================
-// INNER SHADOW
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                           // inner // shadow
+// ════════════════════════════════════════════════════════════════════════════
 
 export interface InnerShadowStyle extends BaseLayerStyle {
   /** Shadow color */
@@ -106,9 +106,9 @@ export interface InnerShadowStyle extends BaseLayerStyle {
   antiAliased?: boolean;
 }
 
-// ============================================================
-// OUTER GLOW
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                             // outer // glow
+// ════════════════════════════════════════════════════════════════════════════
 
 /** Glow rendering technique */
 export type GlowTechnique = "softer" | "precise";
@@ -138,9 +138,9 @@ export interface OuterGlowStyle extends BaseLayerStyle {
   antiAliased?: boolean;
 }
 
-// ============================================================
-// INNER GLOW
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                             // inner // glow
+// ════════════════════════════════════════════════════════════════════════════
 
 /** Where inner glow originates from */
 export type InnerGlowSource = "center" | "edge";
@@ -172,9 +172,9 @@ export interface InnerGlowStyle extends BaseLayerStyle {
   antiAliased?: boolean;
 }
 
-// ============================================================
-// BEVEL AND EMBOSS
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                    // bevel // and // emboss
+// ════════════════════════════════════════════════════════════════════════════
 
 /** Bevel style type */
 export type BevelStyle =
@@ -259,9 +259,9 @@ export interface BevelEmbossStyle extends BaseLayerStyle {
   textureLinkWithLayer?: boolean;
 }
 
-// ============================================================
-// SATIN
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                                     // satin
+// ════════════════════════════════════════════════════════════════════════════
 
 export interface SatinStyle extends BaseLayerStyle {
   /** Satin color */
@@ -280,18 +280,18 @@ export interface SatinStyle extends BaseLayerStyle {
   invert: boolean;
 }
 
-// ============================================================
-// COLOR OVERLAY
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                          // color // overlay
+// ════════════════════════════════════════════════════════════════════════════
 
 export interface ColorOverlayStyle extends BaseLayerStyle {
   /** Overlay color */
   color: AnimatableProperty<RGBA>;
 }
 
-// ============================================================
-// GRADIENT OVERLAY
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                       // gradient // overlay
+// ════════════════════════════════════════════════════════════════════════════
 
 /** Gradient overlay style type */
 export type GradientOverlayType =
@@ -320,9 +320,9 @@ export interface GradientOverlayStyle extends BaseLayerStyle {
   dither?: boolean;
 }
 
-// ============================================================
-// PATTERN OVERLAY
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                        // pattern // overlay
+// ════════════════════════════════════════════════════════════════════════════
 
 export interface PatternOverlayStyle extends BaseLayerStyle {
   /** Pattern asset ID or URL */
@@ -339,9 +339,9 @@ export interface PatternOverlayStyle extends BaseLayerStyle {
   offset: AnimatableProperty<{ x: number; y: number }>;
 }
 
-// ============================================================
-// STROKE
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                                    // stroke
+// ════════════════════════════════════════════════════════════════════════════
 
 /** Stroke position relative to edge */
 export type StrokePosition = "outside" | "inside" | "center";
@@ -372,9 +372,9 @@ export interface StrokeStyle extends BaseLayerStyle {
   patternLinkWithLayer?: boolean;
 }
 
-// ============================================================
-// STYLE BLENDING OPTIONS
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                              // style // blending // options
+// ════════════════════════════════════════════════════════════════════════════
 
 /** Channel blend options */
 export interface ChannelBlendRange {
@@ -411,9 +411,9 @@ export interface StyleBlendingOptions {
   underlyingLayerRange?: ChannelBlendRange;
 }
 
-// ============================================================
-// MAIN LAYER STYLES CONTAINER
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                      // main // layer // styles // container
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Complete Layer Styles definition
@@ -463,9 +463,9 @@ export interface LayerStyles {
   stroke?: StrokeStyle;
 }
 
-// ============================================================
-// GLOBAL LIGHT
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                           // global // light
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Global Light settings for a composition
@@ -478,9 +478,9 @@ export interface GlobalLightSettings {
   altitude: AnimatableProperty<number>;
 }
 
-// ============================================================
-// FACTORY FUNCTIONS
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                      // factory // functions
+// ════════════════════════════════════════════════════════════════════════════
 
 /** Create a default animatable property for layer styles */
 export function createStyleProperty<T>(
@@ -692,9 +692,9 @@ export function createDefaultGlobalLight(): GlobalLightSettings {
   };
 }
 
-// ============================================================
-// UTILITY TYPES FOR STYLE UPDATES
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                               // utility // types // for // style // updates
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Utility type for style update payloads.

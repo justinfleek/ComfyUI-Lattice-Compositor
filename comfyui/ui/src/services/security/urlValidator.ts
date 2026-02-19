@@ -147,7 +147,7 @@ export function validateURL(
     };
   }
 
-  // HTTPS is safe
+  //                                                                     // https
   if (protocol === "https:") {
     return {
       valid: true,
@@ -157,7 +157,7 @@ export function validateURL(
     };
   }
 
-  // HTTP is allowed with warning
+  //                                                                      // http
   if (protocol === "http:") {
     return {
       valid: true,
@@ -314,7 +314,7 @@ export function isTrustedDomain(
  * Used for scanning project files for potentially malicious URLs
  */
 export function extractAndValidateURLs(text: string): URLValidationResult[] {
-  // URL regex pattern
+  //                                                                       // url
   const urlPattern =
     /https?:\/\/[^\s<>"{}|\\^`[\]]+|data:[^\s<>"{}|\\^`[\]]+/gi;
   // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy || []

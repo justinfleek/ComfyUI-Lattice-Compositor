@@ -75,7 +75,7 @@ test.describe("Tutorial 04: Time Remapping - Phases 1-2 (Steps 1-42)", () => {
     await h.setTimeStretch(0, 200);
     // Should extend leftward
 
-    // UNDO/REDO
+    //                                                                      // undo
     await h.undo();
     await h.redo();
   });

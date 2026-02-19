@@ -7,9 +7,9 @@
 import { EASING_PRESETS } from "./easing";
 import type { Expression } from "./types";
 
-// ============================================================
-// EXPRESSION PRESETS
-// ============================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                                     // expression // presets
+// ════════════════════════════════════════════════════════════════════════════
 
 export const EXPRESSION_PRESETS: Record<string, Expression> = {
   // Motion presets

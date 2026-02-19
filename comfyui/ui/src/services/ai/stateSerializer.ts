@@ -36,9 +36,9 @@ import type { JSONValue } from "@/types/dataAsset";
  */
 type RuntimeValue = string | number | boolean | object | null | undefined | bigint | symbol;
 
-// ============================================================================
-// SECURITY: Prompt Injection Defense
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                                                  // security
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Sanitize user-controlled strings before sending to LLM.
@@ -126,9 +126,9 @@ ${jsonState}
 </user_project_data>`;
 }
 
-// ============================================================================
-// TYPES
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                                     // types
+// ════════════════════════════════════════════════════════════════════════════
 
 export interface SerializedProjectState {
   composition: SerializedComposition;
@@ -200,9 +200,9 @@ export interface SerializedEffect {
   parameters: Record<string, PropertyValue>;
 }
 
-// ============================================================================
-// MAIN SERIALIZER
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                        // main // serializer
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Serialize the current project state for LLM context
@@ -230,7 +230,7 @@ export function serializeProjectState(includeKeyframes = true): string {
     currentFrame: animationStore.currentFrame,
   };
 
-  // SECURITY: Wrap in boundary tags - the AICompositorAgent.buildContextualPrompt
+  //                                                                  // security
   // handles the final wrapper, but we return raw JSON here for flexibility
   return JSON.stringify(state, null, 2);
 }
@@ -281,9 +281,9 @@ export function serializeLayerDetails(layerId: string): string {
   );
 }
 
-// ============================================================================
-// SECURITY: Structured Extraction Mode (Defense in Depth)
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                                  // security
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Minimal state extraction for LLM context.
@@ -464,9 +464,9 @@ export function getRecommendedSerializationMode(
   return "minimal";
 }
 
-// ============================================================================
-// SERIALIZATION HELPERS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                  // serialization // helpers
+// ════════════════════════════════════════════════════════════════════════════
 
 function serializeComposition(comp: Composition): SerializedComposition {
   return {
@@ -576,7 +576,7 @@ function serializeEffect(effect: EffectInstance): SerializedEffect {
   // Summarize effect parameters (just current values)
   const parameters: Record<string, PropertyValue> = {};
   for (const [key, param] of Object.entries(effect.parameters)) {
-    // SECURITY: Sanitize string parameter values
+    //                                                                  // security
     parameters[key] =
       typeof param.value === "string"
         ? sanitizeForLLM(param.value)
@@ -667,7 +667,7 @@ function getLayerDataProp<T extends PropertyValue | JSONValue | PropertyValue[] 
  */
 function serializeLayerData(type: string, layerData: Layer["data"]): Record<string, PropertyValue> {
   // Return a summarized version of layer-specific data
-  // SECURITY: Sanitize all user-controlled string fields
+  //                                                                  // security
   if (!layerData || typeof layerData !== "object") {
     return {};
   }
@@ -815,7 +815,7 @@ function serializeLayerData(type: string, layerData: Layer["data"]): Record<stri
 
     default: {
       // Return raw data for unknown types (limited to prevent huge output)
-      // SECURITY: Sanitize all string values in unknown data
+      //                                                                  // security
       const result: Record<string, PropertyValue> = {};
       const entries = Object.entries(layerData).slice(0, 10);
       for (const [key, value] of entries) {
@@ -830,9 +830,9 @@ function serializeLayerData(type: string, layerData: Layer["data"]): Record<stri
   }
 }
 
-// ============================================================================
-// CHANGE TRACKING (for verification)
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                        // change // tracking
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Compare two states and return a summary of changes

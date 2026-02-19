@@ -8,7 +8,7 @@
 import { describe, it, expect } from "vitest";
 import * as fc from "fast-check";
 
-// LOD configuration structure
+//                                                                       // lod
 interface LODConfig {
   enabled: boolean;
   distances: number[];

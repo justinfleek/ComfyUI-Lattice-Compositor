@@ -33,18 +33,18 @@ import {
   MAX_ANIMATION_NAME_LENGTH,
 } from "./shared-validation";
 
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Constants
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export const PROJECT_VERSION = "1.0.0" as const;
 export const MAX_DIMENSION = 16384;
 export const MAX_FPS = 120;
 export const MAX_FRAME_COUNT = 100000;
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Color Settings
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export const ColorSpaceSchema = z.enum([
   "sRGB",
@@ -78,9 +78,9 @@ export const ColorSettingsSchema = z.object({
 
 export type ColorSettings = z.infer<typeof ColorSettingsSchema>;
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Composition Settings
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export const CompositionSettingsSchema = z.object({
   width: z.number().int().positive().max(MAX_DIMENSION).refine(
@@ -113,9 +113,9 @@ export const CompositionSettingsSchema = z.object({
 
 export type CompositionSettings = z.infer<typeof CompositionSettingsSchema>;
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Workflow Mapping
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export const WorkflowInputTypeSchema = z.enum([
   "image",
@@ -146,9 +146,9 @@ export const WorkflowOutputSchema = z.object({
 
 export type WorkflowOutput = z.infer<typeof WorkflowOutputSchema>;
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Global Light Settings
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export const GlobalLightSettingsSchema = z.object({
   angle: finiteNumber.max(360), // Max 360 degrees
@@ -157,9 +157,9 @@ export const GlobalLightSettingsSchema = z.object({
 
 export type GlobalLightSettings = z.infer<typeof GlobalLightSettingsSchema>;
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Marker
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export const MarkerSchema = z.object({
   id: EntityIdSchema,
@@ -172,9 +172,9 @@ export const MarkerSchema = z.object({
 
 export type Marker = z.infer<typeof MarkerSchema>;
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Composition
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export const CompositionSchema = z.object({
   id: EntityIdSchema,
@@ -199,9 +199,9 @@ export const CompositionSchema = z.object({
 
 export type Composition = z.infer<typeof CompositionSchema>;
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Asset Types
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export const AssetTypeSchema = z.enum([
   "depth_map",
@@ -325,11 +325,11 @@ export const AssetReferenceSchema = z.object({
   // Material definition
   materialMaps: MaterialMapsSchema.optional(),
 
-  // HDRI metadata
+  //                                                                      // hdri
   hdriExposure: finiteNumber.min(-10).max(10).optional(), // Reasonable exposure range
   hdriRotation: finiteNumber.max(360).optional(), // Max 360 degrees rotation
 
-  // SVG metadata
+  //                                                                       // svg
   svgPaths: positiveInt.max(100000).optional(), // Max 100k SVG paths
   svgViewBox: SVGViewBoxSchema.optional(),
 
@@ -386,9 +386,9 @@ export const AssetReferenceSchema = z.object({
 
 export type AssetReference = z.infer<typeof AssetReferenceSchema>;
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Data Asset
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export const DataAssetTypeSchema = z.enum(["json", "csv", "tsv", "mgjson"]);
 
@@ -432,9 +432,9 @@ export const DataAssetReferenceSchema = z.object({
 
 export type DataAssetReference = z.infer<typeof DataAssetReferenceSchema>;
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Project Meta
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export const ProjectMetaSchema = z.object({
   name: z.string().min(1).max(MAX_NAME_LENGTH).trim(),
@@ -453,9 +453,9 @@ export const ProjectMetaSchema = z.object({
 
 export type ProjectMeta = z.infer<typeof ProjectMetaSchema>;
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Export Settings
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export const ExportSettingsSchema = z.object({
   format: z.string().min(1).max(50).trim(), // Format name
@@ -470,9 +470,9 @@ export const ExportSettingsSchema = z.object({
 
 export type ExportSettings = z.infer<typeof ExportSettingsSchema>;
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Main Project Schema
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export const LatticeProjectSchema = z.object({
   version: z.literal(PROJECT_VERSION),
@@ -505,9 +505,9 @@ export const LatticeProjectSchema = z.object({
 
 export type LatticeProject = z.infer<typeof LatticeProjectSchema>;
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Validation Helpers
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Validate a project file.

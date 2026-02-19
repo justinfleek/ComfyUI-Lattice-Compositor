@@ -27,9 +27,9 @@ import { useSelectionStore } from "./selectionStore";
 import { useProjectStore } from "./projectStore";
 import { useAnimationStore } from "./animationStore";
 
-// ============================================================================
-// HELPER FUNCTIONS
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                                       // helper // functions
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Safely compare frame numbers, handling NaN values
@@ -53,9 +53,9 @@ function safeFrame(frame: number | undefined | null, fallback = 0): number {
   return fallback;
 }
 
-// ============================================================================
-// STORE ACCESS INTERFACE
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                              // store // access // interface
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Interface for compositorStore access during transition period.
@@ -80,9 +80,9 @@ export interface CameraStoreAccess {
   selectLayer(layerId: string): void;
 }
 
-// ============================================================================
-// PINIA STORE
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                            // pinia // store
+// ════════════════════════════════════════════════════════════════════════════
 
 export const useCameraStore = defineStore("camera", {
   state: () => ({
@@ -110,9 +110,9 @@ export const useCameraStore = defineStore("camera", {
   },
   
   actions: {
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
     // Camera CRUD
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
 
     createCameraLayer(name?: string): { camera: Camera3D; layer: Layer } {
       const projectStore = useProjectStore();
@@ -241,9 +241,9 @@ export const useCameraStore = defineStore("camera", {
       projectStore.pushHistory();
     },
 
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
     // Camera Keyframes
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
 
     getCameraKeyframes(cameraId: string): CameraKeyframe[] {
       // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy || []
@@ -284,9 +284,9 @@ export const useCameraStore = defineStore("camera", {
       }
     },
 
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
     // Camera Interpolation
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
 
     getCameraAtFrame(cameraId: string, frame: number): Camera3D {
       const camera = this.cameras.get(cameraId);

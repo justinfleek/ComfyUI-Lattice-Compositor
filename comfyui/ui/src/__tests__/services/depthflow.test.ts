@@ -12,7 +12,7 @@ function calculateExponentialMotion(
   endValue: number,
   easedT: number,
 ): number {
-  // BUG-004 FIX: Prevent division by zero when startValue is 0
+  //                                                                       // bug
   // Fall back to linear interpolation in this case
   if (startValue === 0) {
     return endValue * easedT;

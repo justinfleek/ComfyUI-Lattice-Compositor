@@ -58,9 +58,9 @@ import Lattice.Services.AudioFeatures (AudioFeatureType(..))
 import Lattice.Services.PropertyEvaluator (AudioMapping(..))
 import Lattice.Types.LayerDataParticles (AudioParticleMapping(..))
 
--- ============================================================================
--- TEST DATA HELPERS
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                   // test // data // helpers
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Create test audio analysis
 -- Uses AudioAnalysis from AudioFeatures service (full type)
@@ -129,9 +129,9 @@ createTestAudioState buf bufLoaded analysis analysisLoaded loading stems activeS
     , audioStateLegacyMappings = HM.empty
     }
 
--- ============================================================================
--- TESTS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                                     // tests
+-- ════════════════════════════════════════════════════════════════════════════
 
 spec :: TestTree
 spec = testGroup "Audio State Functions"

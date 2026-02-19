@@ -14,9 +14,9 @@ import type { ParticleBuffer } from "./VerifiedParticleBuffer";
 import type { ForceField } from "./VerifiedForces";
 import { pos, type Positive } from "./VerifiedTypes";
 
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // WebGPU Availability Check
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 let _webgpuAvailable: boolean | null = null;
 let _gpuDevice: GPUDevice | null = null;
@@ -79,9 +79,9 @@ export function getGPUDevice(): GPUDevice | null {
   return _gpuDevice;
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // WebGPU Compute Manager
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export interface VerifiedWebGPUConfig {
   maxParticles: number;
@@ -98,8 +98,8 @@ export class VerifiedWebGPUCompute {
   private computePipeline: GPUComputePipeline | null = null;
   private audioModPipeline: GPUComputePipeline | null = null;
   
-  // SOA buffers (matching ParticleBuffer layout)
-  // PROVEN: memory_bounded theorem guarantees maxP * particleBytes ≤ vramBytes - fixedBytes
+  //                                                                       // soa
+  //                                                                    // proven
   // See: leanparticles/PARTICLE_VERIFIED.lean, Section 11
   // Definite assignment: createBuffers() called synchronously in constructor
   private posXBuffer!: GPUBuffer;
@@ -116,7 +116,7 @@ export class VerifiedWebGPUCompute {
   private lifetimeBuffer!: GPUBuffer;
 
   // Force field buffer (max 16 fields * 64 bytes = 1024 bytes)
-  // PROVEN: memory_strict_bound ensures total < vramBytes
+  //                                                                    // proven
   private forceFieldBuffer!: GPUBuffer;
   private forceFieldCount: number = 0;
 
@@ -617,7 +617,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) { let i = gid.x; if i >= 
     const lifetimeData = new Float32Array(this.stagingLifetimeBuffer.getMappedRange().slice(0, safeCount * 4));
     
     // Update ParticleBuffer with GPU results
-    // PROVEN: Direct assignment preserves SOA layout
+    //                                                                    // proven
     particles.posX.set(posXData, 0);
     particles.posY.set(posYData, 0);
     particles.posZ.set(posZData, 0);

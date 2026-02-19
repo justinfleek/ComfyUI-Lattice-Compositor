@@ -17,9 +17,9 @@ import Lattice.FFI.PureScriptToTypeScript
   , tsToPs
   )
 
--- ============================================================================
--- ROUND-TRIP PROPERTY TESTS
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                                     // round
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- | Test: PS → TS → PS round-trip
 -- 
@@ -31,11 +31,11 @@ roundTripPSTS x =
     Right x' -> x == x'
     Left _ -> false
 
--- ============================================================================
--- TYPE-SPECIFIC TESTS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                                      // type
+-- ════════════════════════════════════════════════════════════════════════════
 
--- NOTE: Type-specific tests will be generated from Lean4 Extractable
+--                                                                      // note
 -- instances. For now, this module provides the generic test framework.
 --
 -- Example generated tests:
@@ -43,23 +43,23 @@ roundTripPSTS x =
 -- roundTripPSTSPoint3 :: Point3 -> Boolean
 -- roundTripPSTSPoint3 = roundTripPSTS
 
--- ============================================================================
--- SPEC TEST SUITE
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                     // spec // test // suite
+-- ════════════════════════════════════════════════════════════════════════════
 
 spec :: Spec Unit
 spec = do
   describe "PureScriptToTypeScript round-trip tests" $ do
     it "should round-trip Point3 values" $ do
-      -- TODO: Add specific test cases once Point3 is available
+      --                                                                      // todo
       pending
 
     it "should round-trip Vec3 values" $ do
-      -- TODO: Add specific test cases once Vec3 is available
+      --                                                                      // todo
       pending
 
--- ============================================================================
--- QUICKCHECK PROPERTY TESTS
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                           // quickcheck // property // tests
+-- ════════════════════════════════════════════════════════════════════════════
 
 -- Run property tests with: quickCheck roundTripPSTS

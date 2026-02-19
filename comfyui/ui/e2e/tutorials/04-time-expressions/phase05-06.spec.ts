@@ -48,7 +48,7 @@ test.describe("Tutorial 04: Time Remapping - Phases 5-6 (Steps 83-135)", () => {
     await h.goToFrame(180);
     await h.setSpeedMapValue(0, 120); // Continue playback
 
-    // UNDO/REDO
+    //                                                                      // undo
     await h.undo();
     await h.redo();
   });
@@ -92,7 +92,7 @@ test.describe("Tutorial 04: Time Remapping - Phases 5-6 (Steps 83-135)", () => {
     // Close graph editor
     await h.toggleCurveEditor();
 
-    // UNDO/REDO
+    //                                                                      // undo
     await h.undo();
     await h.redo();
   });

@@ -41,7 +41,7 @@ test.describe("Tutorial 03: Mesh Deformation - Phases 5-6 (Steps 51-76)", () => 
     await h.selectPin(0, 0);
     await h.movePinTo(0, 0, 900, 280);
 
-    // UNDO/REDO
+    //                                                                      // undo
     await h.undo();
     await h.redo();
   });
@@ -70,7 +70,7 @@ test.describe("Tutorial 03: Mesh Deformation - Phases 5-6 (Steps 51-76)", () => 
     await h.goToStart();
     await h.goToFrame(15);
 
-    // UNDO/REDO
+    //                                                                      // undo
     await h.undo();
     await h.redo();
   });

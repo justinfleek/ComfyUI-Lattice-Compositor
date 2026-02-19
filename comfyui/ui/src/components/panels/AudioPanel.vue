@@ -736,7 +736,7 @@ const confidenceClass = computed(() => {
   return "low";
 });
 
-// MIDI state
+//                                                                      // midi
 const midiSectionExpanded = ref(false);
 const midiAvailable = ref(false);
 const midiDevices = ref<MIDIDeviceInfo[]>([]);
@@ -745,7 +745,7 @@ const midiMonitorEnabled = ref(false);
 const recentMIDIMessages = ref<MIDIMessage[]>([]);
 let midiListenerRemove: (() => void) | null = null;
 
-// MIDI File to Keyframes state
+//                                                                 // midi // f
 const midiFileSectionExpanded = ref(false);
 const midiFileInput = ref<HTMLInputElement | null>(null);
 const loadedMIDIFile = ref<MIDIParsedFile | null>(null);
@@ -1088,9 +1088,9 @@ onMounted(() => {
   }
 });
 
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Stem Separation Functions
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 // Load available stem separation models from backend (falls back to defaults)
 async function loadStemModels() {
@@ -1292,9 +1292,9 @@ async function useStemForReactivity(stemName: string) {
   }
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Enhanced Beat Detection Functions
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 function applyBeatPreset() {
   if (beatPreset.value && BEAT_DETECTION_PRESETS[beatPreset.value]) {
@@ -1434,9 +1434,9 @@ function markBeatsAsMarkers() {
   );
 }
 
-// ============================================================================
-// MIDI Functions
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                                 // midi // f
+// ════════════════════════════════════════════════════════════════════════════
 
 async function initMIDI() {
   const midiService = getMIDIService();
@@ -1492,9 +1492,9 @@ watch(midiMonitorEnabled, (enabled) => {
   }
 });
 
-// ============================================================================
-// MIDI File to Keyframes Functions
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                                 // midi // f
+// ════════════════════════════════════════════════════════════════════════════
 
 function loadMIDIFile() {
   // Lean4/PureScript/Haskell: Explicit pattern matching - no lazy ?.

@@ -92,7 +92,7 @@ export async function searchChatHistory(
   query: string,
   limit: number = 20
 ): Promise<ChatMessage[]> {
-  // TODO: Implement search_chat_history FFI call
+  //                                                                      // todo
   // For now, get all messages and filter client-side
   const messages = await getChatHistory(projectId, limit * 10);
   const lowerQuery = query.toLowerCase();

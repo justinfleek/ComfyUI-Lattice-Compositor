@@ -16,9 +16,9 @@ import Lattice.State.Particle
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit (testCase, assertEqual, assertBool)
 
--- ============================================================================
--- TEST HELPERS
--- ============================================================================
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                           // test // helpers
+-- ════════════════════════════════════════════════════════════════════════════
 
 createTestKeyframe :: Int -> Double -> Double -> Double -> ParticleKeyframe
 createTestKeyframe frame x y z =
@@ -55,9 +55,9 @@ createTestBakeResult layerId trajectories totalFrames totalParticles exportForma
     , bakeResultExportFormat = exportFormat
     }
 
--- ============================================================================
--- TEST SUITE
--- ============================================================================
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                             // test // suite
+-- ════════════════════════════════════════════════════════════════════════════
 
 spec :: TestTree
 spec =

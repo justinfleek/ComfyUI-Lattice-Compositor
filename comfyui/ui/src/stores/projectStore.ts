@@ -37,18 +37,18 @@ import { validateProjectStructure } from "@/utils/security";
 import { useAnimationStore } from "./animationStore";
 import { createEmptyProject } from "@/types/project";
 
-// ============================================================================
-// CONSTANTS
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                                                 // constants
+// ════════════════════════════════════════════════════════════════════════════
 
 const MAX_HISTORY_SIZE = 50;
 const MAX_PROJECT_SIZE = 100 * 1024 * 1024;
 const MAX_PROJECT_DEPTH = 50;
 const MAX_ARRAY_LENGTH = 50000;
 
-// ============================================================================
-// STORE INTERFACES
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                       // store // interfaces
+// ════════════════════════════════════════════════════════════════════════════
 
 export interface ProjectStateAccess {
   project: {
@@ -93,9 +93,9 @@ export interface ProjectStore {
   autosaveTimerId?: number | null;
 }
 
-// ============================================================================
-// HELPER FUNCTIONS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                       // helper // functions
+// ════════════════════════════════════════════════════════════════════════════
 
 export function getOpenCompositions(projectStore: ReturnType<typeof useProjectStore>): Composition[] {
   return projectStore.openCompositionIds
@@ -239,9 +239,9 @@ export function loadInputs(
   projectStore.project.meta.modified = new Date().toISOString();
 }
 
-// ============================================================================
-// PARTICLE CACHE INVALIDATION
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                         // particle // cache // invalidation
+// ════════════════════════════════════════════════════════════════════════════
 
 interface LatticeEngineGlobal {
   __latticeEngine?: {
@@ -268,9 +268,9 @@ function invalidateParticleCaches(): void {
   }
 }
 
-// ============================================================================
-// ASSET HELPERS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                          // asset // helpers
+// ════════════════════════════════════════════════════════════════════════════
 
 export function findUsedAssetIds(store: ProjectStore): Set<string> {
   const usedIds = new Set<string>();
@@ -322,9 +322,9 @@ function getExtensionForAsset(asset: { filename?: string; type?: string }): stri
   }
 }
 
-// ============================================================================
-// DEFAULT PROJECT
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                        // default // project
+// ════════════════════════════════════════════════════════════════════════════
 
 export function createDefaultProject(): LatticeProject {
   const mainCompId = "comp_main";
@@ -360,9 +360,9 @@ export function createDefaultProject(): LatticeProject {
   };
 }
 
-// ============================================================================
-// STORE DEFINITION
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                       // store // definition
+// ════════════════════════════════════════════════════════════════════════════
 
 export const useProjectStore = defineStore("project", {
   state: () => {
@@ -403,9 +403,9 @@ export const useProjectStore = defineStore("project", {
   },
 
   actions: {
-    // ========================================================================
-    // GETTERS (delegated from compositorStore)
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                                   // getters
+    // ════════════════════════════════════════════════════════════════════════════
 
     getOpenCompositions(): Composition[] {
       return getOpenCompositions(this);
@@ -472,9 +472,9 @@ export const useProjectStore = defineStore("project", {
       loadInputs(this, inputs);
     },
 
-    // ========================================================================
-    // HISTORY MANAGEMENT
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                     // history // management
+    // ════════════════════════════════════════════════════════════════════════════
 
     pushHistory(): void {
       if (this.historyIndex < this.historyStack.length - 1) {
@@ -521,9 +521,9 @@ export const useProjectStore = defineStore("project", {
       this.historyIndex = 0;
     },
 
-    // ========================================================================
-    // PROJECT INITIALIZATION
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                 // project // initialization
+    // ════════════════════════════════════════════════════════════════════════════
 
     newProject(): void {
       this.project = createDefaultProject();
@@ -548,9 +548,9 @@ export const useProjectStore = defineStore("project", {
       return await this.saveProjectToServer(undefined);
     },
 
-    // ========================================================================
-    // SERIALIZATION
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                             // serialization
+    // ════════════════════════════════════════════════════════════════════════════
 
     exportProject(): string {
       const project: LatticeProject = { ...this.project };
@@ -635,7 +635,7 @@ export const useProjectStore = defineStore("project", {
             return false;
           }
         } catch {
-          // JSON parse error will be caught by importProject
+          //                                                                      // json
         }
 
         const success = this.importProject(json, pushHistoryFn);
@@ -647,9 +647,9 @@ export const useProjectStore = defineStore("project", {
       }
     },
 
-    // ========================================================================
-    // SERVER OPERATIONS
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                      // server // operations
+    // ════════════════════════════════════════════════════════════════════════════
 
     async saveProjectToServer(projectId?: string): Promise<string | null> {
       try {
@@ -745,9 +745,9 @@ export const useProjectStore = defineStore("project", {
       }
     },
 
-    // ========================================================================
-    // AUTOSAVE
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                                  // autosave
+    // ════════════════════════════════════════════════════════════════════════════
 
     startAutosave(performAutosaveFn: () => Promise<void>): void {
       if (this.autosaveTimerId !== null || !this.autosaveEnabled) return;
@@ -798,9 +798,9 @@ export const useProjectStore = defineStore("project", {
       this.hasUnsavedChanges = true;
     },
 
-    // ========================================================================
-    // ASSET MANAGEMENT
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                       // asset // management
+    // ════════════════════════════════════════════════════════════════════════════
 
     removeUnusedAssets(store: ProjectStore): { removed: number; assetNames: string[] } {
       const usedIds = findUsedAssetIds(store);

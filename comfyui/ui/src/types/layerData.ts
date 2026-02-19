@@ -8,9 +8,9 @@
 import type { AnimatableProperty } from "./animation";
 import type { JSONValue } from "./dataAsset";
 
-// ============================================================
-// IMAGE LAYER DATA
-// ============================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                                    // image // layer // data
+// ════════════════════════════════════════════════════════════════════════════
 
 export interface ImageLayerData {
   // Asset reference - empty string if using inline source
@@ -37,9 +37,9 @@ export interface ImageLayerData {
   segmentationMaskId: string; // Empty string if not from segmentation
 }
 
-// ============================================================
-// DEPTH LAYER DATA
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                    // depth // layer // data
+// ════════════════════════════════════════════════════════════════════════════
 
 export interface DepthLayerData {
   /** Source asset ID (depth map image) */
@@ -70,9 +70,9 @@ export interface DepthLayerData {
   wireframe: boolean;
 }
 
-// ============================================================
-// NORMAL LAYER DATA
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                   // normal // layer // data
+// ════════════════════════════════════════════════════════════════════════════
 
 export interface NormalLayerData {
   /** Source asset ID (normal map image) */
@@ -100,9 +100,9 @@ export interface NormalLayerData {
   ambientIntensity: number;
 }
 
-// ============================================================
-// AUDIO LAYER DATA
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                    // audio // layer // data
+// ════════════════════════════════════════════════════════════════════════════
 
 export interface AudioLayerData {
   /** Source asset ID (audio file) */
@@ -133,9 +133,9 @@ export interface AudioLayerData {
   exposeFeatures: boolean;
 }
 
-// ============================================================
-// VIDEO DATA
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                             // video // data
+// ════════════════════════════════════════════════════════════════════════════
 
 export interface VideoData {
   assetId: string | null;
@@ -171,9 +171,9 @@ export interface VideoData {
   posterFrame: number; // Frame to show when paused at start
 }
 
-// ============================================================
-// NESTED COMP DATA
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                    // nested // comp // data
+// ════════════════════════════════════════════════════════════════════════════
 
 export interface NestedCompData {
   compositionId: string; // Reference to composition in project.compositions
@@ -199,9 +199,9 @@ export interface NestedCompData {
   frameRate?: number;
 }
 
-// ============================================================
-// GENERATED MAP DATA
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                  // generated // map // data
+// ════════════════════════════════════════════════════════════════════════════
 
 export type GeneratedMapType =
   | "depth" // DepthAnything V3
@@ -221,9 +221,9 @@ export interface GeneratedMapData {
   lastGenerated?: string; // ISO timestamp
 }
 
-// ============================================================
-// GENERATED LAYER DATA (AI-generated content)
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                // generated // layer // data
+// ════════════════════════════════════════════════════════════════════════════
 
 export interface GeneratedLayerData {
   /** Generated content type */
@@ -258,9 +258,9 @@ export interface GeneratedLayerData {
   lastGenerated?: string;
 }
 
-// ============================================================
-// MATTE LAYER DATA
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                    // matte // layer // data
+// ════════════════════════════════════════════════════════════════════════════
 
 export interface MatteLayerData {
   /** Matte extraction method */
@@ -292,9 +292,9 @@ export interface MatteLayerData {
   previewMode: "matte" | "composite" | "overlay";
 }
 
-// ============================================================
-// CONTROL LAYER DATA (formerly Null Object)
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                  // control // layer // data
+// ════════════════════════════════════════════════════════════════════════════
 
 export interface ControlLayerData {
   /** Visual size of control icon in editor */
@@ -313,9 +313,9 @@ export interface ControlLayerData {
   iconColor: string;
 }
 
-// ============================================================
-// SOLID LAYER DATA
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                    // solid // layer // data
+// ════════════════════════════════════════════════════════════════════════════
 
 export interface SolidLayerData {
   /** Solid color */
@@ -334,9 +334,9 @@ export interface SolidLayerData {
   receiveShadow?: boolean;
 }
 
-// ============================================================
-// NULL LAYER DATA (deprecated - use ControlLayerData)
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                     // null // layer // data
+// ════════════════════════════════════════════════════════════════════════════
 
 /** @deprecated Use ControlLayerData instead */
 export interface NullLayerData {
@@ -344,9 +344,9 @@ export interface NullLayerData {
   size: number;
 }
 
-// ============================================================
-// GROUP LAYER DATA
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                    // group // layer // data
+// ════════════════════════════════════════════════════════════════════════════
 
 export interface GroupLayerData {
   /** Collapsed state in timeline */
@@ -362,9 +362,9 @@ export interface GroupLayerData {
   isolate: boolean;
 }
 
-// ============================================================
-// EFFECT LAYER DATA (formerly Adjustment Layer)
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                   // effect // layer // data
+// ════════════════════════════════════════════════════════════════════════════
 
 export interface EffectLayerData {
   /** Effect layer flag (always true for effect layers) */
@@ -377,9 +377,9 @@ export interface EffectLayerData {
   color: string;
 }
 
-// ============================================================
-// MODEL LAYER DATA (3D Models)
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                    // model // layer // data
+// ════════════════════════════════════════════════════════════════════════════
 
 export interface ModelLayerData {
   /** Asset ID for the 3D model */
@@ -423,9 +423,9 @@ export interface ModelInstanceData {
   color?: string;
 }
 
-// ============================================================
-// POINT CLOUD LAYER DATA
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                           // point // cloud // layer // data
+// ════════════════════════════════════════════════════════════════════════════
 
 export interface PointCloudLayerData {
   /** Asset ID for the point cloud */
@@ -465,9 +465,9 @@ export interface PointCloudLayerData {
   };
 }
 
-// ============================================================
-// POSE LAYER DATA (OpenPose skeleton)
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                     // pose // layer // data
+// ════════════════════════════════════════════════════════════════════════════
 
 export interface PoseKeypoint {
   x: number; // Normalized 0-1

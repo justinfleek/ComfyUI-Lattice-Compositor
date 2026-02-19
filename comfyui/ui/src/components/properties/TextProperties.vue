@@ -952,9 +952,9 @@ function duplicateAnimator(animatorId: string) {
   emit("update");
 }
 
-// ============================================================================
-// HELPER: Regenerate keyframe IDs for text animator properties
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                                                    // helper
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Regenerate all keyframe IDs in a text animator to avoid conflicts when duplicating
@@ -1186,7 +1186,7 @@ async function updateExpressionSelector(
   key: keyof TextExpressionSelector,
   value: PropertyValue | string,
 ) {
-  // SECURITY: Validate amountExpression before applying (DoS protection)
+  //                                                                  // security
   if (key === "amountExpression" && typeof value === "string" && value.trim()) {
     const safe = await isExpressionSafe(value);
     if (!safe) {

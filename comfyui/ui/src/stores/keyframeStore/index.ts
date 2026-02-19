@@ -20,9 +20,9 @@
 
 import { defineStore } from "pinia";
 
-// ============================================================================
-// MODULE IMPORTS
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                                         // module // imports
+// ════════════════════════════════════════════════════════════════════════════
 
 // Types (re-export for consumers)
 export type {
@@ -35,7 +35,7 @@ export type {
 // Helpers (re-export for consumers)
 export { findPropertyByPath, safeFrame } from "./helpers";
 
-// CRUD operations
+//                                                                      // crud
 import {
   addKeyframe as addKeyframeImpl,
   removeKeyframe as removeKeyframeImpl,
@@ -146,9 +146,9 @@ import type {
   PropertyValue,
 } from "@/types/project";
 
-// ============================================================================
-// STORE DEFINITION
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                       // store // definition
+// ════════════════════════════════════════════════════════════════════════════
 
 export const useKeyframeStore = defineStore("keyframe", {
   state: (): KeyframeState => ({
@@ -163,9 +163,9 @@ export const useKeyframeStore = defineStore("keyframe", {
   },
 
   actions: {
-    // ========================================================================
-    // KEYFRAME CRUD
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                          // keyframe // crud
+    // ════════════════════════════════════════════════════════════════════════════
 
     addKeyframe<T>(
       layerId: string,
@@ -237,9 +237,9 @@ export const useKeyframeStore = defineStore("keyframe", {
       updateKeyframeImpl(layerId, propertyPath, keyframeId, updates);
     },
 
-    // ========================================================================
-    // INTERPOLATION
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                             // interpolation
+    // ════════════════════════════════════════════════════════════════════════════
 
     setKeyframeInterpolation(
       layerId: string,
@@ -287,9 +287,9 @@ export const useKeyframeStore = defineStore("keyframe", {
       );
     },
 
-    // ========================================================================
-    // PROPERTY STATE
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                         // property // state
+    // ════════════════════════════════════════════════════════════════════════════
 
     setPropertyValue(
       layerId: string,
@@ -308,9 +308,9 @@ export const useKeyframeStore = defineStore("keyframe", {
       setPropertyAnimatedImpl(layerId, propertyPath, animated, addKeyframeCallback);
     },
 
-    // ========================================================================
-    // QUERY UTILITIES
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                        // query // utilities
+    // ════════════════════════════════════════════════════════════════════════════
 
     getKeyframesAtFrame(
       layerId: string,
@@ -339,9 +339,9 @@ export const useKeyframeStore = defineStore("keyframe", {
       return findPrevKeyframeFrameImpl(currentFrame, layerIds);
     },
 
-    // ========================================================================
-    // TIMING
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                                    // timing
+    // ════════════════════════════════════════════════════════════════════════════
 
     scaleKeyframeTiming(
       layerId: string,
@@ -378,9 +378,9 @@ export const useKeyframeStore = defineStore("keyframe", {
       return checkRovingImpactImpl(layerId);
     },
 
-    // ========================================================================
-    // CLIPBOARD
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                                 // clipboard
+    // ════════════════════════════════════════════════════════════════════════════
 
     copyKeyframes(
       keyframeSelections: Array<{
@@ -399,9 +399,9 @@ export const useKeyframeStore = defineStore("keyframe", {
       return pasteKeyframesImpl(targetLayerId, targetPropertyPath);
     },
 
-    // ========================================================================
-    // VELOCITY
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                                  // velocity
+    // ════════════════════════════════════════════════════════════════════════════
 
     applyKeyframeVelocity(
       layerId: string,
@@ -420,9 +420,9 @@ export const useKeyframeStore = defineStore("keyframe", {
       return getKeyframeVelocityImpl(layerId, propertyPath, keyframeId);
     },
 
-    // ========================================================================
-    // DIMENSIONS
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                                // dimensions
+    // ════════════════════════════════════════════════════════════════════════════
 
     separatePositionDimensionsAction(
       layerId: string,
@@ -460,9 +460,9 @@ export const useKeyframeStore = defineStore("keyframe", {
       return hasScaleSeparatedImpl(layerId);
     },
 
-    // ========================================================================
-    // AUTO BEZIER
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                            // auto // bezier
+    // ════════════════════════════════════════════════════════════════════════════
 
     autoCalculateBezierTangents(
       layerId: string,
@@ -479,9 +479,9 @@ export const useKeyframeStore = defineStore("keyframe", {
       return autoCalculateAllBezierTangentsImpl(layerId, propertyPath);
     },
 
-    // ========================================================================
-    // EXPRESSIONS
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                               // expressions
+    // ════════════════════════════════════════════════════════════════════════════
 
     setPropertyExpression(
       layerId: string,
@@ -566,9 +566,9 @@ export const useKeyframeStore = defineStore("keyframe", {
       return canBakeExpressionImpl(layerId, propertyPath);
     },
 
-    // ========================================================================
-    // PROPERTY EVALUATION
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                    // property // evaluation
+    // ════════════════════════════════════════════════════════════════════════════
 
     /**
      * Get a single scalar property value at a specific frame.
@@ -614,8 +614,8 @@ export const useKeyframeStore = defineStore("keyframe", {
   },
 });
 
-// ============================================================================
-// TYPE EXPORTS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                           // type // exports
+// ════════════════════════════════════════════════════════════════════════════
 
 export type KeyframeStoreType = ReturnType<typeof useKeyframeStore>;

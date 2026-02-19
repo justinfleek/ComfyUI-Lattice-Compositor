@@ -25,9 +25,9 @@ import type { JSONValue } from "@/types/dataAsset";
  */
 type RuntimeValue = string | number | boolean | object | null | undefined | bigint | symbol;
 
-// ============================================================================
-// COMFYUI DATA SCHEMAS
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                                // comfyui // data // schemas
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Schema for ComfyUI image output
@@ -88,9 +88,9 @@ export const ComfyPromptInfoSchema = z.object({
   ])).optional(),
 });
 
-// ============================================================================
-// VALIDATION FUNCTIONS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                   // validation // functions
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Validate ComfyUI image output before using
@@ -205,9 +205,9 @@ export function validateComfyExecutionStatus(
   return result.data;
 }
 
-// ============================================================================
-// CUSTOM NODE OUTPUT VALIDATION
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                    // custom // node // output // validation
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Limits for custom node outputs
@@ -349,9 +349,9 @@ function findSuspiciousStrings(
   return found;
 }
 
-// ============================================================================
-// WORKFLOW VALIDATION
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                    // workflow // validation
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Validate a ComfyUI workflow before execution
@@ -453,9 +453,9 @@ export function validateComfyWorkflow(workflow: ComfyUIWorkflow): {
   };
 }
 
-// ============================================================================
-// IMAGE DATA VALIDATION
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                               // image // data // validation
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Validate image data from ComfyUI
@@ -557,7 +557,7 @@ export function validateImageData(
  * Detect image format from magic bytes
  */
 function detectImageFormat(bytes: Uint8Array): string | null {
-  // PNG: 89 50 4E 47 0D 0A 1A 0A
+  //                                                                       // png
   if (
     bytes[0] === 0x89 &&
     bytes[1] === 0x50 &&
@@ -567,7 +567,7 @@ function detectImageFormat(bytes: Uint8Array): string | null {
     return "image/png";
   }
 
-  // JPEG: FF D8 FF
+  //                                                                      // jpeg
   if (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) {
     return "image/jpeg";
   }
@@ -586,7 +586,7 @@ function detectImageFormat(bytes: Uint8Array): string | null {
     return "image/webp";
   }
 
-  // GIF: GIF87a or GIF89a
+  //                                                                       // gif
   if (
     bytes[0] === 0x47 &&
     bytes[1] === 0x49 &&

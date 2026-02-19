@@ -18,7 +18,7 @@
 --   - cuTensor
 --
 -- Version info is parsed from container environment variables:
---   CUDA_VERSION, CUDNN_VERSION, NCCL_VERSION, TENSORRT_VERSION
+--                                                           // cuda // version
 --
 -- The NGC containers have blessed, tested configurations.
 -- No more fighting nvidia's download auth.

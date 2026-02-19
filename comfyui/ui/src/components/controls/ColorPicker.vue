@@ -334,7 +334,7 @@ function selectSwatch(color: string): void {
   emit("update:modelValue", color);
 }
 
-// SV Square drag
+//                                                                   // sv // s
 let isDraggingSV = false;
 
 function startSVDrag(e: MouseEvent): void {

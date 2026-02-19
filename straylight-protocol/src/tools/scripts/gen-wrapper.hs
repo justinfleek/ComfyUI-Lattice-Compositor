@@ -172,9 +172,9 @@ detectFormat help
     | hasUsageSection && hasAngleBracketArgs = ClapFormat
     -- Clap-style: "-x ARG, --long=ARG" (space before ARG in short form)
     | hasClapShortArgStyle = ClapFormat
-    -- GNU-style: long-only options with deep indent
+    --                                                                       // gnu
     | hasLongOnlyOptions = GnuFormat
-    -- GNU coreutils style
+    --                                                                       // gnu
     | hasGnuStyleOptions = GnuFormat
     -- Default based on common patterns
     | hasAngleBracketArgs = ClapFormat
@@ -204,14 +204,14 @@ detectFormat help
                 -- Has pattern like "-x ARG," where ARG is uppercase
                 any (\w -> all (`elem` ['A' .. 'Z']) w && length w > 1) (words (take 20 trimmed))
 
-    -- GNU has long-only options (6+ spaces before --)
+    --                                                                       // gnu
     hasLongOnlyOptions = any isLongOnlyLine helpLines
     isLongOnlyLine line =
         let indent = length (takeWhile isSpace line)
             stripped = dropWhile isSpace line
          in indent >= 6 && take 2 stripped == "--"
 
-    -- GNU style: "  -x, --long" without angle brackets
+    --                                                                       // gnu
     hasGnuStyleOptions = any isGnuStyleLine helpLines
     isGnuStyleLine line =
         let trimmed = dropWhile isSpace line

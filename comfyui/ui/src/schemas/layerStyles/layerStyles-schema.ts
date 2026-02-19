@@ -14,9 +14,9 @@ import {
   MAX_NAME_LENGTH,
 } from "../shared-validation";
 
-// ============================================================================
-// RGBA Color
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                                                 // rgba // c
+// ════════════════════════════════════════════════════════════════════════════
 
 export const RGBASchema = z.object({
   r: z.number().int().min(0).max(255),
@@ -27,9 +27,9 @@ export const RGBASchema = z.object({
 
 export type RGBA = z.infer<typeof RGBASchema>;
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Gradient
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export const GradientStopSchema = z.object({
   position: normalized01,
@@ -58,9 +58,9 @@ export const GradientDefSchema = z.object({
 
 export type GradientDef = z.infer<typeof GradientDefSchema>;
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Contour Curve
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export const ContourCurveSchema = z.object({
   points: boundedArray(
@@ -74,9 +74,9 @@ export const ContourCurveSchema = z.object({
 
 export type ContourCurve = z.infer<typeof ContourCurveSchema>;
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Base Layer Style
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 const BaseLayerStyleSchema = z.object({
   enabled: z.boolean(),
@@ -84,9 +84,9 @@ const BaseLayerStyleSchema = z.object({
   opacity: AnimatablePropertySchema,
 }).strict();
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Drop Shadow
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export const DropShadowStyleSchema = BaseLayerStyleSchema.extend({
   color: AnimatablePropertySchema,
@@ -103,9 +103,9 @@ export const DropShadowStyleSchema = BaseLayerStyleSchema.extend({
 
 export type DropShadowStyle = z.infer<typeof DropShadowStyleSchema>;
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Inner Shadow
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export const InnerShadowStyleSchema = BaseLayerStyleSchema.extend({
   color: AnimatablePropertySchema,
@@ -121,9 +121,9 @@ export const InnerShadowStyleSchema = BaseLayerStyleSchema.extend({
 
 export type InnerShadowStyle = z.infer<typeof InnerShadowStyleSchema>;
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Outer Glow
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export const GlowTechniqueSchema = z.enum(["softer", "precise"]);
 
@@ -145,9 +145,9 @@ export const OuterGlowStyleSchema = BaseLayerStyleSchema.extend({
 
 export type OuterGlowStyle = z.infer<typeof OuterGlowStyleSchema>;
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Inner Glow
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export const InnerGlowSourceSchema = z.enum(["center", "edge"]);
 
@@ -170,9 +170,9 @@ export const InnerGlowStyleSchema = BaseLayerStyleSchema.extend({
 
 export type InnerGlowStyle = z.infer<typeof InnerGlowStyleSchema>;
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Bevel and Emboss
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export const BevelStyleSchema = z.enum([
   "outer-bevel",
@@ -228,9 +228,9 @@ export const BevelEmbossStyleSchema = BaseLayerStyleSchema.extend({
 
 export type BevelEmbossStyle = z.infer<typeof BevelEmbossStyleSchema>;
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Satin
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export const SatinStyleSchema = BaseLayerStyleSchema.extend({
   color: AnimatablePropertySchema,
@@ -244,9 +244,9 @@ export const SatinStyleSchema = BaseLayerStyleSchema.extend({
 
 export type SatinStyle = z.infer<typeof SatinStyleSchema>;
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Color Overlay
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export const ColorOverlayStyleSchema = BaseLayerStyleSchema.extend({
   color: AnimatablePropertySchema,
@@ -254,9 +254,9 @@ export const ColorOverlayStyleSchema = BaseLayerStyleSchema.extend({
 
 export type ColorOverlayStyle = z.infer<typeof ColorOverlayStyleSchema>;
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Gradient Overlay
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export const GradientOverlayTypeSchema = z.enum([
   "linear",
@@ -281,9 +281,9 @@ export const GradientOverlayStyleSchema = BaseLayerStyleSchema.extend({
 
 export type GradientOverlayStyle = z.infer<typeof GradientOverlayStyleSchema>;
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Pattern Overlay
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export const PatternOverlayStyleSchema = BaseLayerStyleSchema.extend({
   pattern: z.string().max(MAX_NAME_LENGTH).trim(),
@@ -296,9 +296,9 @@ export const PatternOverlayStyleSchema = BaseLayerStyleSchema.extend({
 
 export type PatternOverlayStyle = z.infer<typeof PatternOverlayStyleSchema>;
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Stroke
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export const StrokePositionSchema = z.enum(["outside", "inside", "center"]);
 
@@ -336,9 +336,9 @@ export const StrokeStyleSchema = BaseLayerStyleSchema.extend({
 
 export type StrokeStyle = z.infer<typeof StrokeStyleSchema>;
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Style Blending Options
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export const ChannelBlendRangeSchema = z.object({
   inputBlack: z.number().int().min(0).max(255),
@@ -369,9 +369,9 @@ export const StyleBlendingOptionsSchema = z.object({
 
 export type StyleBlendingOptions = z.infer<typeof StyleBlendingOptionsSchema>;
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Layer Styles
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export const LayerStylesSchema = z.object({
   enabled: z.boolean(),
@@ -389,9 +389,9 @@ export const LayerStylesSchema = z.object({
 
 export type LayerStyles = z.infer<typeof LayerStylesSchema>;
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Global Light Settings
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export const GlobalLightSettingsSchema = z.object({
   angle: AnimatablePropertySchema,

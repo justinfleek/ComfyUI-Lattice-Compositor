@@ -84,7 +84,7 @@ test.describe("Tutorial 04: Expressions - Phases 11-12 (Steps 249-295)", () => {
     `,
     );
 
-    // UNDO/REDO
+    //                                                                      // undo
     await h.undo();
     await h.redo();
   });
@@ -148,7 +148,7 @@ test.describe("Tutorial 04: Expressions - Phases 11-12 (Steps 249-295)", () => {
     );
     // Eased animation 0-100 over 2 seconds
 
-    // UNDO/REDO
+    //                                                                      // undo
     await h.undo();
     await h.redo();
   });

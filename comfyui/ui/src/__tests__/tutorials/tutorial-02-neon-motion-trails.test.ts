@@ -174,9 +174,9 @@ describe('Tutorial 02: Neon Motion Trails', () => {
     return `#${r}${g}${b}`;
   };
 
-  // ============================================================================
-  // PHASE 1: PROJECT SETUP & BACKGROUND (Steps 1-12)
-  // ============================================================================
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  //                                                                // phase // 1
+  // ════════════════════════════════════════════════════════════════════════════
   describe('Phase 1: Project Setup & Background (Steps 1-12)', () => {
 
     describe('Steps 1-3: Creating the Project', () => {
@@ -418,9 +418,9 @@ describe('Tutorial 02: Neon Motion Trails', () => {
     });
   });
 
-  // ============================================================================
-  // PHASE 2: CREATING SILHOUETTE (Steps 13-26)
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                // phase // 2
+  // ════════════════════════════════════════════════════════════════════════════
   describe('Phase 2: Creating Silhouette (Steps 13-26)', () => {
 
     describe('Steps 13-15: Import and Prepare Source', () => {
@@ -550,9 +550,9 @@ describe('Tutorial 02: Neon Motion Trails', () => {
     });
   });
 
-  // ============================================================================
-  // PHASE 3: SHAPE LAYER BASICS (Steps 27-42)
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                // phase // 3
+  // ════════════════════════════════════════════════════════════════════════════
   describe('Phase 3: Shape Layer Basics (Steps 27-42)', () => {
 
     describe('Steps 27-31: Creating Spline Layer', () => {
@@ -738,9 +738,9 @@ describe('Tutorial 02: Neon Motion Trails', () => {
     });
   });
 
-  // ============================================================================
-  // PHASE 4: TRIM PATHS ANIMATOR (Steps 43-60)
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                // phase // 4
+  // ════════════════════════════════════════════════════════════════════════════
   describe('Phase 4: Trim Paths Animator (Steps 43-60)', () => {
 
     describe('Steps 43-47: Adding Trim Paths', () => {
@@ -917,9 +917,9 @@ describe('Tutorial 02: Neon Motion Trails', () => {
     });
   });
 
-  // ============================================================================
-  // PHASE 5: GLOW EFFECT STACKING (Steps 61-82)
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                // phase // 5
+  // ════════════════════════════════════════════════════════════════════════════
   describe('Phase 5: Glow Effect Stacking (Steps 61-82)', () => {
 
     describe('Steps 61-66: Adding First Glow', () => {
@@ -1051,9 +1051,9 @@ describe('Tutorial 02: Neon Motion Trails', () => {
     });
   });
 
-  // ============================================================================
-  // PHASE 6: MULTIPLE STREAKS (Steps 83-102)
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                // phase // 6
+  // ════════════════════════════════════════════════════════════════════════════
   describe('Phase 6: Multiple Streaks (Steps 83-102)', () => {
 
     describe('Steps 83-90: Duplicating Streak Layers', () => {
@@ -1194,9 +1194,9 @@ describe('Tutorial 02: Neon Motion Trails', () => {
     });
   });
 
-  // ============================================================================
-  // PHASE 7: GRADIENT STROKES (Steps 103-120)
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                // phase // 7
+  // ════════════════════════════════════════════════════════════════════════════
   describe('Phase 7: Gradient Strokes (Steps 103-120)', () => {
 
     describe('Steps 103-108: Enabling Gradient Stroke', () => {
@@ -1360,9 +1360,9 @@ describe('Tutorial 02: Neon Motion Trails', () => {
     });
   });
 
-  // ============================================================================
-  // PHASE 8: PEN TOOL PATH CREATION (Steps 121-145)
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                // phase // 8
+  // ════════════════════════════════════════════════════════════════════════════
   describe('Phase 8: Pen Tool Path Creation (Steps 121-145)', () => {
 
     describe('Steps 121-130: Creating Paths with Pen Tool', () => {
@@ -1507,17 +1507,17 @@ describe('Tutorial 02: Neon Motion Trails', () => {
     });
   });
 
-  // ============================================================================
-  // PHASE 9: PATH ANIMATION (Steps 146-178)
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                // phase // 9
+  // ════════════════════════════════════════════════════════════════════════════
   describe('Phase 9: Path Animation (Steps 146-178)', () => {
 
     describe('Steps 146-155: Animating Path Shape', () => {
       test.skip('Steps 146-150: Enable path animation', () => {
-        // NOTE: This test uses pathKeyframes which doesn't exist in SplineData API.
+        //                                                                      // note
         // Animated paths use animatedControlPoints (AnimatableControlPoint[]) which requires
         // AnimatableProperty<number> for x/y coordinates. This is complex to set up programmatically.
-        // TODO: Update to use actual animatedControlPoints API or test through UI interactions.
+        //                                                                      // todo
         const layer = layerStore.createLayer('spline', 'Animated_Path');
 
         // Basic test: verify animated flag can be set
@@ -1530,7 +1530,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
       });
 
       test.skip('Steps 151-155: Set keyframes at different frames', () => {
-        // NOTE: This test uses pathKeyframes which doesn't exist in SplineData API.
+        //                                                                      // note
         // See note in previous test.
       });
     });
@@ -1590,7 +1590,7 @@ describe('Tutorial 02: Neon Motion Trails', () => {
 
     describe('Steps 166-178: Path Speed and Easing', () => {
       test.skip('Steps 166-170: Add easing to path animation', () => {
-        // NOTE: This test uses pathKeyframes which doesn't exist in SplineData API.
+        //                                                                      // note
         // See note in previous test.
       });
 
@@ -1623,15 +1623,15 @@ describe('Tutorial 02: Neon Motion Trails', () => {
 
     describe('Phase 9: Undo/Redo Verification', () => {
       test.skip('Steps 146-178: Undo/Redo path animation', () => {
-        // NOTE: This test uses pathKeyframes which doesn't exist in SplineData API.
+        //                                                                      // note
         // See note in previous test.
       });
     });
   });
 
-  // ============================================================================
-  // PHASE 10: ECHO EFFECT / MOTION TRAILS (Steps 179-205)
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                               // phase // 10
+  // ════════════════════════════════════════════════════════════════════════════
   describe('Phase 10: Echo Effect / Motion Trails (Steps 179-205)', () => {
 
     describe('Steps 179-182: Pre-Composing Streaks', () => {
@@ -1763,9 +1763,9 @@ describe('Tutorial 02: Neon Motion Trails', () => {
     });
   });
 
-  // ============================================================================
-  // PHASE 11: MOTION BLUR (Steps 206-225)
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                               // phase // 11
+  // ════════════════════════════════════════════════════════════════════════════
   describe('Phase 11: Motion Blur (Steps 206-225)', () => {
 
     describe('Steps 206-212: Enabling Motion Blur', () => {
@@ -1862,9 +1862,9 @@ describe('Tutorial 02: Neon Motion Trails', () => {
     });
   });
 
-  // ============================================================================
-  // PHASE 12: COLOR ADJUSTMENTS (Steps 226-250)
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                               // phase // 12
+  // ════════════════════════════════════════════════════════════════════════════
   describe('Phase 12: Color Adjustments (Steps 226-250)', () => {
 
     describe('Steps 226-235: Hue/Saturation Effect', () => {
@@ -1958,9 +1958,9 @@ describe('Tutorial 02: Neon Motion Trails', () => {
     });
   });
 
-  // ============================================================================
-  // PHASE 13: COMPOSITING & BLEND MODES (Steps 251-275)
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                               // phase // 13
+  // ════════════════════════════════════════════════════════════════════════════
   describe('Phase 13: Compositing & Blend Modes (Steps 251-275)', () => {
 
     describe('Steps 251-260: Blend Modes', () => {
@@ -2054,9 +2054,9 @@ describe('Tutorial 02: Neon Motion Trails', () => {
     });
   });
 
-  // ============================================================================
-  // PHASE 14: AUDIO SYNC (Steps 276-300)
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                               // phase // 14
+  // ════════════════════════════════════════════════════════════════════════════
   describe('Phase 14: Audio Sync (Steps 276-300)', () => {
 
     describe('Steps 276-285: Import Audio', () => {
@@ -2179,9 +2179,9 @@ describe('Tutorial 02: Neon Motion Trails', () => {
     });
   });
 
-  // ============================================================================
-  // PHASE 15: FINAL COMPOSITION & EXPORT (Steps 301-325)
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                               // phase // 15
+  // ════════════════════════════════════════════════════════════════════════════
   describe('Phase 15: Final Composition & Export (Steps 301-325)', () => {
 
     describe('Steps 301-310: Final Adjustments', () => {

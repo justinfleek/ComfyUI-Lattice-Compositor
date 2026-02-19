@@ -17,9 +17,9 @@ import { uuid5, UUID5_NAMESPACES } from "./uuid5";
  */
 type RuntimeValue = string | number | boolean | object | null | undefined | bigint | symbol;
 
-// ============================================================================
-// URL VALIDATION
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                                         // url // validation
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Allowed URL protocols for external resources
@@ -42,7 +42,7 @@ const BLOCKED_HOSTNAMES = [
  * Check if a hostname is a private/internal IP address
  */
 function isPrivateIP(hostname: string): boolean {
-  // IPv4 private ranges
+  //                                                                        // ip
   const privateRanges = [
     /^10\./, // 10.0.0.0/8
     /^172\.(1[6-9]|2[0-9]|3[0-1])\./, // 172.16.0.0/12
@@ -138,9 +138,9 @@ export function validateURL(
   return url;
 }
 
-// ============================================================================
-// CRYPTOGRAPHICALLY SECURE RANDOM
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                     // cryptographically // secure // random
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Generate a cryptographically secure random string
@@ -185,9 +185,9 @@ export function secureUUID(name: string = `secure-${Date.now()}`, namespace: str
   return uuid5(name, namespace);
 }
 
-// ============================================================================
-// INPUT SANITIZATION
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                     // input // sanitization
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Sanitize a string for safe display (prevents XSS in dynamic content)
@@ -209,9 +209,9 @@ export function sanitizeFilename(filename: string): string {
     .trim();
 }
 
-// ============================================================================
-// RUNTIME TYPE VALIDATION
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                             // runtime // type // validation
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Validation error with details

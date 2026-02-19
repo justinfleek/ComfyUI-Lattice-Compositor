@@ -63,7 +63,7 @@
         description = "Include NVIDIA driver in the SDK bundle";
       };
 
-      # NOTE: Custom gcc option removed - rebuilding cudaPackages with different
+      #                                                                      // note
       # gcc is complex and breaks nixpkgs bootstrap assertions. The SDK exposes
       # passthru.gcc so consumers can detect the compiler it was built with.
 
@@ -126,7 +126,7 @@
       # // cutlass //
       # ──────────────────────────────────────────────────────────────────────────
 
-      # CUTLASS 4.3.3 - fetch directly since nixpkgs may not have latest
+      #                                                              // cutlass // 4
       cutlass-latest = pkgs.stdenv.mkDerivation (finalAttrs: {
         pname = "cutlass";
         version = "4.3.3";
@@ -327,7 +327,7 @@
 
         postBuild = ''
           # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-          # CRITICAL: lib64 -> lib symlink
+          #                                                                  // critical
           # Many NVIDIA tools expect lib64, but Nix uses lib
           # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -336,7 +336,7 @@
           fi
 
           # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-          # CUDA 13 removed texture_fetch_functions.h (deprecated)
+          #                                                                // cuda // 13
           # but clang's wrapper still expects it - symlink to replacement
           # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -345,7 +345,7 @@
           fi
 
           # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-          # NVIDIA USER-SPACE DRIVER + NVML (and friends)
+          #                                                            // nvidia // user
           # - Keep real driver libs available for runtime/debugging.
           # - Keep link-time stubs under $out/stubs like it was designed.
           # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

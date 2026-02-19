@@ -129,9 +129,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
     };
   });
 
-  // ============================================================================
-  // PHASE 1: PROJECT SETUP (Steps 1-15)
-  // ============================================================================
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  //                                                                // phase // 1
+  // ════════════════════════════════════════════════════════════════════════════
 
   describe('Phase 1: Project Setup (Steps 1-15)', () => {
     /**
@@ -185,7 +185,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
      */
     describe('Steps 6-10: Asset Import', () => {
       it('can store image assets in project.assets', () => {
-        // NOTE: No store.registerAsset() method exists - direct mutation required
+        //                                                                      // note
         // This tests the data structure works, not a proper API
         const imageAsset: AssetReference = {
           id: 'asset_image_001',
@@ -328,9 +328,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // PHASE 1: UNDO/REDO VERIFICATION
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                                // phase // 1
+    // ════════════════════════════════════════════════════════════════════════════
 
     describe('Phase 1: Undo/Redo Verification', () => {
       it('can undo/redo asset registration when paired with layer creation', () => {
@@ -357,9 +357,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // PHASE 1: SAVE/LOAD STATE PRESERVATION
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                                // phase // 1
+    // ════════════════════════════════════════════════════════════════════════════
 
     describe('Phase 1: Save/Load State Preservation', () => {
       it('preserves complete project state through save/load cycle', () => {
@@ -426,9 +426,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
     });
   });
 
-  // ============================================================================
-  // PHASE 2: COMPOSITION CREATION (Steps 16-30)
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                // phase // 2
+  // ════════════════════════════════════════════════════════════════════════════
 
   describe('Phase 2: Composition Creation (Steps 16-30)', () => {
     /**
@@ -441,7 +441,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
     describe('Steps 16-18: Create Composition with Settings', () => {
       it('can create a new composition with specific settings', () => {
         // Step 16-17: Create composition with settings
-        // API: createComposition(name, settings)
+        //                                                                       // api
         const comp = compositionStore.createComposition('Main_Comp', {
           width: 1920,
           height: 1080,
@@ -619,9 +619,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // PHASE 2: UNDO/REDO VERIFICATION
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                                // phase // 2
+    // ════════════════════════════════════════════════════════════════════════════
 
     describe('Phase 2: Undo/Redo Verification', () => {
       it('can undo/redo composition creation', () => {
@@ -675,9 +675,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // PHASE 2: SAVE/LOAD STATE PRESERVATION
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                                // phase // 2
+    // ════════════════════════════════════════════════════════════════════════════
 
     describe('Phase 2: Save/Load State Preservation', () => {
       it('preserves multiple compositions through save/load', () => {
@@ -726,9 +726,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
     });
   });
 
-  // ============================================================================
-  // PHASE 3: ADDING LAYERS TO TIMELINE (Steps 31-60)
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                // phase // 3
+  // ════════════════════════════════════════════════════════════════════════════
 
   describe('Phase 3: Adding Layers to Timeline (Steps 31-60)', () => {
     /**
@@ -1097,9 +1097,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // PHASE 3: UNDO/REDO VERIFICATION
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                                // phase // 3
+    // ════════════════════════════════════════════════════════════════════════════
 
     describe('Phase 3: Undo/Redo Verification', () => {
       it('can undo/redo layer creation', () => {
@@ -1171,9 +1171,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // PHASE 3: SAVE/LOAD STATE PRESERVATION
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                                // phase // 3
+    // ════════════════════════════════════════════════════════════════════════════
 
     describe('Phase 3: Save/Load State Preservation', () => {
       it('preserves layers through save/load', () => {
@@ -1255,9 +1255,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
     });
   });
 
-  // ============================================================================
-  // PHASE 4: TIMELINE NAVIGATION (Steps 61-85)
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                // phase // 4
+  // ════════════════════════════════════════════════════════════════════════════
 
   describe('Phase 4: Timeline Navigation (Steps 61-85)', () => {
     /**
@@ -1489,9 +1489,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // PHASE 4: UNDO/REDO VERIFICATION
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                                // phase // 4
+    // ════════════════════════════════════════════════════════════════════════════
 
     describe('Phase 4: Undo/Redo Verification', () => {
       it('frame position IS part of undo history (stored in composition)', () => {
@@ -1551,9 +1551,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // PHASE 4: SAVE/LOAD STATE PRESERVATION
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                                // phase // 4
+    // ════════════════════════════════════════════════════════════════════════════
 
     describe('Phase 4: Save/Load State Preservation', () => {
       it('main composition currentFrame is preserved through save/load', () => {
@@ -1679,9 +1679,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
     });
   });
 
-  // ============================================================================
-  // PHASE 5: LAYER TIMING & TRIMMING (Steps 86-110)
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                // phase // 5
+  // ════════════════════════════════════════════════════════════════════════════
 
   describe('Phase 5: Layer Timing & Trimming (Steps 86-110)', () => {
     /**
@@ -2124,9 +2124,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // PHASE 5: UNDO/REDO VERIFICATION
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                                // phase // 5
+    // ════════════════════════════════════════════════════════════════════════════
 
     describe('Phase 5: Undo/Redo Verification', () => {
       it('can undo/redo layer timing change', () => {
@@ -2208,9 +2208,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // PHASE 5: SAVE/LOAD STATE PRESERVATION
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                                // phase // 5
+    // ════════════════════════════════════════════════════════════════════════════
 
     describe('Phase 5: Save/Load State Preservation', () => {
       it('preserves layer timing through save/load', () => {
@@ -2317,9 +2317,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
     });
   });
 
-  // ============================================================================
-  // PHASE 6: LAYER SWITCHES (Steps 111-135)
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                // phase // 6
+  // ════════════════════════════════════════════════════════════════════════════
 
   describe('Phase 6: Layer Switches (Steps 111-135)', () => {
     // Steps 111-112: Layer Switches Panel (UI observation - no store test needed)
@@ -2678,9 +2678,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // PHASE 6: UNDO/REDO VERIFICATION
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                                // phase // 6
+    // ════════════════════════════════════════════════════════════════════════════
 
     describe('Phase 6: Undo/Redo Verification', () => {
       it('can undo/redo visibility change', () => {
@@ -2776,9 +2776,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // PHASE 6: SAVE/LOAD STATE PRESERVATION
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                                // phase // 6
+    // ════════════════════════════════════════════════════════════════════════════
 
     describe('Phase 6: Save/Load State Preservation', () => {
       it('preserves visibility through save/load', () => {
@@ -2894,15 +2894,15 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
         const freshUIStore = useUIStore();
         freshProjectStore.importProject(savedJson, () => freshProjectStore.pushHistory());
 
-        // UI state resets to default
+        //                                                                        // ui
         expect(freshUIStore.hideMinimizedLayers).toBe(false);
       });
     });
   });
 
-  // ==========================================================================
-  // PHASE 7: TRANSFORM PROPERTIES (Steps 136-175)
-  // ==========================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                // phase // 7
+  // ════════════════════════════════════════════════════════════════════════════
 
   describe('Phase 7: Transform Properties (Steps 136-175)', () => {
 
@@ -3257,9 +3257,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // PHASE 7: UNDO/REDO VERIFICATION
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                                // phase // 7
+    // ════════════════════════════════════════════════════════════════════════════
 
     describe('Phase 7: Undo/Redo Verification', () => {
       it('can undo/redo position change', () => {
@@ -3347,9 +3347,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // PHASE 7: SAVE/LOAD STATE PRESERVATION
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                                // phase // 7
+    // ════════════════════════════════════════════════════════════════════════════
 
     describe('Phase 7: Save/Load State Preservation', () => {
       it('preserves position through save/load', () => {
@@ -3458,9 +3458,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
     });
   });
 
-  // ==========================================================================
-  // PHASE 8: PROPERTY REVEAL SHORTCUTS (Steps 176-195)
-  // ==========================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                // phase // 8
+  // ════════════════════════════════════════════════════════════════════════════
 
   describe('Phase 8: Property Reveal Shortcuts (Steps 176-195)', () => {
     /**
@@ -3529,7 +3529,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
 
         const updated = layerStore.getLayerById(layer!.id);
         expect(updated!.transform.position.value.x).not.toBe(defaultPos.x);
-        // UI would use this to show property in "UU" reveal
+        //                                                                        // ui
       });
 
       it('can detect scale differs from default', () => {
@@ -3562,9 +3562,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
     });
   });
 
-  // ==========================================================================
-  // PHASE 9: KEYFRAME ANIMATION (Steps 196-240)
-  // ==========================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                // phase // 9
+  // ════════════════════════════════════════════════════════════════════════════
 
   describe('Phase 9: Keyframe Animation (Steps 196-240)', () => {
 
@@ -4233,9 +4233,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // PHASE 9: UNDO/REDO VERIFICATION
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                                // phase // 9
+    // ════════════════════════════════════════════════════════════════════════════
 
     describe('Phase 9: Undo/Redo Verification', () => {
       it('can undo/redo keyframe addition', () => {
@@ -4339,9 +4339,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // PHASE 9: SAVE/LOAD STATE PRESERVATION
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                                // phase // 9
+    // ════════════════════════════════════════════════════════════════════════════
 
     describe('Phase 9: Save/Load State Preservation', () => {
       it('preserves keyframes through save/load', () => {
@@ -4453,9 +4453,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
     });
   });
 
-  // ==========================================================================
-  // PHASE 10: EASING & CURVEEDITOR (Steps 241-275)
-  // ==========================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                               // phase // 10
+  // ════════════════════════════════════════════════════════════════════════════
   describe('Phase 10: Easing & CurveEditor (Steps 241-275)', () => {
     let projectStore: ReturnType<typeof useProjectStore>;
     let layerStore: ReturnType<typeof useLayerStore>;
@@ -4473,9 +4473,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       comp = projectStore.getActiveComp();
     });
 
-    // ========================================================================
-    // SMOOTH EASE SHORTCUTS (Steps 241-246)
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                               // smooth // ease // shortcuts
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Smooth Ease Shortcuts (Steps 241-246)', () => {
       it('can set interpolation to bezier (F9 smooth ease) (Steps 241-244)', () => {
         const layer = layerStore.createLayer('solid', 'Smooth Ease');
@@ -4587,9 +4587,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // CURVEEDITOR BASICS (Steps 247-250)
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                     // curveeditor // basics
+    // ════════════════════════════════════════════════════════════════════════════
     describe('CurveEditor Basics (Steps 247-250)', () => {
       it('curve editor starts hidden', () => {
         expect(uiStore.curveEditorVisible).toBe(false);
@@ -4628,9 +4628,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // EDITING CURVES / BEZIER HANDLES (Steps 255-260)
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                         // editing // curves
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Editing Curves / Bezier Handles (Steps 255-260)', () => {
       it('can set keyframe bezier in handle (Steps 255-257)', () => {
         const layer = layerStore.createLayer('solid', 'Handle Test');
@@ -4716,9 +4716,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // KEYFRAME CONTROL MODE (Step 260 - longer handles = more gradual)
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                               // keyframe // control // mode
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Keyframe Control Mode', () => {
       it('can set keyframe control mode to smooth', () => {
         const layer = layerStore.createLayer('solid', 'Control Mode');
@@ -4754,9 +4754,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // SEPARATE DIMENSIONS (Steps 266-270)
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                    // separate // dimensions
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Separate Dimensions (Steps 266-270)', () => {
       /**
        * API GAP: No dedicated separateDimensions method exists.
@@ -4801,9 +4801,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // PHASE 10: UNDO/REDO VERIFICATION
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                               // phase // 10
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Phase 10: Undo/Redo Verification', () => {
       it('can undo/redo interpolation change', () => {
         const layer = layerStore.createLayer('solid', 'Undo Interp');
@@ -4884,14 +4884,14 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
         uiStore.toggleCurveEditorVisible();
         uiStore.toggleCurveEditorVisible();
 
-        // UI state changes shouldn't affect undo history
+        //                                                                        // ui
         expect(projectStore.historyIndex).toBe(historyBefore);
       });
     });
 
-    // ========================================================================
-    // PHASE 10: SAVE/LOAD STATE PRESERVATION
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                               // phase // 10
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Phase 10: Save/Load State Preservation', () => {
       it('preserves interpolation type through save/load', () => {
         const layer = layerStore.createLayer('solid', 'Save Interp');
@@ -4973,7 +4973,7 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
         const freshProjectStore = useProjectStore();
         freshProjectStore.importProject(savedJson, () => freshProjectStore.pushHistory());
 
-        // UI state should reset to default
+        //                                                                        // ui
         expect(freshProjectStore.curveEditorVisible).toBe(false);
       });
 
@@ -5027,9 +5027,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
     });
   });
 
-  // ==========================================================================
-  // PHASE 11: FADING ELEMENTS (Steps 276-295)
-  // ==========================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                               // phase // 11
+  // ════════════════════════════════════════════════════════════════════════════
   describe('Phase 11: Fading Elements (Steps 276-295)', () => {
     let projectStore: ReturnType<typeof useProjectStore>;
     let layerStore: ReturnType<typeof useLayerStore>;
@@ -5045,9 +5045,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       comp = projectStore.getActiveComp();
     });
 
-    // ========================================================================
-    // FADE IN (Steps 276-286)
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                                // fade // in
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Fade In (Steps 276-286)', () => {
       it('can create fade in with opacity keyframes (Steps 281-286)', () => {
         const layer = layerStore.createLayer('solid', 'Fade In Layer');
@@ -5084,9 +5084,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // FADE OUT (Steps 287-291)
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                               // fade // out
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Fade Out (Steps 287-291)', () => {
       it('can create fade out with opacity keyframes (Steps 287-291)', () => {
         const layer = layerStore.createLayer('solid', 'Fade Out Layer');
@@ -5127,9 +5127,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // APPLY EASING TO FADE (Steps 292-295)
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                             // apply // easing // to // fade
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Apply Easing to Fade (Steps 292-295)', () => {
       it('can apply smooth ease to fade keyframes (Steps 292-294)', () => {
         const layer = layerStore.createLayer('solid', 'Eased Fade');
@@ -5153,9 +5153,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // PHASE 11: UNDO/REDO VERIFICATION
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                               // phase // 11
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Phase 11: Undo/Redo Verification', () => {
       it('can undo/redo fade in creation', () => {
         const layer = layerStore.createLayer('solid', 'Undo Fade');
@@ -5182,9 +5182,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // PHASE 11: SAVE/LOAD STATE PRESERVATION
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                               // phase // 11
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Phase 11: Save/Load State Preservation', () => {
       it('preserves fade animation through save/load', () => {
         const layer = layerStore.createLayer('solid', 'Save Fade');
@@ -5219,9 +5219,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
     });
   });
 
-  // ==========================================================================
-  // PHASE 12: TEXT LAYERS (Steps 296-325)
-  // ==========================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                               // phase // 12
+  // ════════════════════════════════════════════════════════════════════════════
   describe('Phase 12: Text Layers (Steps 296-325)', () => {
     let projectStore: ReturnType<typeof useProjectStore>;
     let layerStore: ReturnType<typeof useLayerStore>;
@@ -5237,9 +5237,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       comp = projectStore.getActiveComp();
     });
 
-    // ========================================================================
-    // CREATING TEXT (Steps 296-300)
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                          // creating // text
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Creating Text (Steps 296-300)', () => {
       it('can create a text layer (Steps 298-300)', () => {
         const layer = layerStore.createTextLayer('LATTICE COMPOSITOR');
@@ -5279,9 +5279,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // CHARACTER PANEL (Steps 301-307)
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                        // character // panel
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Character Panel Properties (Steps 301-307)', () => {
       it('can update font family (Step 303)', () => {
         const layer = layerStore.createTextLayer('Font Test');
@@ -5344,9 +5344,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // PARAGRAPH PANEL (Steps 308-310)
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                        // paragraph // panel
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Paragraph Panel Properties (Steps 308-310)', () => {
       it('can set text alignment to center (Step 309)', () => {
         const layer = layerStore.createTextLayer('Align Test');
@@ -5385,9 +5385,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // POSITIONING TEXT (Steps 311-314)
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                       // positioning // text
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Positioning Text (Steps 311-314)', () => {
       it('text layer has transform properties like other layers (Steps 311-312)', () => {
         const layer = layerStore.createTextLayer('Position Test');
@@ -5410,9 +5410,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // ANIMATING TEXT (Steps 315-318)
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                         // animating // text
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Animating Text (Steps 315-318)', () => {
       it('text layers have same transform properties as other layers (Step 315)', () => {
         const textLayer = layerStore.createTextLayer('Animated Text');
@@ -5463,9 +5463,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // POINT TEXT VS PARAGRAPH TEXT (Steps 319-322)
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                  // point // text // vs // paragraph // text
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Point Text vs Paragraph Text (Steps 319-322)', () => {
       /**
        * API GAP: No distinction between Point Text and Paragraph Text.
@@ -5543,9 +5543,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // TEXT CONTENT (Steps 323-325)
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                           // text // content
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Text Content (Steps 323-325)', () => {
       it('can update text content (Step 323)', () => {
         const layer = layerStore.createTextLayer('Original Text');
@@ -5573,9 +5573,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // PHASE 12: UNDO/REDO VERIFICATION
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                               // phase // 12
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Phase 12: Undo/Redo Verification', () => {
       it('can undo/redo text layer creation', () => {
         const initialCount = projectStore.getActiveCompLayers().length;
@@ -5631,9 +5631,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // PHASE 12: SAVE/LOAD STATE PRESERVATION
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                               // phase // 12
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Phase 12: Save/Load State Preservation', () => {
       it('preserves text layer through save/load', () => {
         const layer = layerStore.createTextLayer('Save Text');
@@ -5715,9 +5715,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
     });
   });
 
-  // ============================================================================
-  // PHASE 13: ALIGN PANEL & SNAPPING (Steps 326-355)
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                               // phase // 13
+  // ════════════════════════════════════════════════════════════════════════════
   describe('Phase 13: Align Panel & Snapping (Steps 326-355)', () => {
     let projectStore: ReturnType<typeof useProjectStore>;
     let layerStore: ReturnType<typeof useLayerStore>;
@@ -5731,9 +5731,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       comp = projectStore.getActiveComp();
     });
 
-    // ========================================================================
-    // ALIGN TO COMPOSITION (Steps 326-333)
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                // align // to // composition
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Align to Composition (Steps 326-333)', () => {
       /**
        * API GAP: No dedicated alignLayerToComposition() method exists.
@@ -5802,9 +5802,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // ALIGNING MULTIPLE LAYERS (Steps 334-338)
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                            // aligning // multiple // layers
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Aligning Multiple Layers (Steps 334-338)', () => {
       /**
        * API GAP: No alignLayers() or distributeLayers() methods exist.
@@ -5879,9 +5879,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // GRID & GUIDES (Steps 339-347)
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                                      // grid
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Grid & Guides (Steps 339-347)', () => {
       /**
        * Steps 339-347 are UI-only (visual grid/guide display and snapping).
@@ -5912,9 +5912,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // CENTER LAYER COMMANDS (Steps 348-352)
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                               // center // layer // commands
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Center Layer Commands (Steps 348-352)', () => {
       /**
        * API GAP: No centerLayerInComposition() or fitLayerToComposition() methods.
@@ -5991,9 +5991,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // TOGGLE VISUAL AIDS (Steps 353-355)
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                  // toggle // visual // aids
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Toggle Visual Aids (Steps 353-355)', () => {
       /**
        * Steps 353-355 are UI-only (visibility toggles for visual aids).
@@ -6010,9 +6010,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // PHASE 13: UNDO/REDO VERIFICATION
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                               // phase // 13
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Phase 13: Undo/Redo Verification', () => {
       it('can undo/redo layer centering', () => {
         const layer = layerStore.createLayer('solid', 'Undo Center');
@@ -6051,9 +6051,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // PHASE 13: SAVE/LOAD STATE PRESERVATION
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                               // phase // 13
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Phase 13: Save/Load State Preservation', () => {
       it('preserves layer positions through save/load', () => {
         const layer1 = layerStore.createLayer('solid', 'Save Align 1');
@@ -6115,9 +6115,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // API GAPS SUMMARY
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                    // api // gaps // summary
+    // ════════════════════════════════════════════════════════════════════════════
     describe('API Gaps Summary', () => {
       /**
        * PHASE 13 API GAPS:
@@ -6162,13 +6162,13 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
     });
   });
 
-  // ============================================================================
-  // PHASE 14: EFFECTS (Steps 356-390)
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                               // phase // 14
+  // ════════════════════════════════════════════════════════════════════════════
   describe('Phase 14: Effects (Steps 356-390)', () => {
-    // ========================================================================
-    // APPLYING EFFECTS (Steps 359-375)
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                       // applying // effects
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Applying Effects (Steps 359-375)', () => {
       it('can add an effect to a layer (Steps 359-361)', () => {
         const layer = layerStore.createLayer('solid', 'Effect Target');
@@ -6268,9 +6268,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // ANIMATING EFFECTS (Steps 376-379)
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                      // animating // effects
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Animating Effects (Steps 376-379)', () => {
       it('can enable animation on effect parameter (Step 376)', () => {
         const layer = layerStore.createLayer('solid', 'Animate Effect');
@@ -6330,9 +6330,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // DISABLE/REMOVE EFFECTS (Steps 380-382)
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                                   // disable
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Disable/Remove Effects (Steps 380-382)', () => {
       it('can toggle effect enabled state (Step 380)', () => {
         const layer = layerStore.createLayer('solid', 'Toggle Effect');
@@ -6383,9 +6383,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // EFFECT LAYERS / ADJUSTMENT LAYERS (Steps 383-387)
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                          // effect // layers
+    // ════════════════════════════════════════════════════════════════════════════
     describe('EffectLayers / Adjustment Layers (Steps 383-387)', () => {
       it('can create an effectLayer (Step 383-384)', () => {
         const layer = layerStore.createLayer('effectLayer', 'Adjustment');
@@ -6435,9 +6435,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // AVAILABLE EFFECTS (Verify common effect types)
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                      // available // effects
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Available Effect Types', () => {
       it('has blur & sharpen effects', () => {
         const layer = layerStore.createLayer('solid', 'Blur Test');
@@ -6505,9 +6505,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // PHASE 14: UNDO/REDO VERIFICATION
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                               // phase // 14
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Phase 14: Undo/Redo Verification', () => {
       it('can undo/redo adding effect', () => {
         const layer = layerStore.createLayer('solid', 'Undo Add Effect');
@@ -6602,9 +6602,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // PHASE 14: SAVE/LOAD STATE PRESERVATION
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                               // phase // 14
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Phase 14: Save/Load State Preservation', () => {
       it('preserves effects through save/load', () => {
         const layer = layerStore.createLayer('solid', 'Save Effects');
@@ -6724,9 +6724,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // API GAPS (Steps 388-390: Copy/Paste Effects)
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                               // api // gaps
+    // ════════════════════════════════════════════════════════════════════════════
     describe('API Gaps: Copy/Paste Effects (Steps 388-390)', () => {
       /**
        * API GAP: copyEffects / pasteEffects methods not implemented
@@ -6783,9 +6783,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
     });
   });
 
-  // ============================================================================
-  // PHASE 15: PARENTING & PROPERTYLINK (Steps 391-420)
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                               // phase // 15
+  // ════════════════════════════════════════════════════════════════════════════
   describe('Phase 15: Parenting & PropertyLink (Steps 391-420)', () => {
     let projectStore: ReturnType<typeof useProjectStore>;
     let layerStore: ReturnType<typeof useLayerStore>;
@@ -6807,9 +6807,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       };
     });
 
-    // ========================================================================
-    // UNDERSTANDING PARENTING (Steps 391-394)
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                // understanding // parenting
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Understanding Parenting (Steps 391-394)', () => {
       it('can set a parent layer (Step 391)', () => {
         const parent = layerStore.createLayer('solid', 'Parent');
@@ -6841,9 +6841,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
 
     // Steps 395-396: Timeline UI column visibility - UI only
 
-    // ========================================================================
-    // PROPERTYLINK (Steps 397-404)
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                              // propertylink
+    // ════════════════════════════════════════════════════════════════════════════
     describe('PropertyLink / Setting Parent (Steps 397-404)', () => {
       it('can link child to parent via setLayerParent (Steps 397-400)', () => {
         const parent = layerStore.createLayer('solid', 'Parent Layer');
@@ -6866,9 +6866,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // CONTROL LAYERS (Steps 405-409)
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                         // control // layers
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Control Layers (Steps 405-409)', () => {
       it('can create a Control layer (Step 405)', () => {
         const control = layerStore.createLayer('control', 'Character_Control');
@@ -6920,9 +6920,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // PARENTING EXAMPLE (Steps 410-415)
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                      // parenting // example
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Parenting Example (Steps 410-415)', () => {
       it('complete parenting workflow', () => {
         const armLeft = layerStore.createLayer('solid', 'Arm_Left');
@@ -6953,9 +6953,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // HIERARCHY (Steps 416-420)
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                                 // hierarchy
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Hierarchy (Steps 416-420)', () => {
       it('parenting can be nested (Step 416)', () => {
         const grandparent = layerStore.createLayer('control', 'Grandparent');
@@ -6991,9 +6991,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // PHASE 15: UNDO/REDO VERIFICATION
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                               // phase // 15
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Phase 15: Undo/Redo Verification', () => {
       it('can undo/redo setLayerParent', () => {
         const parent = layerStore.createLayer('solid', 'Parent');
@@ -7010,9 +7010,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // PHASE 15: SAVE/LOAD STATE PRESERVATION
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                               // phase // 15
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Phase 15: Save/Load State Preservation', () => {
       it('preserves parent relationships through save/load', () => {
         const parent = layerStore.createLayer('control', 'Save Parent');
@@ -7053,14 +7053,14 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
     });
   });
 
-  // ============================================================================
-  // PHASE 16: BASIC EXPRESSIONS (Steps 421-455)
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                               // phase // 16
+  // ════════════════════════════════════════════════════════════════════════════
   describe('Phase 16: Basic Expressions (Steps 421-455)', () => {
 
-    // ========================================================================
-    // STEPS 421-423: What Expressions Are (Conceptual - minimal test)
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                              // steps // 421
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Steps 421-423: Expression System Exists', () => {
       it('expression methods work end-to-end', () => {
         // Step 421-423: Expressions exist and function correctly
@@ -7093,9 +7093,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // STEPS 424-428: Enabling Expressions
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                              // steps // 424
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Steps 424-428: Enabling Expressions', () => {
       it('Steps 424-426: enables expression on position property', () => {
         // Step 424: Select layer (create one)
@@ -7120,10 +7120,10 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // STEPS 429-433: Property Linking (PropertyLink expression)
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                              // steps // 429
     // Steps 431-432 involve drag PropertyLink which is UI-only
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Steps 429-433: Linking Properties', () => {
       // Steps 431-432 drag PropertyLink is UI-only - skip
       it('Steps 429-433: can set expression to link to another layer position', () => {
@@ -7145,9 +7145,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // STEPS 434-438: Wiggle Expression
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                              // steps // 434
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Steps 434-438: Wiggle Expression', () => {
       it('Steps 434-436: can enable wiggle expression preset', () => {
         const layer = layerStore.createLayer('solid', 'Wiggle Layer');
@@ -7178,9 +7178,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // STEPS 439-443: repeatAfter Expression (Loop)
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                              // steps // 439
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Steps 439-443: repeatAfter Expression (Loop)', () => {
       it('Steps 439-442: can enable repeatAfter cycle expression', () => {
         const layer = layerStore.createLayer('solid', 'Loop Layer');
@@ -7216,9 +7216,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // STEPS 444-448: Time Expression
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                              // steps // 444
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Steps 444-448: Time Expression', () => {
       it('Steps 444-446: can enable time-based rotation expression', () => {
         const layer = layerStore.createLayer('solid', 'Time Layer');
@@ -7245,9 +7245,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // STEPS 449-453: Expression Errors (UI-only visual feedback)
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                              // steps // 449
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Steps 449-453: Expression Errors', () => {
       // Visual error feedback (red/yellow highlighting) is UI-only
       it('Steps 449-453: UI-only visual error feedback - skip', () => {
@@ -7256,9 +7256,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // STEPS 454-455: Disable/Enable Expression Toggle
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                              // steps // 454
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Steps 454-455: Disable Expression', () => {
       it('Step 454: can disable expression', () => {
         const layer = layerStore.createLayer('solid', 'Disable Test');
@@ -7285,9 +7285,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // PHASE 16: Additional Expression Tests
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                               // phase // 16
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Additional Expression Functionality', () => {
       it('can remove expression entirely', () => {
         const layer = layerStore.createLayer('solid', 'Remove Expr');
@@ -7348,9 +7348,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // PHASE 16: UNDO/REDO VERIFICATION
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                               // phase // 16
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Phase 16: Undo/Redo Verification', () => {
       it('can undo/redo enabling expression', () => {
         const layer = layerStore.createLayer('solid', 'Undo Enable');
@@ -7380,9 +7380,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // PHASE 16: SAVE/LOAD STATE PRESERVATION
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                               // phase // 16
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Phase 16: Save/Load State Preservation', () => {
       it('preserves expressions through save/load', () => {
         const layer = layerStore.createLayer('solid', 'Save Expr');
@@ -7431,14 +7431,14 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
     });
   });
 
-  // ============================================================================
-  // PHASE 17: NESTED COMPOSITIONS (Steps 456-480)
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                               // phase // 17
+  // ════════════════════════════════════════════════════════════════════════════
   describe('Phase 17: Nested Compositions (Steps 456-480)', () => {
 
-    // ========================================================================
-    // STEPS 456-459: Why NestedComps (Conceptual)
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                              // steps // 456
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Steps 456-459: Why NestedComps', () => {
       it('Steps 456-459: NestedComp methods work end-to-end', () => {
         // Step 456-459: Verify nestedComp workflow functions
@@ -7464,9 +7464,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // STEPS 460-467: Creating NestedComp
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                              // steps // 460
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Steps 460-467: Creating NestedComp', () => {
       it('Steps 460-463: can create nestedComp from selected layers', () => {
         // Step 460: Create multiple layers to group
@@ -7527,9 +7527,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // STEPS 468-471: Editing NestedComp
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                              // steps // 468
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Steps 468-471: Editing NestedComp', () => {
       it('Step 468-469: can enter nestedComp to edit', () => {
         const layer1 = layerStore.createLayer('solid', 'Edit Layer');
@@ -7564,9 +7564,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // STEPS 472-475: NestedComp as Layer
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                              // steps // 472
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Steps 472-475: NestedComp as Layer', () => {
       it('Step 472-473: nestedComp layer has transform properties', () => {
         const layer1 = layerStore.createLayer('solid', 'Transform Source');
@@ -7628,9 +7628,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // STEPS 476-480: NestedComp Tips
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                              // steps // 476
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Steps 476-480: NestedComp Tips', () => {
       it('Step 476: changes to source nestedComp affect instances', () => {
         // Create a comp with a layer
@@ -7659,9 +7659,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // PHASE 17: Additional NestedComp Tests
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                               // phase // 17
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Additional NestedComp Functionality', () => {
       it('can create composition directly', () => {
         const comp = compositionStore.createComposition('Manual Comp', {
@@ -7693,9 +7693,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // PHASE 17: UNDO/REDO VERIFICATION
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                               // phase // 17
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Phase 17: Undo/Redo Verification', () => {
       it('can undo/redo nestSelectedLayers', () => {
         const layer1 = layerStore.createLayer('solid', 'Undo Nest Layer');
@@ -7723,9 +7723,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // PHASE 17: SAVE/LOAD STATE PRESERVATION
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                               // phase // 17
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Phase 17: Save/Load State Preservation', () => {
       it('preserves nestedComp through save/load', () => {
         const layer1 = layerStore.createLayer('solid', 'Save Nest Layer');
@@ -7835,9 +7835,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
     });
   });
 
-  // ============================================================================
-  // PHASE 18: RENDERRANGE & PREVIEW (Steps 481-510)
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                               // phase // 18
+  // ════════════════════════════════════════════════════════════════════════════
   describe('Phase 18: RenderRange & Preview (Steps 481-510)', () => {
     let playbackStore: ReturnType<typeof usePlaybackStore>;
 
@@ -7845,9 +7845,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       playbackStore = usePlaybackStore();
     });
 
-    // ========================================================================
-    // STEPS 481-487: RenderRange (Work Area)
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                              // steps // 481
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Steps 481-487: RenderRange (Work Area)', () => {
       it('Step 481: playbackStore has work area support', () => {
         // Step 481: Work area (RenderRange) exists in Timeline
@@ -7889,9 +7889,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // STEPS 488-493: Preview Panel & Options
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                              // steps // 488
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Steps 488-493: Preview Panel & Options', () => {
       // Steps 488-489: Preview Panel UI is UI-only
       it('Steps 488-489: Preview panel is UI-only - skip', () => {
@@ -7926,9 +7926,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // STEPS 494-500: Audio Preview & Scrub
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                              // steps // 494
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Steps 494-500: Audio Preview & Scrub', () => {
       // Audio preview and scrubbing are UI/engine features
       it('Steps 494-500: Audio preview/scrub is UI-only - skip', () => {
@@ -7937,9 +7937,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // STEPS 501-504: Preview Quality
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                              // steps // 501
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Steps 501-504: Preview Quality', () => {
       // Preview quality settings are UI/rendering features
       it('Steps 501-504: Preview quality settings are UI-only - skip', () => {
@@ -7947,9 +7947,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // STEPS 505-507: Clear Cache
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                              // steps // 505
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Steps 505-507: Clear Cache', () => {
       // Cache management is UI/rendering feature
       it('Steps 505-507: Cache management is UI-only - skip', () => {
@@ -7957,9 +7957,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // STEPS 508-510: Preview Shortcuts Summary
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                              // steps // 508
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Steps 508-510: Preview Shortcuts', () => {
       it('Step 508: playback toggle works (spacebar shortcut)', () => {
         const onFrame = (f: number) => {};
@@ -7982,9 +7982,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // PHASE 18: Additional Playback Tests
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                               // phase // 18
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Additional Playback Functionality', () => {
       it('can set loop playback mode', () => {
         expect(playbackStore.loopPlayback).toBe(true); // Default
@@ -8077,10 +8077,10 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // PHASE 18: State Preservation
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                               // phase // 18
     // Note: playbackStore is runtime state, not persisted to project file
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Phase 18: Runtime State (not persisted)', () => {
       it('work area is runtime state', () => {
         // Work area is session state, not project state
@@ -8097,9 +8097,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
     });
   });
 
-  // ============================================================================
-  // PHASE 19: EXPORT (Steps 511-550)
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                               // phase // 19
+  // ════════════════════════════════════════════════════════════════════════════
   describe('Phase 19: Export (Steps 511-550)', () => {
     let playbackStore: ReturnType<typeof usePlaybackStore>;
 
@@ -8107,9 +8107,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       playbackStore = usePlaybackStore();
     });
 
-    // ========================================================================
-    // STEPS 511-514: Render Queue
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                              // steps // 511
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Steps 511-514: Render Queue', () => {
       // Render Queue Panel is UI-only
       it('Steps 511-514: Render Queue Panel is UI-only - skip', () => {
@@ -8118,9 +8118,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // STEPS 515-519: Render Settings
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                              // steps // 515
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Steps 515-519: Render Settings', () => {
       // Render Settings dialog is UI-only
       it('Steps 515-519: Render Settings dialog is UI-only - skip', () => {
@@ -8128,9 +8128,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // STEPS 520-528: Output Module
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                              // steps // 520
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Steps 520-528: Output Module', () => {
       // Output Module dialog is UI-only
       it('Steps 520-528: Output Module dialog is UI-only - skip', () => {
@@ -8138,9 +8138,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // STEPS 529-532: Output Destination
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                              // steps // 529
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Steps 529-532: Output Destination', () => {
       // Output destination dialog is UI-only
       it('Steps 529-532: Output destination dialog is UI-only - skip', () => {
@@ -8148,9 +8148,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // STEPS 533-536: Render Process
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                              // steps // 533
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Steps 533-536: Render Process', () => {
       // Render process is engine/rendering feature
       it('Steps 533-536: Render process is engine-only - skip', () => {
@@ -8158,9 +8158,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // STEPS 537-540: Render Queue Management
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                              // steps // 537
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Steps 537-540: Render Queue Management', () => {
       // Queue management is UI-only
       it('Steps 537-540: Render queue management is UI-only - skip', () => {
@@ -8168,9 +8168,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // STEPS 541-543: RenderRange and Export
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                              // steps // 541
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Steps 541-543: RenderRange and Export', () => {
       it('Step 541: export respects work area bounds', () => {
         // Step 541: Export only renders within RenderRange
@@ -8190,9 +8190,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // STEPS 544-547: Export Presets
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                              // steps // 544
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Steps 544-547: Export Presets', () => {
       // Export presets are UI-only
       it('Steps 544-547: Export presets are UI-only - skip', () => {
@@ -8200,9 +8200,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // STEPS 548-550: Post-Export
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                              // steps // 548
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Steps 548-550: Post-Export', () => {
       // Post-export verification is external to the application
       it('Steps 548-550: Post-export verification is external - skip', () => {
@@ -8210,9 +8210,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // PHASE 19: Project Export (Save to File)
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                               // phase // 19
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Project Export (Save/Load)', () => {
       it('can export project to JSON', () => {
         // Create some content
@@ -8260,9 +8260,9 @@ describe('Tutorial 01: Lattice Compositor Fundamentals', () => {
       });
     });
 
-    // ========================================================================
-    // PHASE 19: Final Verification
-    // ========================================================================
+    // ════════════════════════════════════════════════════════════════════════════
+    //                                                               // phase // 19
+    // ════════════════════════════════════════════════════════════════════════════
     describe('Tutorial Completion Verification', () => {
       it('can complete full tutorial workflow', () => {
         // This test verifies that all major features work together

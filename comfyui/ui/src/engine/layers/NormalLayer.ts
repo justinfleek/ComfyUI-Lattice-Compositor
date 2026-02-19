@@ -146,7 +146,7 @@ export class NormalLayer extends BaseLayer {
           vec3 color;
 
           if (visualizationMode == 0) {
-            // RGB - direct normal visualization
+            //                                                                       // rgb
             color = normal * 0.5 + 0.5;
           } else if (visualizationMode == 1) {
             // Hemisphere - hemisphere colorization
@@ -195,9 +195,9 @@ export class NormalLayer extends BaseLayer {
     }
   }
 
-  // ============================================================================
-  // ABSTRACT IMPLEMENTATIONS
-  // ============================================================================
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  //                                               // abstract // implementations
+  // ════════════════════════════════════════════════════════════════════════════
 
   protected onEvaluateFrame(_frame: number): void {
     if (!this.material) return;

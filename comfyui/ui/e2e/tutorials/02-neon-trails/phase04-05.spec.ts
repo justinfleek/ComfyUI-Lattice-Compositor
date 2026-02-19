@@ -35,7 +35,7 @@ test.describe("Tutorial 02: Neon Motion Trails - Phases 4-5 (Steps 41-82)", () =
     await h.setStrokeLineJoin(0, "bevel");
     await h.setStrokeLineJoin(0, "round"); // Final choice
 
-    // UNDO/REDO
+    //                                                                      // undo
     await h.undo();
     await h.redo();
   });
@@ -66,7 +66,7 @@ test.describe("Tutorial 02: Neon Motion Trails - Phases 4-5 (Steps 41-82)", () =
     await h.setTrimPathsOffset(0, 360);
     await h.setTrimPathsOffset(0, 0); // Reset
 
-    // UNDO/REDO
+    //                                                                      // undo
     await h.undo();
     await h.redo();
   });

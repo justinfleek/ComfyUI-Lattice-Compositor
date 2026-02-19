@@ -61,7 +61,7 @@ export {
   type PhysicsStoreAccess,
   usePhysicsStore,
 } from "./physicsStore";
-// AI/ML stores
+//                                                                        // ai
 export {
   type DecompositionStoreAccess,
   useDecompositionStore,

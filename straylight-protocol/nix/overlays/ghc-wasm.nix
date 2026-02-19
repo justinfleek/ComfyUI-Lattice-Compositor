@@ -9,7 +9,7 @@
 #
 #                                                         — Neuromancer
 #
-# GHC WASM backend toolchain from ghc-wasm-meta.
+#                                                               // ghc // wasm
 # Provides wasm32-wasi-ghc, wasm32-wasi-cabal, and related tools.
 #
 # This enables:
@@ -28,7 +28,7 @@ let
       ghcWasmPkgs = inputs.ghc-wasm-meta.packages.${system} or { };
     in
     {
-      # GHC 9.12 - recommended for Hackage compatibility
+      #                                                                  // ghc // 9
       ghc-wasm = ghcWasmPkgs.wasm32-wasi-ghc-9_12 or null;
       ghc-wasm-cabal = ghcWasmPkgs.wasm32-wasi-cabal-9_12 or null;
 
@@ -37,7 +37,7 @@ let
       ghc-wasm-9_10 = ghcWasmPkgs.wasm32-wasi-ghc-9_10 or null;
       ghc-wasm-9_8 = ghcWasmPkgs.wasm32-wasi-ghc-9_8 or null;
 
-      # GMP flavour (default, uses libgmp)
+      #                                                                       // gmp
       ghc-wasm-gmp = ghcWasmPkgs.wasm32-wasi-ghc-gmp or null;
 
       # Native flavour (uses native Haskell Integer)

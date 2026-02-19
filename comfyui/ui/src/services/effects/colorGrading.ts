@@ -17,9 +17,9 @@ import {
 } from "../effectProcessor";
 import { isFiniteNumber, isArray, hasXY } from "@/utils/typeGuards";
 
-// ============================================================================
-// LIFT/GAMMA/GAIN
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                                                      // lift
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Lift/Gamma/Gain effect renderer - ASC CDL-style three-way color correction
@@ -163,9 +163,9 @@ export function liftGammaGainRenderer(
   return output;
 }
 
-// ============================================================================
-// HSL SECONDARY QUALIFICATION
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                         // hsl // secondary // qualification
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * HSL Secondary effect renderer - Qualify and correct specific color ranges
@@ -410,9 +410,9 @@ export function hslSecondaryRenderer(
   return output;
 }
 
-// ============================================================================
-// HUE VS CURVES
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                       // hue // vs // curves
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Hue vs Curves effect renderer - HSL-space curve adjustments
@@ -537,7 +537,7 @@ export function hueVsCurvesRenderer(
   const lumVsSatLUT = buildCurveLUT(lumVsSat, 100, 100, true);
   const satVsSatLUT = buildCurveLUT(satVsSat, 100, 100, false);
 
-  // RGB <-> HSL helpers
+  //                                                                       // rgb
   const rgbToHsl = (
     r: number,
     g: number,
@@ -645,9 +645,9 @@ export function hueVsCurvesRenderer(
   return output;
 }
 
-// ============================================================================
-// COLOR MATCH
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                            // color // match
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Color Match effect renderer - Match color distribution to reference
@@ -827,9 +827,9 @@ export function colorMatchRenderer(
   return output;
 }
 
-// ============================================================================
-// REGISTRATION
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                              // registration
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Register all color grading effect renderers

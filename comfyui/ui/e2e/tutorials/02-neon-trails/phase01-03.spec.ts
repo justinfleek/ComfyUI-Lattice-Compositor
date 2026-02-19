@@ -46,7 +46,7 @@ test.describe("Tutorial 02: Neon Motion Trails - Phases 1-3 (Steps 1-42)", () =>
     // Step 12: Lock background
     await h.toggleLayerLock();
 
-    // UNDO/REDO
+    //                                                                      // undo
     await h.undo();
     await h.redo();
   });
@@ -72,7 +72,7 @@ test.describe("Tutorial 02: Neon Motion Trails - Phases 1-3 (Steps 1-42)", () =>
     await h.isolateScale();
     await h.setPropertyValue("scale", "70");
 
-    // UNDO/REDO
+    //                                                                      // undo
     await h.undo();
     await h.redo();
   });
@@ -94,7 +94,7 @@ test.describe("Tutorial 02: Neon Motion Trails - Phases 1-3 (Steps 1-42)", () =>
     // Step 35-36: Remove fill
     await h.removeShapeFill(0);
 
-    // UNDO/REDO
+    //                                                                      // undo
     await h.undo();
     await h.redo();
   });

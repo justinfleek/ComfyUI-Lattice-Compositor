@@ -3,7 +3,7 @@
  * Extracted from GPUParticleSystem.ts to reduce file size
  */
 
-// GLSL Simplex Noise functions (shared by shaders)
+//                                                                 // glsl // s
 const GLSL_NOISE = `
 vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
 vec4 mod289(vec4 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
@@ -280,7 +280,7 @@ uniform int motionBlurEnabled;
 uniform float motionBlurStrength;
 uniform float minStretch;
 uniform float maxStretch;
-// LOD uniforms
+//                                                                       // lod
 uniform int lodEnabled;
 uniform vec3 lodDistances;  // [near, mid, far] distances
 uniform vec3 lodSizeMultipliers;  // [near, mid, far] size multipliers
@@ -353,7 +353,7 @@ void main() {
     // Apply scale
     vertexPos = i_position + rotatedPos * size;
   } else {
-    // BILLBOARD MODE: position is 2D, face camera
+    //                                                         // billboard // mode
     vec2 offsetPos = vec2(position.x, position.y);
 
     // Motion blur: stretch billboard along velocity direction

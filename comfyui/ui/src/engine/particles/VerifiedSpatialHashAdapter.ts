@@ -50,7 +50,7 @@ export class VerifiedSpatialHashAdapter implements ISpatialHash {
     this.particleIndices = [];
     
     // Extract positions from AOS buffer
-    // PROVEN: PARTICLE_STRIDE is constant, so offset calculation is deterministic
+    //                                                                    // proven
     const maxParticles = Math.floor(particleBuffer.length / PARTICLE_STRIDE);
     
     for (let i = 0; i < maxParticles; i++) {
@@ -83,7 +83,7 @@ export class VerifiedSpatialHashAdapter implements ISpatialHash {
     }
     
     // Rebuild verified spatial hash with position array
-    // PROVEN: VerifiedSpatialHash.rebuild() preserves completeness guarantee
+    //                                                                    // proven
     this.verifiedHash.rebuild(this.particlePositions, this.particleIndices);
   }
   
@@ -104,7 +104,7 @@ export class VerifiedSpatialHashAdapter implements ISpatialHash {
       return;
     }
     
-    // PROVEN: VerifiedSpatialHash.queryNeighbors() returns all neighbors
+    //                                                                    // proven
     // within cellSize distance (completeness guarantee)
     const neighbors = this.verifiedHash.queryNeighbors(
       finite(px),
@@ -149,7 +149,7 @@ export class VerifiedSpatialHashAdapter implements ISpatialHash {
       return [];
     }
     
-    // PROVEN: VerifiedSpatialHash.queryNeighborsWithinDistance() uses
+    //                                                                    // proven
     // completeness guarantee + distance filtering
     const neighbors = this.verifiedHash.queryNeighborsWithinDistance(
       finite(px),

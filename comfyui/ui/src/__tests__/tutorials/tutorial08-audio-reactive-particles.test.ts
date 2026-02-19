@@ -57,9 +57,9 @@ describe('Tutorial 08: Audio-Reactive Particles - Audio Galaxy', () => {
     vi.clearAllMocks();
   });
 
-  // ============================================================================
-  // PHASE 1: BASIC AUDIO BINDING SETUP (Steps 1-50)
-  // ============================================================================
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  //                                                                // phase // 1
+  // ════════════════════════════════════════════════════════════════════════════
 
   describe('Phase 1: Basic Audio Binding Setup (Steps 1-50)', () => {
     test('Step 1-25: Create audio-reactive emitter with bass binding', async () => {
@@ -106,7 +106,7 @@ describe('Tutorial 08: Audio-Reactive Particles - Audio Galaxy', () => {
         particleLayer.update(layer!, i, 1/30, audioFeatures);
       }
 
-      // PROVEN: No compounding - size stabilizes
+      //                                                                    // proven
       const state = (particleLayer as any).particleSystem.getState();
       expect(state.particleCount).toBeGreaterThan(0);
     });
@@ -159,7 +159,7 @@ describe('Tutorial 08: Audio-Reactive Particles - Audio Galaxy', () => {
         particleLayer.update(layer!, i, 1/30, audioFeatures);
       }
 
-      // PROVEN: Base values remain unchanged after many frames
+      //                                                                    // proven
       // Modulation always uses base values, never accumulates
       const system = (particleLayer as any).particleSystem;
       const emitter = system.getEmitter('base_test');
@@ -171,9 +171,9 @@ describe('Tutorial 08: Audio-Reactive Particles - Audio Galaxy', () => {
     });
   });
 
-  // ============================================================================
-  // PHASE 2: MULTI-PARAMETER AUDIO BINDING (Steps 51-100)
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                // phase // 2
+  // ════════════════════════════════════════════════════════════════════════════
 
   describe('Phase 2: Multi-Parameter Audio Binding (Steps 51-100)', () => {
     test('Step 51-75: Bind size, speed, and rate to different audio features', async () => {
@@ -242,7 +242,7 @@ describe('Tutorial 08: Audio-Reactive Particles - Audio Galaxy', () => {
         particleLayer.update(layer!, i, 1/30, audioFeatures);
       }
 
-      // PROVEN: Multiple bindings work independently without interference
+      //                                                                    // proven
       const state = (particleLayer as any).particleSystem.getState();
       expect(state.particleCount).toBeGreaterThan(0);
     });
@@ -292,15 +292,15 @@ describe('Tutorial 08: Audio-Reactive Particles - Audio Galaxy', () => {
         particleLayer.update(layer!, i, 1/30, audioFeatures);
       }
 
-      // PROVEN: Smoothing reduces jitter while maintaining responsiveness
+      //                                                                    // proven
       const state = (particleLayer as any).particleSystem.getState();
       expect(state.particleCount).toBeGreaterThan(0);
     });
   });
 
-  // ============================================================================
-  // PHASE 3: AUDIO CURVES & RESPONSE SHAPES (Steps 101-150)
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                // phase // 3
+  // ════════════════════════════════════════════════════════════════════════════
 
   describe('Phase 3: Audio Curves & Response Shapes (Steps 101-150)', () => {
     test('Step 101-125: Test exponential audio curve', async () => {
@@ -348,7 +348,7 @@ describe('Tutorial 08: Audio-Reactive Particles - Audio Galaxy', () => {
         particleLayer.update(layer!, i, 1/30, audioFeatures);
       }
 
-      // PROVEN: Exponential curve provides smooth acceleration
+      //                                                                    // proven
       const state = (particleLayer as any).particleSystem.getState();
       expect(state.particleCount).toBeGreaterThan(0);
     });
@@ -399,15 +399,15 @@ describe('Tutorial 08: Audio-Reactive Particles - Audio Galaxy', () => {
         particleLayer.update(layer!, i, 1/30, audioFeatures);
       }
 
-      // PROVEN: Step curve creates discrete levels
+      //                                                                    // proven
       const state = (particleLayer as any).particleSystem.getState();
       expect(state.particleCount).toBeGreaterThan(0);
     });
   });
 
-  // ============================================================================
-  // PHASE 4: TRIGGER MODES (Steps 151-200)
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                // phase // 4
+  // ════════════════════════════════════════════════════════════════════════════
 
   describe('Phase 4: Trigger Modes (Steps 151-200)', () => {
     test('Step 151-175: Test onThreshold trigger mode', async () => {
@@ -460,7 +460,7 @@ describe('Tutorial 08: Audio-Reactive Particles - Audio Galaxy', () => {
         particleLayer.update(layer!, i, 1/30, audioFeatures);
       }
 
-      // PROVEN: Threshold mode only activates above threshold
+      //                                                                    // proven
       const state = (particleLayer as any).particleSystem.getState();
       expect(state.particleCount).toBeGreaterThan(0);
     });
@@ -511,15 +511,15 @@ describe('Tutorial 08: Audio-Reactive Particles - Audio Galaxy', () => {
         particleLayer.update(layer!, i, 1/30, audioFeatures);
       }
 
-      // PROVEN: Beat mode triggers on onset detection
+      //                                                                    // proven
       const state = (particleLayer as any).particleSystem.getState();
       expect(state.particleCount).toBeGreaterThan(0);
     });
   });
 
-  // ============================================================================
-  // PHASE 5: MULTI-EMITTER AUDIO REACTIVITY (Steps 201-250)
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                // phase // 5
+  // ════════════════════════════════════════════════════════════════════════════
 
   describe('Phase 5: Multi-Emitter Audio Reactivity (Steps 201-250)', () => {
     test('Step 201-225: Create multiple emitters with different audio bindings', async () => {
@@ -611,7 +611,7 @@ describe('Tutorial 08: Audio-Reactive Particles - Audio Galaxy', () => {
         particleLayer.update(layer!, i, 1/30, audioFeatures);
       }
 
-      // PROVEN: Multiple emitters react independently to their audio features
+      //                                                                    // proven
       const state = (particleLayer as any).particleSystem.getState();
       expect(state.particleCount).toBeGreaterThan(0);
     });
@@ -679,15 +679,15 @@ describe('Tutorial 08: Audio-Reactive Particles - Audio Galaxy', () => {
         particleLayer.update(layer!, i, 1/30, audioFeatures);
       }
 
-      // PROVEN: Both emitter and force field react to audio without compounding
+      //                                                                    // proven
       const state = (particleLayer as any).particleSystem.getState();
       expect(state.particleCount).toBeGreaterThan(0);
     });
   });
 
-  // ============================================================================
-  // PHASE 6: LONG-TERM STABILITY TEST (Steps 251-300)
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                // phase // 6
+  // ════════════════════════════════════════════════════════════════════════════
 
   describe('Phase 6: Long-Term Stability Test (Steps 251-300)', () => {
     test('Step 251-300: Run for 10 seconds with constant audio - verify no compounding', async () => {
@@ -740,7 +740,7 @@ describe('Tutorial 08: Audio-Reactive Particles - Audio Galaxy', () => {
         particleLayer.update(layer!, i, 1/30, audioFeatures);
       }
 
-      // PROVEN: No compounding after 10 seconds
+      //                                                                    // proven
       // Size should stabilize, not grow unbounded
       const system = (particleLayer as any).particleSystem;
       const emitter = system.getEmitter('stability_test');
@@ -754,9 +754,9 @@ describe('Tutorial 08: Audio-Reactive Particles - Audio Galaxy', () => {
     });
   });
 
-  // ============================================================================
-  // PHASE 7: COMPLETE AUDIO GALAXY EFFECT (Steps 301-400)
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                // phase // 7
+  // ════════════════════════════════════════════════════════════════════════════
 
   describe('Phase 7: Complete Audio Galaxy Effect (Steps 301-400)', () => {
     test('Step 301-400: Create beautiful audio-reactive galaxy visualization', async () => {
@@ -886,7 +886,7 @@ describe('Tutorial 08: Audio-Reactive Particles - Audio Galaxy', () => {
       const connectionMesh = system.getConnectionMesh();
       expect(connectionMesh).toBeDefined();
 
-      // PROVEN: Complete audio-reactive system works without compounding
+      //                                                                    // proven
       // Beautiful visuals with mathematical guarantees
     });
   });

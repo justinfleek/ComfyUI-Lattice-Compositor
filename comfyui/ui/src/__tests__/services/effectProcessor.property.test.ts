@@ -27,9 +27,9 @@ import {
 import type { EffectInstance, EffectCategory } from '@/types/effects';
 import type { AnimatableProperty, Keyframe, BezierHandle, ControlMode, InterpolationType } from '@/types/animation';
 
-// ============================================================================
-// HELPER FUNCTIONS FOR TYPE-SAFE FIXTURES
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                        // helper // functions // for // type
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Create a properly-typed BezierHandle
@@ -77,9 +77,9 @@ function createAnimatableProperty<T>(
   };
 }
 
-// ============================================================================
-// TEST DATA GENERATORS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                // test // data // generators
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Generate a valid AnimatableProperty for effect parameters
@@ -179,9 +179,9 @@ const arbitraryEffectInstance = (effectKey?: string): fc.Arbitrary<EffectInstanc
 const arbitraryEffectStack = (): fc.Arbitrary<EffectInstance[]> =>
   fc.array(arbitraryEffectInstance(), { minLength: 0, maxLength: 5 });
 
-// ============================================================================
-// MOCK EFFECT RENDERERS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                               // mock // effect // renderers
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Register mock renderers for common effect types used in tests.
@@ -200,9 +200,9 @@ function setupMockEffectRenderers() {
   }
 }
 
-// ============================================================================
-// MOCK CANVAS FOR TESTING
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                          // mock // canvas // for // testing
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Create a mock canvas for testing (works in Node.js/happy-dom)
@@ -243,9 +243,9 @@ function createTestCanvas(width: number, height: number, color: { r: number; g: 
   return canvas;
 }
 
-// ============================================================================
-// STRICT PARAMETER EVALUATION TESTS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                // strict // parameter // evaluation // tests
+// ════════════════════════════════════════════════════════════════════════════
 
 describe('STRICT: Effect Parameter Evaluation', () => {
   test.prop([
@@ -319,9 +319,9 @@ describe('STRICT: Effect Parameter Evaluation', () => {
     expect(evaluated.amount).toBeCloseTo(expectedMidpoint, 4);
   });
 
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
   // Additional evaluateEffectParameters edge cases
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
 
   it('handles effect with no parameters', () => {
     const effect: EffectInstance = {
@@ -470,9 +470,9 @@ describe('STRICT: Effect Parameter Evaluation', () => {
   });
 });
 
-// ============================================================================
-// BROWSER-ONLY TESTS: Effect Stack Processing
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                                   // browser
+// ════════════════════════════════════════════════════════════════════════════
 //
 // The following browser-dependent functionality is tested in E2E:
 //
@@ -496,12 +496,12 @@ describe('STRICT: Effect Parameter Evaluation', () => {
 //
 // Run E2E tests with: bunx playwright test effect-processor.spec.ts
 
-// NOTE: Determinism tests are covered in E2E: /ui/e2e/export/effect-processor.spec.ts
+//                                                                      // note
 // See "determinism - same input produces same output" test
 
-// ============================================================================
-// STRICT CACHE TESTS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                  // strict // cache // tests
+// ════════════════════════════════════════════════════════════════════════════
 
 describe('STRICT: Effect Cache Integrity', () => {
   beforeEach(() => {
@@ -539,9 +539,9 @@ describe('STRICT: Effect Cache Integrity', () => {
   });
 });
 
-// ============================================================================
-// STRICT hasEnabledEffects TESTS (pure function - no canvas needed)
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                                    // strict
+// ════════════════════════════════════════════════════════════════════════════
 
 describe('STRICT: hasEnabledEffects', () => {
   test.prop([
@@ -583,9 +583,9 @@ describe('STRICT: hasEnabledEffects', () => {
   });
 });
 
-// ============================================================================
-// STRICT getRegisteredEffects / registerEffectRenderer TESTS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                                    // strict
+// ════════════════════════════════════════════════════════════════════════════
 
 describe('STRICT: Effect Renderer Registration', () => {
   beforeEach(() => {
@@ -639,17 +639,17 @@ describe('STRICT: Effect Renderer Registration', () => {
   });
 });
 
-// NOTE: Input validation tests are covered in E2E: /ui/e2e/export/effect-processor.spec.ts
+//                                                                      // note
 // See "return canvas with same dimensions" and "handle NaN in effect parameters" tests
 
-// NOTE: Renderer registration tests are already covered in the non-skipped
+//                                                                      // note
 // 'STRICT: Effect Renderer Registration' describe block above (lines 503-554)
 // Browser-specific processing tests in E2E: /ui/e2e/export/effect-processor.spec.ts
 // See "handle unregistered effect gracefully" test
 
-// ============================================================================
-// STRESS TESTS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                           // stress // tests
+// ════════════════════════════════════════════════════════════════════════════
 //
 // The following browser-dependent stress tests are covered in E2E:
 //

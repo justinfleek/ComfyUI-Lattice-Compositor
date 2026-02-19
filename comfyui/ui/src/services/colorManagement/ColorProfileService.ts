@@ -16,9 +16,9 @@ import { isFiniteNumber } from "@/utils/typeGuards";
 
 const logger = createLogger("ColorProfile");
 
-// ============================================================================
-// TYPES
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                                                     // types
+// ════════════════════════════════════════════════════════════════════════════
 
 export type ColorSpace =
   | "sRGB"
@@ -85,9 +85,9 @@ export interface ICCProfile {
 export type RGB = [number, number, number];
 export type XYZ = [number, number, number];
 
-// ============================================================================
-// COLOR SPACE DEFINITIONS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                             // color // space // definitions
+// ════════════════════════════════════════════════════════════════════════════
 
 export const COLOR_SPACES: Record<ColorSpace, ColorSpaceInfo> = {
   sRGB: {
@@ -188,9 +188,9 @@ export const COLOR_SPACES: Record<ColorSpace, ColorSpaceInfo> = {
   },
 };
 
-// ============================================================================
-// TRANSFER FUNCTIONS (Gamma)
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                     // transfer // functions
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * sRGB transfer function (linearize)
@@ -270,9 +270,9 @@ export function applyGammaRGB(rgb: RGB, colorSpace: ColorSpace): RGB {
   ];
 }
 
-// ============================================================================
-// COLOR SPACE CONVERSION MATRICES
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                  // color // space // conversion // matrices
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * 3x3 matrix for RGB to XYZ conversion
@@ -290,7 +290,7 @@ const SRGB_TO_XYZ: Matrix3x3 = [
   [0.0193339, 0.119192, 0.9503041],
 ];
 
-// XYZ to sRGB (D65)
+//                                                                       // xyz
 const XYZ_TO_SRGB: Matrix3x3 = [
   [3.2404542, -1.5371385, -0.4985314],
   [-0.969266, 1.8760108, 0.041556],
@@ -304,7 +304,7 @@ const P3_TO_XYZ: Matrix3x3 = [
   [0.0, 0.0451134, 1.0439444],
 ];
 
-// XYZ to Display P3 (D65)
+//                                                                       // xyz
 const XYZ_TO_P3: Matrix3x3 = [
   [2.4934969, -0.9313836, -0.4027108],
   [-0.829489, 1.7626641, 0.0236247],
@@ -318,7 +318,7 @@ const WIDEGAMUT_TO_XYZ: Matrix3x3 = [
   [0.0270343, 0.0706872, 0.9911085],
 ];
 
-// XYZ to Wide-Gamut RGB (D65)
+//                                                                       // xyz
 const XYZ_TO_WIDEGAMUT: Matrix3x3 = [
   [2.041369, -0.5649464, -0.3446944],
   [-0.969266, 1.8760108, 0.041556],
@@ -339,9 +339,9 @@ function matrixMultiply(
   ];
 }
 
-// ============================================================================
-// COLOR SPACE CONVERSIONS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                             // color // space // conversions
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Convert RGB to XYZ color space
@@ -416,9 +416,9 @@ export function convertColorSpace(
   return xyzToRGB(xyz, to);
 }
 
-// ============================================================================
-// ICC PROFILE PARSING
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                 // icc // profile // parsing
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Parse basic ICC profile information
@@ -623,7 +623,7 @@ function extractICCFromPNG(data: ArrayBuffer): ICCProfile {
     );
 
     if (chunkType === "iCCP") {
-      // ICC Profile chunk found
+      //                                                                  // icc // p
       // Skip to profile data (after null-terminated name and compression method)
       let nameEnd = offset + 8;
       while (
@@ -674,7 +674,7 @@ function extractICCFromJPEG(data: ArrayBuffer): ICCProfile {
 
     const segmentLength = view.getUint16(offset + 2);
 
-    // APP2 marker with ICC_PROFILE
+    //                                                                      // app2
     if (marker === 0xffe2) {
       const iccSignature = String.fromCharCode(
         view.getUint8(offset + 4),
@@ -717,9 +717,9 @@ function extractICCFromJPEG(data: ArrayBuffer): ICCProfile {
   throw new Error(`[ColorProfileService] Cannot extract ICC profile from JPEG: No APP2 ICC profile segments found`);
 }
 
-// ============================================================================
-// COLOR PROFILE SERVICE CLASS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                      // color // profile // service // class
+// ════════════════════════════════════════════════════════════════════════════
 
 export class ColorProfileService {
   private settings: ColorSettings;
@@ -785,9 +785,9 @@ export class ColorProfileService {
     };
   }
 
-  // ============================================================================
-  // SETTINGS
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                  // settings
+  // ════════════════════════════════════════════════════════════════════════════
 
   getSettings(): ColorSettings {
     return { ...this.settings };
@@ -810,9 +810,9 @@ export class ColorProfileService {
     this.settings.linearCompositing = enabled;
   }
 
-  // ============================================================================
-  // PROFILE MANAGEMENT
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                     // profile // management
+  // ════════════════════════════════════════════════════════════════════════════
 
   async loadProfile(
     name: string,
@@ -834,9 +834,9 @@ export class ColorProfileService {
     return extractICCFromImage(imageData);
   }
 
-  // ============================================================================
-  // COLOR CONVERSION
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                       // color // conversion
+  // ════════════════════════════════════════════════════════════════════════════
 
   /**
    * Convert RGB to working color space
@@ -896,9 +896,9 @@ export class ColorProfileService {
     return applyGammaRGB(rgb, this.settings.workingColorSpace);
   }
 
-  // ============================================================================
-  // CANVAS OPERATIONS
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                      // canvas // operations
+  // ════════════════════════════════════════════════════════════════════════════
 
   /**
    * Convert ImageData to working color space
@@ -948,9 +948,9 @@ export class ColorProfileService {
   }
 }
 
-// ============================================================================
-// SINGLETON INSTANCE
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                     // singleton // instance
+// ════════════════════════════════════════════════════════════════════════════
 
 let serviceInstance: ColorProfileService | null = null;
 
@@ -968,9 +968,9 @@ export function initializeColorManagement(
   return serviceInstance;
 }
 
-// ============================================================================
-// UTILITY EXPORTS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                        // utility // exports
+// ════════════════════════════════════════════════════════════════════════════
 
 export const colorUtils = {
   sRGBToLinear,

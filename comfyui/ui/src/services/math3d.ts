@@ -13,9 +13,9 @@
  * - Set math3dWarnHandler to customize warning behavior (e.g., throw errors)
  */
 
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Warning System - NO SILENT FAILURES
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export type Math3DWarning = 
   | 'SCALE_OUT_OF_RANGE'
@@ -77,9 +77,9 @@ export interface Mat4_64 {
   elements: Float64Array;  // 16 elements, column-major, ~15 digits precision
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Vector Operations
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export function vec3(x: number, y: number, z: number): Vec3 {
   return { x, y, z };
@@ -137,9 +137,9 @@ export function distanceVec3(a: Vec3, b: Vec3): number {
   return lengthVec3(subVec3(a, b));
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Matrix Operations
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export function identityMat4(): Mat4 {
   return {
@@ -733,9 +733,9 @@ export function invertMat4(m: Mat4): Mat4 | null {
   return { elements: te };
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Lens Math
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Convert focal length to field of view
@@ -757,7 +757,7 @@ export function focalLengthToFOV(
  * @returns Focal length in mm
  */
 export function fovToFocalLength(fov: number, sensorSize: number): number {
-  // BUG FIX: Prevent division by zero when fov=0 (tan(0)=0)
+  //                                                                // bug // fix
   if (fov <= 0 || fov >= Math.PI) {
     math3dWarn('DIVISION_BY_ZERO',
       'fovToFocalLength: FOV must be in (0, π) radians',
@@ -781,7 +781,7 @@ export function zoomToFocalLength(
   compWidth: number,
   filmSize: number,
 ): number {
-  // BUG FIX: Prevent division by zero when compWidth=0
+  //                                                                // bug // fix
   if (compWidth <= 0) {
     math3dWarn('DIVISION_BY_ZERO',
       'zoomToFocalLength: compWidth must be positive',
@@ -804,7 +804,7 @@ export function focalLengthToZoom(
   compWidth: number,
   filmSize: number,
 ): number {
-  // BUG FIX: Prevent division by zero when filmSize=0
+  //                                                                // bug // fix
   if (filmSize <= 0) {
     math3dWarn('DIVISION_BY_ZERO',
       'focalLengthToZoom: filmSize must be positive',
@@ -829,9 +829,9 @@ export function radToDeg(radians: number): number {
   return radians * (180 / Math.PI);
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Quaternion (for smooth rotation interpolation)
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export interface Quat {
   x: number;
@@ -880,7 +880,7 @@ export function quatToEuler(q: Quat): Vec3 {
   // Normalize quaternion to prevent numerical issues
   const len = Math.sqrt(q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w);
   
-  // BUG FIX: Prevent division by zero for zero quaternion
+  //                                                                // bug // fix
   if (len === 0) {
     math3dWarn('ZERO_VECTOR_NORMALIZE',
       'quatToEuler: Cannot convert zero quaternion to Euler - returning identity rotation',
@@ -971,10 +971,10 @@ export function slerpQuat(a: Quat, b: Quat, t: number): Quat {
   };
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // High-Precision Matrix Operations (Float64)
 // Use these when precision > 1e-7 is required
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Create identity matrix with high precision (Float64)

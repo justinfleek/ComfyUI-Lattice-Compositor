@@ -8,9 +8,9 @@ import { isFiniteNumber } from "@/utils/typeGuards";
 import type { AnimatableProperty, Keyframe, LayerTransform, PropertyValue } from "@/types/project";
 import { useProjectStore } from "../projectStore";
 
-// ============================================================================
-// KEYFRAME QUERY UTILITIES
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                            // keyframe // query // utilities
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Get keyframes at a specific frame across all animated properties of a layer.

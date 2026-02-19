@@ -5,7 +5,7 @@
  * Computes histogram, waveform, vectorscope, and RGB parade data.
  */
 
-// BT.709 luminance coefficients
+//                                                                        // bt
 const BT709_R = 0.2126;
 const BT709_G = 0.7152;
 const BT709_B = 0.0722;
@@ -54,7 +54,7 @@ interface WaveformResult {
 }
 
 interface VectorscopeResult {
-  // UV grid data (256x256)
+  //                                                                        // uv
   data: Uint32Array;
   maxCount: number;
   // Pre-calculated graticule target positions
@@ -138,7 +138,7 @@ function computeHistogram(
     green[g]++;
     blue[b]++;
 
-    // BT.709 luminance
+    //                                                                        // bt
     const lum = Math.round(BT709_R * r + BT709_G * g + BT709_B * b);
     luminance[Math.min(255, lum)]++;
   }
@@ -219,7 +219,7 @@ function computeVectorscope(
       const g = pixels[idx + 1] / 255;
       const b = pixels[idx + 2] / 255;
 
-      // BT.709 Y
+      //                                                                        // bt
       const Y = BT709_R * r + BT709_G * g + BT709_B * b;
 
       // Chrominance (Cb/Cr style, scaled for display)

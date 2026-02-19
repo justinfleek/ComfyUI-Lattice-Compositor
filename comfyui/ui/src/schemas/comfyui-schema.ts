@@ -20,9 +20,9 @@ import {
   MAX_FILENAME_LENGTH,
 } from "./shared-validation";
 
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Primitives
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 const finiteNumber = z.number().finite();
 const positiveFinite = z.number().finite().positive();
@@ -31,9 +31,9 @@ const positiveInt = z.number().int().positive();
 const nonNegativeInt = z.number().int().nonnegative();
 const normalized0100 = z.number().finite().min(0).max(100);
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Export Target
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export const ExportTargetSchema = z.enum([
   "wan22-i2v",
@@ -64,9 +64,9 @@ export const ExportTargetSchema = z.enum([
 
 export type ExportTarget = z.infer<typeof ExportTargetSchema>;
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Depth Map Format
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export const DepthMapFormatSchema = z.enum([
   "raw",
@@ -80,9 +80,9 @@ export const DepthMapFormatSchema = z.enum([
 
 export type DepthMapFormat = z.infer<typeof DepthMapFormatSchema>;
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Control Type
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export const ControlTypeSchema = z.enum([
   "depth",
@@ -97,9 +97,9 @@ export const ControlTypeSchema = z.enum([
 
 export type ControlType = z.infer<typeof ControlTypeSchema>;
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Depth Export Options
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export const DepthExportOptionsSchema = z.object({
   format: DepthMapFormatSchema,
@@ -119,9 +119,9 @@ export const DepthExportOptionsSchema = z.object({
 
 export type DepthExportOptions = z.infer<typeof DepthExportOptionsSchema>;
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Control Export Config
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export const ControlExportConfigSchema = z.object({
   type: ControlTypeSchema,
@@ -142,9 +142,9 @@ export const ControlExportConfigSchema = z.object({
 
 export type ControlExportConfig = z.infer<typeof ControlExportConfigSchema>;
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Export Config
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export const ExportConfigSchema = z.object({
   target: ExportTargetSchema,
@@ -187,9 +187,9 @@ export const ExportConfigSchema = z.object({
 
 export type ExportConfig = z.infer<typeof ExportConfigSchema>;
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Export Result
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export const ExportResultSchema = z.object({
   success: z.boolean(),
@@ -209,9 +209,9 @@ export const ExportResultSchema = z.object({
 
 export type ExportResult = z.infer<typeof ExportResultSchema>;
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Camera Formats
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 // MotionCtrl
 export const MotionCtrlPoseSchema = z.object({
@@ -377,9 +377,9 @@ export const FullCameraExportSchema = z.object({
 
 export type FullCameraExport = z.infer<typeof FullCameraExportSchema>;
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // ComfyUI Types
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export const NodeConnectionSchema = z.tuple([
   z.string().max(200).trim(), // Node ID
@@ -445,9 +445,9 @@ export const ComfyUIHistoryEntrySchema = z.object({
 
 export type ComfyUIHistoryEntry = z.infer<typeof ComfyUIHistoryEntrySchema>;
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Video Output Types
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export const VideoFormatSchema = z.enum(["mp4", "webm", "gif", "webp", "image_sequence"]);
 
@@ -484,9 +484,9 @@ export const VideoEncoderOptionsSchema = z.object({
 
 export type VideoEncoderOptions = z.infer<typeof VideoEncoderOptionsSchema>;
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Progress Tracking
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export const ExportStageSchema = z.enum([
   "preparing",
@@ -556,9 +556,9 @@ export const GenerationProgressSchema = z.object({
 
 export type GenerationProgress = z.infer<typeof GenerationProgressSchema>;
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Client Types
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export const ComfyUIClientConfigSchema = z.object({
   serverAddress: url,
@@ -612,9 +612,9 @@ export const QueueStatusSchema = z.object({
 
 export type QueueStatus = z.infer<typeof QueueStatusSchema>;
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Validation Helpers
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 export function validateExportConfig(data: unknown): ExportConfig {
   return ExportConfigSchema.parse(data);

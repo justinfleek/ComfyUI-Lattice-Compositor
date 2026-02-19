@@ -83,7 +83,7 @@ in
           ghc-wasm-meta = inputs.ghc-wasm-meta or null;
         };
 
-        # GHC WASM toolchain (if available)
+        #                                                               // ghc // wasm
         ghc-wasm =
           if inputs ? ghc-wasm-meta then inputs.ghc-wasm-meta.packages.${system}.all_9_12 else null;
 
@@ -92,7 +92,7 @@ in
         # ──────────────────────────────────────────────────────────────────────
 
         # Haskell package set - using GHC 9.12 from nixpkgs (stable, well-tested)
-        # GHC 9.12 is the latest stable before 9.14's doctest/HLS breakage.
+        #                                                                  // ghc // 9
         # This replaces the Mercury GHC approach which had package.cache.lock bugs.
         hsPkgs = pkgs.haskell.packages.ghc912;
 
@@ -164,7 +164,7 @@ in
                 # Combined Haskell dependencies
                 allHsDeps = p: baseDeps p ++ hs-deps p;
 
-                # GHC with turtle and user's Haskell deps (using ghc912 from nixpkgs)
+                #                                                                       // ghc
                 ghcWithDeps = hsPkgs.ghcWithPackages allHsDeps;
               in
               pkgs.stdenv.mkDerivation {
@@ -295,18 +295,18 @@ in
         # ──────────────────────────────────────────────────────────────────────
 
         render = {
-          # JSON: use builtin serialization
+          #                                                                      // json
           json =
             name: value:
             pkgs.writeTextFile {
               inherit name;
               text = builtins.toJSON value;
             };
-          # TOML/YAML/INI: pkgs.formats.*.generate already returns a derivation
+          #                                                                      // toml
           toml = name: value: (pkgs.formats.toml { }).generate name value;
           yaml = name: value: (pkgs.formats.yaml { }).generate name value;
           ini = name: value: (pkgs.formats.ini { }).generate name value;
-          # ENV: simple key=value format
+          #                                                                       // env
           env =
             name: attrs:
             pkgs.writeTextFile {
@@ -689,7 +689,7 @@ in
             inherit (lib.types) either;
             one-of = lib.types.oneOf;
 
-            # GPU capability type
+            #                                                                       // gpu
             cuda-capability = lib.types.enum [
               "7.0"
               "7.5"
@@ -703,7 +703,7 @@ in
               "12.1"
             ];
 
-            # GPU architecture type
+            #                                                                       // gpu
             cuda-arch = lib.types.enum [
               "volta"
               "turing"
@@ -917,7 +917,7 @@ in
 
             # Build single-file PureScript to WASM
             # Uses pure-sarcasm (Wasm-GC backend) if available, otherwise provides helpful error.
-            # NOTE: pure-sarcasm is experimental and targets Wasm-GC (not standard WASM).
+            #                                                                      // note
             buildPursWasm =
               pursPath:
               let
@@ -1004,7 +1004,7 @@ in
                   cp ${wrapperMain} Main.purs
                   
                   # Compile PureScript to Wasm-GC using pure-sarcasm
-                  # NOTE: pure-sarcasm is experimental and may have different CLI
+                  #                                                                      // note
                   # This implementation attempts compilation and handles errors gracefully
                   
                   # Check if purs-sarcasm is available
@@ -1099,7 +1099,7 @@ in
             else
               let
                 # Build PureScript to WASM
-                # NOTE: This will fail until PureScript WASM backend is available
+                #                                                                      // note
                 wasmDrv = buildPursWasm path;
                 spec = builtins.wasm wasmDrv "pkg" args;
               in

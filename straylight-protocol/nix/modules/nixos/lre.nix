@@ -17,18 +17,18 @@
 # This runs NativeLink as a systemd service for build caching and
 # remote execution with Buck2, Bazel, or other RE-compatible clients.
 #
-# SIMPLE USAGE (cache only):
+#                                                           // simple // usage
 #
 #   services.lre.enable = true;
 #
-# FULL USAGE (cache + remote execution):
+#                                                             // full // usage
 #
 #   services.lre = {
 #     enable = true;
 #     worker.enable = true;  # Enable local worker for execution
 #   };
 #
-# BUCK2 CONFIGURATION (.buckconfig.local):
+#                                                    // buck2 // configuration
 #
 #   [buck2_re_client]
 #   engine_address = grpc://127.0.0.1:50051

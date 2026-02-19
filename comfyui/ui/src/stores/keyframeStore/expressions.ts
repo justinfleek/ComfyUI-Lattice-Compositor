@@ -15,9 +15,9 @@ import { findPropertyByPath } from "./helpers";
 import { evaluatePropertyAtFrame } from "./evaluation";
 import { generateKeyframeId } from "@/utils/uuid5";
 
-// ============================================================================
-// EXPRESSION METHODS
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                                     // expression // methods
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Set an expression on a property.
@@ -212,9 +212,9 @@ export function updateExpressionParams(
   return true;
 }
 
-// ============================================================================
-// CONVERT EXPRESSION TO KEYFRAMES (BAKE)
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                  // convert // expression // to // keyframes
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Convert an expression to keyframes by sampling at every frame.

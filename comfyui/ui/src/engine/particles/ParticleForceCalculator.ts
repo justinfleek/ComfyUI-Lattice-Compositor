@@ -12,9 +12,9 @@ import { isFiniteNumber } from "@/utils/typeGuards";
 import * as THREE from "three";
 import type { ForceFieldConfig } from "./types";
 
-// ============================================================================
-// FORCE CALCULATION
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                                      // force // calculation
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Calculate force from a force field on a particle
@@ -345,9 +345,9 @@ export function calculateForceField(
   return force;
 }
 
-// ============================================================================
-// FORCE FIELD TYPE INDICES (for GPU shaders)
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                         // force // field // type // indices
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Get numeric index for force field type (for GPU shader)

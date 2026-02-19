@@ -28,9 +28,9 @@ import {
 import type { Camera3D, CameraKeyframe, CameraType, MeasureFilmSize, AutoOrientMode } from "@/types/camera";
 import type { ExportTarget } from "@/types/export";
 
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Arbitraries (Test Data Generators)
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /** Generate a valid 3D position */
 const positionArb = fc.record({
@@ -98,15 +98,15 @@ const camera3DArb: fc.Arbitrary<Camera3D> = fc.record({
     saturation: fc.float({ min: 0, max: 1, noNaN: true }),
   }),
   autoOrient: fc.constantFrom<AutoOrientMode>("off", "orient-along-path", "orient-towards-poi"),
-  // NOTE: nearClip uses fc.double because 0.1 is not exactly representable as 32-bit float
+  //                                                                      // note
   // fc.float requires Math.fround(min/max) - double is more appropriate for camera precision
   nearClip: fc.double({ min: 0.1, max: 100, noNaN: true, noDefaultInfinity: true }),
   farClip: fc.integer({ min: 1000, max: 100000 }).map(n => n),
 });
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // interpolateCameraAtFrame Property Tests
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 describe("PROPERTY: interpolateCameraAtFrame", () => {
   it("returns camera defaults when no keyframes", () => {
@@ -210,7 +210,7 @@ describe("PROPERTY: interpolateCameraAtFrame", () => {
     );
   });
 
-  // BUG-081: This test documents the CURRENT behavior with duplicate frames
+  //                                                                       // bug
   // The function uses LAST keyframe at a frame for `prev`, FIRST for `next`
   // When frames match, it returns `prev` (the LAST duplicate)
   it.skip("BUG-081: duplicate frame keyframes have undefined behavior - NEEDS FIX", () => {
@@ -320,9 +320,9 @@ describe("PROPERTY: interpolateCameraAtFrame", () => {
   });
 });
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // computeViewMatrix Property Tests
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 describe("PROPERTY: computeViewMatrix", () => {
   const interpolatedCameraArb = fc.record({
@@ -410,9 +410,9 @@ describe("PROPERTY: computeViewMatrix", () => {
   });
 });
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // computeProjectionMatrix Property Tests
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 describe("PROPERTY: computeProjectionMatrix", () => {
   const interpolatedCameraArb = fc.record({
@@ -485,9 +485,9 @@ describe("PROPERTY: computeProjectionMatrix", () => {
   });
 });
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // exportToMotionCtrl Property Tests
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 describe("PROPERTY: exportToMotionCtrl", () => {
   it("returns correct number of poses", () => {
@@ -542,9 +542,9 @@ describe("PROPERTY: exportToMotionCtrl", () => {
   });
 });
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // detectMotionCtrlSVDPreset Property Tests
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 describe("PROPERTY: detectMotionCtrlSVDPreset", () => {
   it("returns static for empty keyframes", () => {
@@ -593,9 +593,9 @@ describe("PROPERTY: detectMotionCtrlSVDPreset", () => {
   });
 });
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // analyzeCameraMotion Property Tests
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 describe("PROPERTY: analyzeCameraMotion", () => {
   it("returns all false for empty keyframes", () => {
@@ -662,9 +662,9 @@ describe("PROPERTY: analyzeCameraMotion", () => {
   });
 });
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // mapToWan22FunCamera Property Tests
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 describe("PROPERTY: mapToWan22FunCamera", () => {
   it("returns valid camera motion preset", () => {
@@ -708,9 +708,9 @@ describe("PROPERTY: mapToWan22FunCamera", () => {
   });
 });
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // exportToUni3C Property Tests
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 describe("PROPERTY: exportToUni3C", () => {
   it("returns valid traj_type", () => {
@@ -774,9 +774,9 @@ describe("PROPERTY: exportToUni3C", () => {
   });
 });
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // exportCameraMatrices Property Tests
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 describe("PROPERTY: exportCameraMatrices", () => {
   it("returns correct number of frames", () => {
@@ -943,9 +943,9 @@ describe("PROPERTY: exportCameraMatrices", () => {
   });
 });
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // exportCameraForTarget Property Tests
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 describe("PROPERTY: exportCameraForTarget", () => {
   // Valid export targets for property testing
@@ -1009,9 +1009,9 @@ describe("PROPERTY: exportCameraForTarget", () => {
   });
 });
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // detectUni3CTrajectoryType Property Tests
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 describe("PROPERTY: detectUni3CTrajectoryType", () => {
   it("returns valid Uni3C trajectory type for any keyframes", () => {
@@ -1034,9 +1034,9 @@ describe("PROPERTY: detectUni3CTrajectoryType", () => {
   });
 });
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // detectCameraCtrlMotionType Property Tests
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 describe("PROPERTY: detectCameraCtrlMotionType", () => {
   it("returns valid CameraCtrl motion type for any keyframes", () => {
@@ -1065,9 +1065,9 @@ describe("PROPERTY: detectCameraCtrlMotionType", () => {
   });
 });
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // exportToCameraCtrl Property Tests
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 describe("PROPERTY: exportToCameraCtrl", () => {
   it("returns valid CameraCtrl poses for any keyframes", () => {
@@ -1092,9 +1092,9 @@ describe("PROPERTY: exportToCameraCtrl", () => {
   });
 });
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Edge Case Tests
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 describe("EDGE CASES: Camera Export", () => {
   it("handles NaN in keyframe position gracefully", () => {

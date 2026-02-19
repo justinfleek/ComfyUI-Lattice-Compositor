@@ -78,7 +78,7 @@ let
   #                         // clang wrappers //
   # ──────────────────────────────────────────────────────────────────────────
 
-  # LLVM 19 for stable CUDA 13 / CCCL compatibility
+  #                                                                // llvm // 19
   # Clang 20 has broken __clang_cuda_runtime_wrapper.h that conflicts with CCCL
   llvm = final.llvmPackages_19;
 

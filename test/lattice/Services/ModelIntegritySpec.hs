@@ -18,11 +18,11 @@ spec = testGroup "Lattice.Services.ModelIntegrity"
   [ testGroup "computeHash"
     [ testCase "computeHash - empty string" $ do
         let hash = computeHash BS.empty
-        -- SHA256 of empty string: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+        --                                                                    // sha256
         T.length hash @?= 64
     , testCase "computeHash - hello world" $ do
         let hash = computeHash (BS.pack [104, 101, 108, 108, 111, 32, 119, 111, 114, 108, 100])
-        -- SHA256 of "hello world": b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9
+        --                                                                    // sha256
         T.length hash @?= 64
         -- Verify it's hex (all lowercase)
         T.all (\c -> (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f')) hash @?= True

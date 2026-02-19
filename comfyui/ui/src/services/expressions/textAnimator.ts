@@ -11,9 +11,9 @@ import { isFiniteNumber } from "@/utils/typeGuards";
 // Re-export types
 export type { TextAnimatorContext } from "./types";
 
-// ============================================================
-// TEXT ANIMATOR CONTEXT
-// ============================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                               // text // animator // context
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Create a text animator context for per-character animation
@@ -118,9 +118,9 @@ export function evaluateTextAnimatorExpression(
   return evaluateCustomExpression(extendedCode, ctx);
 }
 
-// ============================================================
-// TEXT ANIMATOR NAMESPACE
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                             // text // animator // namespace
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Text animator namespace

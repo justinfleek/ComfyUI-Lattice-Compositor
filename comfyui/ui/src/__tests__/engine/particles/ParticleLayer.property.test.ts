@@ -29,7 +29,7 @@ function extractRenderConfig(data: Partial<ParticleLayerData>): Partial<{
 
   if (!renderOptions) return config;
 
-  // LOD settings (BUG-189 fix)
+  //                                                                       // lod
   if (renderOptions.lodEnabled !== undefined) {
     config.lodEnabled = renderOptions.lodEnabled;
   }
@@ -96,7 +96,7 @@ describe("ParticleLayer Config Wiring", () => {
       lineOpacity: fc.float({ min: Math.fround(0), max: Math.fround(1), noNaN: true }),
       fadeByDistance: fc.boolean(),
     }),
-    // LOD settings (the ones that were NOT wired before BUG-189)
+    //                                                                       // lod
     lodEnabled: fc.boolean(),
     lodDistances: fc.array(fc.float({ min: Math.fround(0), max: Math.fround(10000), noNaN: true }), { minLength: 1, maxLength: 5 }),
     lodSizeMultipliers: fc.array(fc.float({ min: Math.fround(0.1), max: Math.fround(2), noNaN: true }), { minLength: 1, maxLength: 5 }),

@@ -8,7 +8,7 @@
 import { describe, it, expect } from "vitest";
 import * as fc from "fast-check";
 
-// DOF configuration structure
+//                                                                       // dof
 interface DOFConfig {
   enabled: boolean;
   focusDistance: number;

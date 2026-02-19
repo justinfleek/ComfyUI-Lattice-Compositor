@@ -50,7 +50,7 @@ test.describe("Tutorial 02: Neon Motion Trails - Phases 8-9 (Steps 136-178)", ()
     await h.selectLayer(4);
     await h.paste();
 
-    // UNDO/REDO
+    //                                                                      // undo
     await h.undo();
     await h.redo();
   });
@@ -80,7 +80,7 @@ test.describe("Tutorial 02: Neon Motion Trails - Phases 8-9 (Steps 136-178)", ()
     await expect(page.locator('[data-testid="effect-1-glow"]')).toBeVisible();
     await expect(page.locator('[data-testid="effect-2-glow"]')).toBeVisible();
 
-    // UNDO/REDO
+    //                                                                      // undo
     await h.undo();
     await h.redo();
   });

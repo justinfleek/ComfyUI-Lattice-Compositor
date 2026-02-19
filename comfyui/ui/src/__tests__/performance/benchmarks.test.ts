@@ -266,14 +266,14 @@ describe('Performance: RNG', () => {
 
 describe('Performance: Effect Processing', () => {
   test.skip('processing effect stacks meets target', () => {
-    // TODO: Implement when effect processing API is available
+    //                                                                      // todo
     // This requires canvas/ImageData creation which may not be available in Node.js
   });
 });
 
 describe('Performance: Export', () => {
   test.skip('export frame meets target', () => {
-    // TODO: Implement when export API is available
+    //                                                                      // todo
     // This requires browser environment
   });
 });

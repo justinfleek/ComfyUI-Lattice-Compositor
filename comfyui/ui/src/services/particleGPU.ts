@@ -18,9 +18,9 @@
 
 import { assertDefined } from "@/utils/typeGuards";
 
-// ============================================================================
-// TYPES
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                                                     // types
+// ════════════════════════════════════════════════════════════════════════════
 
 export interface GPUParticleConfig {
   maxParticles: number;
@@ -63,9 +63,9 @@ export interface WebGPUCapabilities {
   maxBufferSize: number;
 }
 
-// ============================================================================
-// WEBGPU COMPUTE SHADERS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                              // webgpu // compute // shaders
+// ════════════════════════════════════════════════════════════════════════════
 
 const PARTICLE_UPDATE_SHADER = /* wgsl */ `
 // Uniform buffer for simulation config
@@ -291,9 +291,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 }
 `;
 
-// ============================================================================
-// WEBGPU PARTICLE COMPUTE ENGINE
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                   // webgpu // particle // compute // engine
+// ════════════════════════════════════════════════════════════════════════════
 
 export class ParticleGPUCompute {
   private device: GPUDevice | null = null;
@@ -330,9 +330,9 @@ export class ParticleGPUCompute {
   // Static capability check
   private static _capabilities: WebGPUCapabilities | null = null;
 
-  // ============================================================================
-  // STATIC METHODS
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                         // static // methods
+  // ════════════════════════════════════════════════════════════════════════════
 
   /**
    * Check WebGPU availability and capabilities
@@ -407,9 +407,9 @@ export class ParticleGPUCompute {
     return caps.available;
   }
 
-  // ============================================================================
-  // INITIALIZATION
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                            // initialization
+  // ════════════════════════════════════════════════════════════════════════════
 
   /**
    * Initialize the GPU compute engine
@@ -587,9 +587,9 @@ export class ParticleGPUCompute {
     });
   }
 
-  // ============================================================================
-  // DATA UPLOAD
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                            // data // upload
+  // ════════════════════════════════════════════════════════════════════════════
 
   /**
    * Upload particle data to GPU
@@ -687,9 +687,9 @@ export class ParticleGPUCompute {
     this.device.queue.writeBuffer(this.vortexBuffer, 0, vortexData);
   }
 
-  // ============================================================================
-  // COMPUTE DISPATCH
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                       // compute // dispatch
+  // ════════════════════════════════════════════════════════════════════════════
 
   /**
    * Run the particle update compute shader
@@ -790,9 +790,9 @@ export class ParticleGPUCompute {
     this.device.queue.submit([commandEncoder.finish()]);
   }
 
-  // ============================================================================
-  // DATA READBACK
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                          // data // readback
+  // ════════════════════════════════════════════════════════════════════════════
 
   /**
    * Read particle data back from GPU
@@ -933,9 +933,9 @@ export class ParticleGPUCompute {
     };
   }
 
-  // ============================================================================
-  // CLEANUP
-  // ============================================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                                                   // cleanup
+  // ════════════════════════════════════════════════════════════════════════════
 
   /**
    * Dispose GPU resources
@@ -1029,9 +1029,9 @@ export class ParticleGPUCompute {
   }
 }
 
-// ============================================================================
-// HYBRID CPU/GPU PARTICLE SYSTEM
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                             // hybrid // cpu
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Hybrid particle system that uses GPU compute when available
@@ -1043,7 +1043,7 @@ export class HybridParticleSystem {
   private particleCount: number = 0;
   private maxParticles: number;
 
-  // CPU-side particle data (always maintained for compatibility)
+  //                                                                       // cpu
   private positions: Float32Array;
   private velocities: Float32Array;
   private properties: Float32Array;
@@ -1112,7 +1112,7 @@ export class HybridParticleSystem {
     vortices: GPUVortex[],
   ): Promise<void> {
     if (this.useGPU && this.gpu) {
-      // GPU path
+      //                                                                       // gpu
       this.gpu.uploadConfig(config, gravityWells, vortices);
       this.gpu.dispatchUpdate(this.particleCount);
 
@@ -1120,7 +1120,7 @@ export class HybridParticleSystem {
       // const data = await this.gpu.readbackParticles(this.particleCount);
       // ... copy to CPU arrays
     } else {
-      // CPU path - basic simulation
+      //                                                                       // cpu
       this.stepCPU(config, gravityWells, vortices);
     }
   }
@@ -1366,9 +1366,9 @@ export class HybridParticleSystem {
   }
 }
 
-// ============================================================================
-// PREFERENCES INTEGRATION
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                // preferences // integration
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Helper to get particle preferences from store
@@ -1396,7 +1396,7 @@ export function getParticlePreferences() {
     },
 
     shouldUseGPUCompute: async (): Promise<boolean> => {
-      // GPU compute is only for physics, rendering can still use WebGL2
+      //                                                                       // gpu
       const hasGPU = await getParticlePreferences().shouldUseGPU();
       return hasGPU;
     },
@@ -1447,8 +1447,8 @@ export async function createParticleSystem(
   };
 }
 
-// ============================================================================
-// EXPORTS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                                   // exports
+// ════════════════════════════════════════════════════════════════════════════
 
 export default ParticleGPUCompute;

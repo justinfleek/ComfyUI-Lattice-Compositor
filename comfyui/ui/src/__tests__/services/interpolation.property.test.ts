@@ -19,9 +19,9 @@ import {
 } from "@/services/interpolation";
 import type { AnimatableProperty, Keyframe, BezierHandle } from "@/types/project";
 
-// ============================================================================
-// ARBITRARIES (Generators)
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                                               // arbitraries
+// ════════════════════════════════════════════════════════════════════════════
 
 const finiteNumber = fc.double({ noNaN: true, noDefaultInfinity: true });
 const finitePositiveNumber = fc.double({
@@ -154,9 +154,9 @@ function createTestProperty<T>(value: T, keyframes: Keyframe<T>[] = [], animated
   };
 }
 
-// ============================================================================
-// PROPERTY TESTS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                         // property // tests
+// ════════════════════════════════════════════════════════════════════════════
 
 describe("PROPERTY: interpolateProperty determinism", () => {
   beforeEach(() => {
@@ -613,11 +613,11 @@ describe("PROPERTY: PURITY - no mutation", () => {
   );
 });
 
-// ============================================================================
-// EDGE CASE PROBES
-// REINTEGRATED: 2026-01-07 from _deprecated/properties/interpolation-probes.test.ts
+// ════════════════════════════════════════════════════════════════════════════
+//                                                    // edge // case // probes
+//                                                              // reintegrated
 // These tests probe specific edge cases to verify behavior
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 describe("PROBE: Interpolation Edge Cases", () => {
   it("PROBE: 3D to 2D transition loses Z correctly", () => {
@@ -638,7 +638,7 @@ describe("PROBE: Interpolation Edge Cases", () => {
     expect(at0.z).toBe(100);
     expect(at50.z).toBe(50); // 100 * (1 - 0.5) = 50
 
-    // DESIGN: At exact keyframe frame, returns keyframe value directly
+    //                                                                    // design
     // The endpoint keyframe has no Z (2D), so Z becomes undefined, not 0
     // This matches professional animation software behavior
     expect(at100.z).toBeUndefined();
@@ -736,11 +736,11 @@ describe("PROBE: Interpolation Edge Cases", () => {
   });
 });
 
-// ============================================================================
-// STRICT EDGE CASES
-// REINTEGRATED: 2026-01-07 from _deprecated/properties/strict-interpolation.property.test.ts
+// ════════════════════════════════════════════════════════════════════════════
+//                                                   // strict // edge // cases
+//                                                              // reintegrated
 // These tests cover NaN/Infinity handling, division by zero, and cache determinism
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 describe("STRICT: NaN/Infinity Input Handling", () => {
   beforeEach(() => {

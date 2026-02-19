@@ -19,9 +19,9 @@ import type {
 } from "@/types/project";
 import { createDefaultTextData, type TextData } from "@/types/text";
 
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Test Helpers
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 function createTestKeyframe<T>(
   frame: number,
@@ -165,9 +165,9 @@ function roundtripJSON<T>(data: T): T {
   return JSON.parse(serialized);
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Integration Tests
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 describe("Save/Load Roundtrip - Basic Types", () => {
   test("empty project survives roundtrip", () => {
@@ -454,7 +454,7 @@ describe("Save/Load Roundtrip - Special Values", () => {
     const restored = roundtripJSON(original);
     const restoredLayer = restored.compositions.main.layers[0];
 
-    // JSON.parse/stringify preserves IEEE 754 doubles
+    //                                                                      // json
     expect(restoredLayer.opacity.value).toBeCloseTo(33.333333333, 8);
     expect(restoredLayer.transform.position.value.x).toBeCloseTo(0.123456789, 8);
     expect(restoredLayer.transform.position.value.y).toBeCloseTo(0.987654321, 8);

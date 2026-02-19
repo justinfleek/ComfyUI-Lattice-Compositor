@@ -401,7 +401,7 @@ const expandedPanels = ref({
   styles: false,
 });
 
-// AI section tab
+//                                                                        // ai
 const aiTab = ref<"chat" | "generate" | "flow" | "decompose">("chat");
 const viewportTab = ref<"composition" | "layer" | "footage">("composition");
 
@@ -565,9 +565,9 @@ const snapIndicatorY = ref<number | null>(null);
 const compWidth = computed(() => projectStore.getWidth());
 const compHeight = computed(() => projectStore.getHeight());
 
-// ========================================================================
-// KEYBOARD SHORTCUTS COMPOSABLE
-// ========================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                       // keyboard // shortcuts // composable
+// ════════════════════════════════════════════════════════════════════════════
 const keyboard = useKeyboardShortcuts({
   showExportDialog,
   showCompositionSettingsDialog,
@@ -657,9 +657,9 @@ const _compositionInfo = computed(() => {
 const _canUndo = computed(() => projectStore.canUndo);
 const _canRedo = computed(() => projectStore.canRedo);
 
-// ========================================================================
-// GUIDES SYSTEM (using composable)
-// ========================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                          // guides // system
+// ════════════════════════════════════════════════════════════════════════════
 const {
   guides,
   guideContextMenu,
@@ -692,9 +692,9 @@ provide("captureFrame", async (): Promise<string | null> => {
   throw new Error("[WorkspaceLayout] Cannot capture frame: ThreeCanvas is not available or captureFrame method is not accessible");
 });
 
-// ========================================================================
-// SNAP POINT CALCULATION (uses both guides and keyboard composable state)
-// ========================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                              // snap // point // calculation
+// ════════════════════════════════════════════════════════════════════════════
 function getSnapPoint(
   x: number,
   y: number,
@@ -846,7 +846,7 @@ function onFrameInterpolationComplete(frames: string[]) {
   console.log("[Lattice] Frame interpolation completed:", frames.length, "frames");
   showFrameInterpolationDialog.value = false;
   playExportChime();
-  // TODO: Allow user to save frames or add to project
+  //                                                                      // todo
 }
 
 function onCompositionSettingsConfirm(settings: {
@@ -1404,9 +1404,9 @@ function handleZoomChange() {
   }
 }
 
-// ========================================================================
-// MENU BAR ACTION HANDLER (using composable)
-// ========================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                          // menu // bar // action // handler
+// ════════════════════════════════════════════════════════════════════════════
 const { handleMenuAction } = useMenuActions({
   showExportDialog,
   showPrecomposeDialog,

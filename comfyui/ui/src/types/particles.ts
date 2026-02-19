@@ -1,15 +1,15 @@
-// ============================================================
-// PARTICLE TYPES - Particle system configuration
-// ============================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                                         // particle // types
+// ════════════════════════════════════════════════════════════════════════════
 // Extracted from project.ts for better modularity
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 import type { AnimatableProperty } from "./animation";
 import type { BlendMode } from "./blendModes";
 
-// ============================================================
-// LEGACY PARTICLE DATA (for backwards compatibility)
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                // legacy // particle // data
+// ════════════════════════════════════════════════════════════════════════════
 
 export interface ParticleData {
   emitter: ParticleEmitter;
@@ -51,14 +51,14 @@ export interface ParticleTexture {
   // Custom image
   imageAssetId?: string;
 
-  // AI-generated (SDXL)
+  //                                                                        // ai
   generatedPrompt?: string;
 
   // Extracted from image (MatSeg)
   extractedFromAssetId?: string;
   extractedRegion?: { x: number; y: number; width: number; height: number };
 
-  // PBR maps (optional, for 3D-like rendering)
+  //                                                                       // pbr
   albedo?: string; // Base64
   normal?: string;
   roughness?: string;
@@ -99,9 +99,9 @@ export interface ParticleRendering {
   stretchFactor: number;
 }
 
-// ============================================================
-// NEW PARTICLE SYSTEM LAYER DATA (matching RyanOnTheInside)
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                // new // particle // system // layer // data
+// ════════════════════════════════════════════════════════════════════════════
 
 export interface ParticleLayerData {
   systemConfig: ParticleSystemLayerConfig;
@@ -115,7 +115,7 @@ export interface ParticleLayerData {
   flocking?: FlockingConfig;
   collision?: CollisionConfig;
   audioBindings?: AudioBindingConfig[];
-  // CODE IS TRUTH - added from defaults analysis
+  //                                                       // code // is // truth
   audioMappings?: AudioParticleMapping[];
   exportEnabled?: boolean;
   exportFormat?: string;
@@ -124,7 +124,7 @@ export interface ParticleLayerData {
   speedMapEnabled?: boolean;
   speedMap?: import("./animation").AnimatableProperty<number>;
 
-  // CC Particle World style visualization
+  //                                                                   // cc // p
   visualization?: ParticleVisualizationConfig;
 
   // Particle groups for selective interactions
@@ -133,13 +133,13 @@ export interface ParticleLayerData {
   // Spring system for cloth/soft body simulation
   springConfig?: SpringSystemConfig;
 
-  // SPH fluid simulation
+  //                                                                       // sph
   sphConfig?: SPHFluidConfig;
 
-  // LOD (Level of Detail) config
+  //                                                                       // lod
   lodConfig?: ParticleLODConfig;
 
-  // DOF (Depth of Field) config for particles
+  //                                                                       // dof
   dofConfig?: ParticleDOFConfig;
 
   // Custom collision planes
@@ -149,9 +149,9 @@ export interface ParticleLayerData {
   particleGroups?: ParticleGroupConfig[];
 }
 
-// ============================================================
-// LOD (LEVEL OF DETAIL) CONFIGURATION
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                                       // lod
+// ════════════════════════════════════════════════════════════════════════════
 
 export interface ParticleLODConfig {
   enabled: boolean;
@@ -159,9 +159,9 @@ export interface ParticleLODConfig {
   sizeMultipliers: number[]; // [near, mid, far] e.g. [1.0, 0.5, 0.25]
 }
 
-// ============================================================
-// DOF (DEPTH OF FIELD) CONFIGURATION FOR PARTICLES
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                                       // dof
+// ════════════════════════════════════════════════════════════════════════════
 
 export interface ParticleDOFConfig {
   enabled: boolean;
@@ -170,9 +170,9 @@ export interface ParticleDOFConfig {
   blurAmount: number; // matches component usage (not maxBlur)
 }
 
-// ============================================================
-// PARTICLE GROUP CONFIGURATION
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                        // particle // group // configuration
+// ════════════════════════════════════════════════════════════════════════════
 
 export interface ParticleGroupConfig {
   id: string;
@@ -183,9 +183,9 @@ export interface ParticleGroupConfig {
   connectionMask: number; // Bitmask for which groups this connects to
 }
 
-// ============================================================
-// SPRING SYSTEM CONFIGURATION (Cloth, Soft Body, Ropes)
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                         // spring // system // configuration
+// ════════════════════════════════════════════════════════════════════════════
 
 export interface SpringSystemConfig {
   enabled: boolean;
@@ -215,9 +215,9 @@ export interface SpringStructure {
   breakThreshold: number; // 0 = unbreakable
 }
 
-// ============================================================
-// SPH FLUID SIMULATION CONFIGURATION
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                               // sph // fluid // simulation // configuration
+// ════════════════════════════════════════════════════════════════════════════
 
 export interface SPHFluidConfig {
   enabled: boolean;
@@ -231,7 +231,7 @@ export interface SPHFluidConfig {
   boundaryDamping: number; // Energy loss at boundaries
 }
 
-// CC Particle World style visualization helpers
+//                                                                   // cc // p
 export interface ParticleVisualizationConfig {
   showHorizon: boolean; // Show horizon line at floor position
   showGrid: boolean; // Show 3D perspective grid
@@ -491,9 +491,9 @@ export interface ParticleEmitterConfig {
   // Sprite configuration
   sprite: SpriteConfig;
 
-  // ============================================================
-  // CONE SHAPE PROPERTIES (when shape = 'cone')
-  // ============================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                               // cone // shape // properties
+  // ════════════════════════════════════════════════════════════════════════════
   /** Cone opening angle in degrees (0-180) */
   coneAngle?: number;
   /** Cone base radius */
@@ -501,10 +501,10 @@ export interface ParticleEmitterConfig {
   /** Cone length/height */
   coneLength?: number;
 
-  // ============================================================
-  // IMAGE SHAPE PROPERTIES (when shape = 'image')
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                              // image // shape // properties
   // Emit from non-transparent pixels of a layer
-  // ============================================================
+  // ════════════════════════════════════════════════════════════════════════════
   /** Layer ID to use as emission source */
   imageSourceLayerId?: string;
   /** Minimum alpha threshold for emission (0-1) */
@@ -512,10 +512,10 @@ export interface ParticleEmitterConfig {
   /** Emit from edges of the mask only */
   emitFromMaskEdge?: boolean;
 
-  // ============================================================
-  // DEPTH EDGE SHAPE PROPERTIES (when shape = 'depthEdge')
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                      // depth // edge // shape // properties
   // Emit from depth discontinuities (silhouette edges)
-  // ============================================================
+  // ════════════════════════════════════════════════════════════════════════════
   /** Layer ID containing the depth map */
   depthSourceLayerId?: string;
   /** Depth gradient threshold for edge detection */
@@ -523,9 +523,9 @@ export interface ParticleEmitterConfig {
   /** Scale factor for Z position from depth */
   depthScale?: number;
 
-  // ============================================================
-  // ALTERNATIVE PROPERTY NAMES (for preset compatibility)
-  // ============================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                          // alternative // property // names
+  // ════════════════════════════════════════════════════════════════════════════
   /** Alias for particleLifetime (seconds instead of frames) */
   lifespan?: number;
   /** Initial particle size (alias for size) */
@@ -543,9 +543,9 @@ export interface ParticleEmitterConfig {
   /** Velocity spread/variance */
   velocitySpread?: number;
 
-  // ============================================================
-  // MESH SHAPE PROPERTIES (when shape = 'mesh')
-  // ============================================================
+  // ════════════════════════════════════════════════════════════════════════════
+  //                                               // mesh // shape // properties
+  // ════════════════════════════════════════════════════════════════════════════
   /** Mesh vertices for mesh emission (Float32Array) */
   meshVertices?: Float32Array;
   /** Mesh normals for mesh emission (Float32Array) */
@@ -608,7 +608,7 @@ export interface ParticleRenderOptions {
   spriteFrameRate?: number; // Frames per second
   spriteRandomStart?: boolean; // Start at random frame
 
-  // LOD (Level of Detail) settings - for performance optimization
+  //                                                                       // lod
   lodEnabled?: boolean;
   lodDistances?: number[]; // Distance thresholds [near, mid, far]
   lodSizeMultipliers?: number[]; // Size multipliers at each level
@@ -630,9 +630,9 @@ export interface ParticleRenderOptions {
   meshGeometry?: "cube" | "sphere" | "cylinder" | "cone" | "torus" | "custom";
 }
 
-// ============================================================
-// AUDIO PARTICLE MAPPING
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                              // audio // particle // mapping
+// ════════════════════════════════════════════════════════════════════════════
 
 export interface AudioParticleMapping {
   feature: "amplitude" | "rms" | "bass" | "mid" | "high" | "onsets";

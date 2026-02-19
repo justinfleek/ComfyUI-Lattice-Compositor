@@ -453,7 +453,7 @@ const groupedProperties = computed(() => {
   add("transform.anchorPoint", "Origin", t.anchorPoint);
   add("transform.position", "Position", t.position);
 
-  // Z Position: Use 'transform.position' path - PropertyTrack handles Z extraction based on name
+  //                                                                    // z // p
   if (props.layer.threeD && t.position) {
     transformProps.push({
       path: "transform.position",
@@ -1134,9 +1134,9 @@ function handleOutsideClick(e: MouseEvent) {
   }
 }
 
-// ============================================================
-// WAVEFORM RENDERING
-// ============================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                                     // waveform // rendering
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Initialize waveform data from audio buffer

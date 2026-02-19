@@ -24,9 +24,9 @@ import {
 } from "@/engine/particles/ParticleCollisionSystem";
 import { PARTICLE_STRIDE } from "@/engine/particles/types";
 
-// ============================================================================
-// ARBITRARIES
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                                               // arbitraries
+// ════════════════════════════════════════════════════════════════════════════
 
 const safeFloat = (min = -10000, max = 10000) =>
   fc.float({ min: Math.fround(min), max: Math.fround(max), noNaN: true });
@@ -139,9 +139,9 @@ function getParticleLifetime(buffer: Float32Array, index: number): number {
   return buffer[offset + 7];
 }
 
-// ============================================================================
-// TESTS: ParticleCollisionSystem Construction
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                                     // tests
+// ════════════════════════════════════════════════════════════════════════════
 
 describe("ParticleCollisionSystem construction", () => {
   it("should handle any valid maxParticles", () => {
@@ -179,9 +179,9 @@ describe("ParticleCollisionSystem construction", () => {
   });
 });
 
-// ============================================================================
-// TESTS: Boundary Collisions
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                                     // tests
+// ════════════════════════════════════════════════════════════════════════════
 
 describe("ParticleCollisionSystem boundary collisions", () => {
   it("should never produce NaN positions after collision", () => {
@@ -485,9 +485,9 @@ describe("ParticleCollisionSystem boundary collisions", () => {
   });
 });
 
-// ============================================================================
-// TESTS: Particle-Particle Collisions
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                                     // tests
+// ════════════════════════════════════════════════════════════════════════════
 
 describe("ParticleCollisionSystem particle-particle collisions", () => {
   it("should not produce NaN when particles collide", () => {
@@ -595,9 +595,9 @@ describe("ParticleCollisionSystem particle-particle collisions", () => {
   });
 });
 
-// ============================================================================
-// TESTS: Plane Collisions
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                                     // tests
+// ════════════════════════════════════════════════════════════════════════════
 
 describe("ParticleCollisionSystem plane collisions", () => {
   it("should bounce particles off planes", () => {
@@ -709,9 +709,9 @@ describe("ParticleCollisionSystem plane collisions", () => {
   });
 });
 
-// ============================================================================
-// TESTS: Energy Conservation
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                                     // tests
+// ════════════════════════════════════════════════════════════════════════════
 
 describe("ParticleCollisionSystem energy conservation", () => {
   it("should reduce energy with damping", () => {

@@ -39,7 +39,7 @@ export {
   type DepthRange,
 } from "./depth-schema";
 
-// ATI Export Schemas
+//                                                                  // ati // e
 export {
   ATI_FIXED_FRAMES,
   ATI_MAX_DIMENSION,
@@ -188,7 +188,7 @@ export {
   type NormalGenerationResult,
 } from "./normal-schema";
 
-// TTM Export Schemas
+//                                                                  // ttm // e
 export {
   TTMModelSchema,
   TTMLayerExportSchema,
@@ -244,7 +244,7 @@ export {
   type OverlapDepthSequenceExport,
 } from "./meshdeform-schema";
 
-// VACE Export Schemas
+//                                                                 // vace // e
 export {
   PathFollowerShapeSchema,
   PathFollowerEasingSchema,
@@ -300,7 +300,7 @@ export {
   type FrameSequenceResult,
 } from "./framesequence-schema";
 
-// SCAIL Export Schemas
+//                                                                // scail // e
 export {
   SCAILExportConfigSchema,
   SCAILExportResultSchema,

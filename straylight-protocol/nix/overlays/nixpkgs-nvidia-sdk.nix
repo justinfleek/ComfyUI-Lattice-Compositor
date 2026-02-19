@@ -65,7 +65,7 @@ let
     };
   });
 
-  # CUTLASS - latest version, header-only
+  #                                                                   // cutlass
   cutlass = prev.stdenv.mkDerivation (finalAttrs: {
     pname = "cutlass";
     version = "4.3.3";
@@ -96,7 +96,7 @@ let
   });
 
   # ════════════════════════════════════════════════════════════════════════════
-  # NVIDIA SDK
+  #                                                             // nvidia // sdk
   # ════════════════════════════════════════════════════════════════════════════
 
   nvidia-sdk = prev.symlinkJoin {
@@ -121,12 +121,12 @@ let
       cuda-packages.libcusparse
       cuda-packages.libnvjitlink
 
-      # ML
+      #                                                                        // ml
       cuda-packages.cudnn
       cuda-packages.tensorrt
       cuda-packages.nccl
 
-      # CUTLASS
+      #                                                                   // cutlass
       cutlass
     ];
 
@@ -136,13 +136,13 @@ let
         ln -s lib $out/lib64
       fi
 
-      # CUDA 13 compat: texture_fetch_functions.h was renamed/removed
+      #                                                                // cuda // 13
       # clang's __clang_cuda_runtime_wrapper.h still expects it
       if [ ! -e $out/include/texture_fetch_functions.h ] && [ -e $out/include/texture_indirect_functions.h ]; then
         ln -s texture_indirect_functions.h $out/include/texture_fetch_functions.h
       fi
 
-      # CCCL compat: CUTLASS 4.x expects cccl/cuda/std/ but cuda_cccl provides cuda/std/
+      #                                                                      // cccl
       if [ ! -e $out/include/cccl ] && [ -e $out/include/cuda/std ]; then
         mkdir -p $out/include/cccl
         ln -s ../cuda $out/include/cccl/cuda

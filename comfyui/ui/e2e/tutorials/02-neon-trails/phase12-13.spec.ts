@@ -38,7 +38,7 @@ test.describe("Tutorial 02: Neon Motion Trails - Phases 12-13 (Steps 226-272)", 
     // Step 247: Hide motion path
     await h.toggleLayerVisibility(1);
 
-    // UNDO/REDO
+    //                                                                      // undo
     await h.undo();
     await h.redo();
   });
@@ -57,7 +57,7 @@ test.describe("Tutorial 02: Neon Motion Trails - Phases 12-13 (Steps 226-272)", 
     await h.goToStart();
     await h.goToFrame(30);
 
-    // UNDO/REDO
+    //                                                                      // undo
     await h.undo();
     await h.redo();
   });

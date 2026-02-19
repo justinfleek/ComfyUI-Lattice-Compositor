@@ -11,7 +11,7 @@
 { lib }:
 rec {
   # ════════════════════════════════════════════════════════════════════════════
-  # OCI IMAGE UTILITIES
+  #                                                 // oci // image // utilities
   # ════════════════════════════════════════════════════════════════════════════
 
   oci = rec {
@@ -70,7 +70,7 @@ rec {
       alpine = version: "alpine:${version}";
       python = version: "python:${version}";
 
-      # NGC images
+      #                                                                       // ngc
       ngc-pytorch = version: "nvcr.io/nvidia/pytorch:${version}-py3";
       ngc-triton = version: "nvcr.io/nvidia/tritonserver:${version}-py3";
       ngc-tensorrt = version: "nvcr.io/nvidia/tensorrt:${version}-py3";
@@ -80,7 +80,7 @@ rec {
   };
 
   # ════════════════════════════════════════════════════════════════════════════
-  # LINUX NAMESPACE UTILITIES
+  #                                           // linux // namespace // utilities
   # ════════════════════════════════════════════════════════════════════════════
 
   namespace = rec {
@@ -92,7 +92,7 @@ rec {
       "--die-with-parent"
     ];
 
-    # FHS mount flags - present a library path as standard FHS locations
+    #                                                                       // fhs
     #
     # Example:
     #   fhs-lib-flags "/nix/store/xxx-libs"
@@ -105,7 +105,7 @@ rec {
       "--ro-bind ${lib-path} /lib64"
     ];
 
-    # GPU device bind flags (NVIDIA)
+    #                                                                       // gpu
     gpu-flags = [
       "--dev-bind /dev/nvidia0 /dev/nvidia0"
       "--dev-bind /dev/nvidiactl /dev/nvidiactl"
@@ -114,7 +114,7 @@ rec {
       "--dev-bind /dev/nvidia-modeset /dev/nvidia-modeset"
     ];
 
-    # DRI device bind flags (for OpenGL/Vulkan without full GPU)
+    #                                                                       // dri
     dri-flags = [
       "--dev-bind /dev/dri /dev/dri"
     ];
@@ -136,7 +136,7 @@ rec {
   };
 
   # ════════════════════════════════════════════════════════════════════════════
-  # FIRECRACKER UTILITIES
+  #                                                  // firecracker // utilities
   # ════════════════════════════════════════════════════════════════════════════
 
   firecracker = rec {
@@ -295,7 +295,7 @@ rec {
   };
 
   # ════════════════════════════════════════════════════════════════════════════
-  # ELF UTILITIES
+  #                                                          // elf // utilities
   # ════════════════════════════════════════════════════════════════════════════
 
   elf = rec {
@@ -367,7 +367,7 @@ rec {
   };
 
   # ════════════════════════════════════════════════════════════════════════════
-  # PEP 503 UTILITIES (Python Simple Repository API)
+  #                                                   // pep // 503 // utilities
   # ════════════════════════════════════════════════════════════════════════════
 
   pep503 = rec {

@@ -96,7 +96,7 @@ describe('BUG Regression: RGBA Hex Color Alpha Lost', () => {
     expect(typeof result).toBe('string');
     expect(result).toMatch(/^#[0-9a-f]{8}$/i);
 
-    // RGB should interpolate: red (255,0,0) + green (0,255,0) at t=0.5:
+    //                                                                       // rgb
     // R: (255 + 0) / 2 = 127.5 ≈ 128 = 0x80
     // G: (0 + 255) / 2 = 127.5 ≈ 128 = 0x80
     // B: (0 + 0) / 2 = 0 = 0x00

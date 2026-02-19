@@ -237,7 +237,7 @@ function getEffectStoreAccess(): EffectStoreAccess {
   };
 }
 
-// --- Helpers ---
+// ── Helpers ───────────────────────────────────────────────────
 
 function getEffectsByCategory(cat: string) {
   return Object.entries(EFFECT_DEFINITIONS)
@@ -329,7 +329,7 @@ function getLayerIcon(type: string) {
   return icons[type] || "•";
 }
 
-// --- Actions ---
+// ── Actions ───────────────────────────────────────────────────
 
 function addEffect(key: string) {
   if (layer.value) {
@@ -423,7 +423,7 @@ function toggleParamAnim(effectId: string, paramKey: string) {
   }
 }
 
-// --- Drag & Drop ---
+// ── Drag & Drop ───────────────────────────────────────────────
 
 function onDragStart(event: DragEvent, index: number) {
   if (!event.dataTransfer) return;

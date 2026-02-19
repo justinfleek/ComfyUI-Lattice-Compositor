@@ -19,9 +19,9 @@ import {
 import type { DepthMapFormat } from "@/types/export";
 import { DEPTH_FORMAT_SPECS } from "@/config/exportPresets";
 
-// ============================================================
-// TEST FIXTURES
-// ============================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                                          // test // fixtures
+// ════════════════════════════════════════════════════════════════════════════
 
 function createDepthRenderResult(
   width: number,
@@ -47,9 +47,9 @@ function createDepthRenderResult(
   };
 }
 
-// ============================================================
-// ARBITRARIES
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                               // arbitraries
+// ════════════════════════════════════════════════════════════════════════════
 
 const validDepthFormats: DepthMapFormat[] = Object.keys(DEPTH_FORMAT_SPECS) as DepthMapFormat[];
 
@@ -64,9 +64,9 @@ const depthRenderResultArb = fc.record({
   createDepthRenderResult(width, height, minDepth, maxDepth)
 );
 
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
 // convertDepthToFormat TESTS - CRITICAL FOR ML MODEL COMPATIBILITY
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 describe("PROPERTY: convertDepthToFormat", () => {
   it("returns Float32Array for 'raw' format", () => {
@@ -111,7 +111,7 @@ describe("PROPERTY: convertDepthToFormat", () => {
     );
   });
 
-  // NOTE: Array iteration over all pixels is slow - extend timeout
+  //                                                                      // note
   it("8-bit output values are in range 0-255", () => {
     const format8bitFormats = validDepthFormats.filter(
       (f) => DEPTH_FORMAT_SPECS[f].bitDepth === 8
@@ -134,7 +134,7 @@ describe("PROPERTY: convertDepthToFormat", () => {
     );
   }, 30000);
 
-  // NOTE: Array iteration over all pixels is slow - extend timeout
+  //                                                                      // note
   it("16-bit output values are in range 0-65535", () => {
     const format16bitFormats = validDepthFormats.filter(
       (f) => DEPTH_FORMAT_SPECS[f].bitDepth === 16 && f !== "raw"
@@ -215,9 +215,9 @@ describe("PROPERTY: convertDepthToFormat", () => {
   });
 });
 
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
 // generateDepthMetadata TESTS
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 describe("PROPERTY: generateDepthMetadata", () => {
   it("includes all required fields", () => {
@@ -320,9 +320,9 @@ describe("PROPERTY: generateDepthMetadata", () => {
   });
 });
 
-// ============================================================
-// BROWSER-ONLY TESTS
-// ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                                   // browser
+// ════════════════════════════════════════════════════════════════════════════
 //
 // The following browser-dependent functionality is tested in E2E:
 //

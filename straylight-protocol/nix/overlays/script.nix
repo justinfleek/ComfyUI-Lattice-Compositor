@@ -59,7 +59,7 @@ let
       bytestring
     ];
 
-  # GHC with Straylight.Script dependencies
+  #                                                                       // ghc
   ghcWithScript = final.haskellPackages.ghcWithPackages hsDeps;
 
   # QuickCheck deps for property tests
@@ -159,7 +159,7 @@ in
       # // ghc //
       # ──────────────────────────────────────────────────────────────────────
 
-      # GHC with Straylight.Script modules available
+      #                                                                       // ghc
       ghc = ghcWithScript;
       ghc-with-tests = ghcWithTests;
 
@@ -220,7 +220,7 @@ in
         name = "straylight-script-shell";
         buildInputs = [
           ghcWithTests
-          # CLI tools for testing wrappers
+          #                                                                       // cli
           final.ripgrep
           final.fd
           final.bat
@@ -262,7 +262,7 @@ in
           "taplo"
           "zoxide"
         ];
-        # GNU getopt_long tools
+        #                                                                       // gnu
         gnu = [
           "ls"
           "grep"
@@ -298,7 +298,7 @@ in
       # runtime dependencies.
 
       compiled = {
-        # VFIO scripts - PCI device binding for GPU passthrough
+        #                                                                      // vfio
         vfio-bind = mkCompiledScript {
           name = "vfio-bind";
           deps = [ final.pciutils ]; # lspci for device info
@@ -314,7 +314,7 @@ in
           deps = [ final.pciutils ];
         };
 
-        # OCI scripts - container image and runtime operations
+        #                                                                       // oci
         oci-run = mkCompiledScript {
           name = "oci-run";
           deps = [
@@ -347,7 +347,7 @@ in
           deps = [ final.crane ];
         };
 
-        # FHS/GPU scripts - namespace environment wrappers
+        #                                                                       // fhs
         fhs-run = mkCompiledScript {
           name = "fhs-run";
           deps = [ final.bubblewrap ];
@@ -390,7 +390,7 @@ in
           ];
         };
 
-        # NVIDIA SDK extraction - pull from NGC, extract CUDA/cuDNN/TensorRT
+        #                                                             // nvidia // sdk
         nvidia-extract = mkCompiledScript {
           name = "nvidia-extract";
           deps = [
@@ -401,7 +401,7 @@ in
           ];
         };
 
-        # NVIDIA SDK extraction v2 - comprehensive extraction from containers/tarballs
+        #                                                             // nvidia // sdk
         # Handles CUDA, cuDNN, NCCL, TensorRT, cuTensor, Tritonserver
         nvidia-sdk-extract = mkCompiledScript {
           name = "nvidia-sdk-extract";
@@ -415,7 +415,7 @@ in
           ];
         };
 
-        # NVIDIA wheel extraction - extract from PyPI wheels (no redistribution issues)
+        #                                                                    // nvidia
         nvidia-wheel-extract = mkCompiledScript {
           name = "nvidia-wheel-extract";
           deps = [
@@ -426,7 +426,7 @@ in
           ];
         };
 
-        # NVIDIA SDK - unified extraction (wheels + containers)
+        #                                                             // nvidia // sdk
         # Typed Haskell replacement for packages.nix shell scripts
         nvidia-sdk = mkCompiledScript {
           name = "nvidia-sdk";

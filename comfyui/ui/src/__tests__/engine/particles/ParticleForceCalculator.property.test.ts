@@ -23,9 +23,9 @@ import {
 } from "@/engine/particles/ParticleForceCalculator";
 import type { ForceFieldConfig, ForceFieldType } from "@/engine/particles/types";
 
-// ============================================================================
-// ARBITRARIES
-// ============================================================================
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//                                                               // arbitraries
+// ════════════════════════════════════════════════════════════════════════════
 
 const safeFloat = (min = -10000, max = 10000) =>
   fc.float({ min: Math.fround(min), max: Math.fround(max), noNaN: true });
@@ -99,9 +99,9 @@ const arbForceFieldConfig: fc.Arbitrary<ForceFieldConfig> = fc.record({
   pathRadius: fc.option(positiveFloat(500), { nil: undefined }),
 }) as fc.Arbitrary<ForceFieldConfig>;
 
-// ============================================================================
-// TESTS: calculateForceField
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                                     // tests
+// ════════════════════════════════════════════════════════════════════════════
 
 describe("ParticleForceCalculator.calculateForceField", () => {
   it("should never return NaN force components for any force type", () => {
@@ -565,9 +565,9 @@ describe("ParticleForceCalculator.calculateForceField", () => {
   });
 });
 
-// ============================================================================
-// TESTS: getForceFieldTypeIndex
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                                     // tests
+// ════════════════════════════════════════════════════════════════════════════
 
 describe("ParticleForceCalculator.getForceFieldTypeIndex", () => {
   it("should return valid index for all force types", () => {
@@ -592,9 +592,9 @@ describe("ParticleForceCalculator.getForceFieldTypeIndex", () => {
   });
 });
 
-// ============================================================================
-// TESTS: getFalloffTypeIndex
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//                                                                     // tests
+// ════════════════════════════════════════════════════════════════════════════
 
 describe("ParticleForceCalculator.getFalloffTypeIndex", () => {
   it("should return valid index for all falloff types", () => {

@@ -38,7 +38,7 @@ export function calculateMaxParticles(
   const availableBytes = availableMB * 1024 * 1024;
   const withMargin = Math.floor(availableBytes * (1 - safeMargin));
   
-  // PROVEN: This calculation ensures memory_bounded theorem holds
+  //                                                                    // proven
   return Math.floor(withMargin / ParticleBuffer.BYTES_PER_PARTICLE);
 }
 
