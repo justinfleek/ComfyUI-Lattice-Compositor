@@ -1,4 +1,5 @@
 {-# LANGUAGE StrictData #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 {-|
 Module      : Lattice.Utils.FpsUtils

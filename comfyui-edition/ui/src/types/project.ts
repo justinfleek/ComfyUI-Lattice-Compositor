@@ -13,17 +13,19 @@
 // Import types needed for local use in this file
 import type { AnimatableProperty } from "./animation";
 import { createAnimatableProperty } from "./animation";
+import type { JSONValue } from "./dataAsset";
 import type { EffectInstance } from "./effects";
 import type { GlobalLightSettings, LayerStyles } from "./layerStyles";
 import type { LayerMask, MatteType } from "./masks";
 // BlendMode re-exported from blendModes.ts (not imported here to avoid conflict with local BlendMode type)
 import type { ParticleData, ParticleLayerData } from "./particles";
+import type { Result, TypeMismatchError } from "./result";
+import { err, ok, typeMismatchError } from "./result";
 import type { ShapeLayerData } from "./shapes";
 import type { PathLayerData, SplineData } from "./spline";
 import type { TemplateConfig } from "./templateBuilder";
 import type { TextData } from "./text";
 import type { LayerTransform, Vec2, Vec3 } from "./transform";
-import type { JSONValue } from "./dataAsset";
 
 // Animation types (extracted to animation.ts)
 export type {
@@ -763,8 +765,9 @@ export function isLayerOfType<T extends keyof LayerDataMap>(
 }
 
 /**
- * Get typed data from a layer
- * @throws Error if layer type doesn't match
+ * Get typed data from a layer (strict version - throws on mismatch)
+ * @throws Error if layer type doesn't match expected type
+ * @see queryLayerData for a Result-based version with full error context
  */
 export function getLayerData<T extends keyof LayerDataMap>(
   layer: Layer,
@@ -773,7 +776,36 @@ export function getLayerData<T extends keyof LayerDataMap>(
   if (layer.type === type) {
     return layer.data as LayerDataMap[T];
   }
-  throw new Error(`[ProjectTypes] Layer type mismatch: expected "${type}", got "${layer.type}"`);
+  throw new Error(
+    `[ProjectTypes] Layer type mismatch: expected "${type}", got "${layer.type}". ` +
+      `Layer ID: ${layer.id}, name: "${layer.name}". ` +
+      `Use queryLayerData() for Result-based error handling, or check with isLayerOfType() first.`,
+  );
+}
+
+/**
+ * Query typed data from a layer with Result-based error handling
+ *
+ * System F/Omega proof: Total function - always returns, never throws
+ * Type proof: Layer × LayerType → Result<LayerData, TypeMismatchError>
+ * Mathematical proof: Exhaustive pattern matching on Result required
+ *
+ * @returns Result.Ok with layer data if type matches, Result.Err with TypeMismatchError otherwise
+ */
+export function queryLayerData<T extends keyof LayerDataMap>(
+  layer: Layer,
+  type: T,
+): Result<LayerDataMap[T], TypeMismatchError> {
+  if (layer.type === type) {
+    return ok(layer.data as LayerDataMap[T]);
+  }
+  return err(
+    typeMismatchError(
+      type,
+      layer.type,
+      `Layer "${layer.name}" (ID: ${layer.id})`,
+    ),
+  );
 }
 
 /**
@@ -2164,10 +2196,10 @@ export function createEmptyProject(
   if (width % 8 !== 0 || height % 8 !== 0) {
     throw new Error(
       `Dimensions must be divisible by 8. Got ${width}x${height}. ` +
-      `Use ${Math.round(width / 8) * 8}x${Math.round(height / 8) * 8} instead.`
+        `Use ${Math.round(width / 8) * 8}x${Math.round(height / 8) * 8} instead.`,
     );
   }
-  
+
   const mainCompId = "main";
   const compositionSettings: CompositionSettings = {
     width,

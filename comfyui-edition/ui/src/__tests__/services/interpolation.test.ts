@@ -9,23 +9,44 @@
  * - No functions mutate their inputs
  * - No Math.random(), Date.now(), or other non-deterministic operations
  */
-import { describe, test, expect, beforeEach } from "vitest";
+import { beforeEach, describe, expect, test } from "vitest";
 import {
-  interpolateProperty,
-  clearBezierCache,
-  getBezierCacheStats,
-  clearPathMorphCache,
-  EASING_PRESETS_NORMALIZED,
-  EASING_PRESETS,
-  createHandlesForPreset,
+  applyEasing,
   applyEasingPreset,
+  clearBezierCache,
+  clearPathMorphCache,
+  createHandlesForPreset,
+  EASING_PRESETS,
+  EASING_PRESETS_NORMALIZED,
+  getBezierCacheStats,
   getBezierCurvePoint,
   getBezierCurvePointNormalized,
-  applyEasing,
+  interpolateProperty,
 } from "@/services/interpolation";
-import type { AnimatableProperty, Keyframe, BezierHandle } from "@/types/project";
-import { createKeyframe } from "@/types/animation";
 import type { InterpolationType, PropertyExpression } from "@/types/animation";
+import { createKeyframe as createKeyframeProd } from "@/types/animation";
+import type {
+  AnimatableProperty,
+  BezierHandle,
+  Keyframe,
+} from "@/types/project";
+
+// Test wrapper for createKeyframe with default layerId/propertyPath
+const TEST_LAYER_ID = "test-layer";
+const TEST_PROPERTY_PATH = "test.property";
+function createKeyframe<T>(
+  frame: number,
+  value: T,
+  interpolation: InterpolationType = "linear",
+): Keyframe<T> {
+  return createKeyframeProd(
+    TEST_LAYER_ID,
+    TEST_PROPERTY_PATH,
+    frame,
+    value,
+    interpolation,
+  );
+}
 
 // Helper to create AnimatableProperty
 function createProperty<T>(
@@ -323,7 +344,7 @@ describe("interpolateProperty", () => {
       ]);
       const mid = interpolateProperty(prop, 50);
       // Type guard ensures safe property access for Vec2/Vec3 transition
-      if (typeof mid !== 'object' || mid === null) {
+      if (typeof mid !== "object" || mid === null) {
         throw new Error("Expected interpolated value to be an object");
       }
       const midObj = mid as Record<string, unknown>;
@@ -339,7 +360,7 @@ describe("interpolateProperty", () => {
       ]);
       const mid = interpolateProperty(prop, 50);
       // Type guard ensures safe property access for Vec3/Vec2 transition
-      if (typeof mid !== 'object' || mid === null) {
+      if (typeof mid !== "object" || mid === null) {
         throw new Error("Expected interpolated value to be an object");
       }
       const midObj = mid as Record<string, unknown>;
@@ -428,7 +449,10 @@ describe("interpolateProperty", () => {
 
     test("does not mutate input property", () => {
       const originalValue = 42;
-      const originalKeyframes = [createKeyframe(0, 0), createKeyframe(100, 100)];
+      const originalKeyframes = [
+        createKeyframe(0, 0),
+        createKeyframe(100, 100),
+      ];
       const prop = createProperty(originalValue, true, [...originalKeyframes]);
 
       // Store original state
@@ -448,24 +472,42 @@ describe("interpolateProperty", () => {
 describe("EASING_PRESETS_NORMALIZED", () => {
   test("has linear preset", () => {
     expect(EASING_PRESETS_NORMALIZED.linear).toBeDefined();
-    expect(EASING_PRESETS_NORMALIZED.linear.outHandle).toEqual({ x: 0.33, y: 0.33 });
-    expect(EASING_PRESETS_NORMALIZED.linear.inHandle).toEqual({ x: 0.33, y: 0.33 });
+    expect(EASING_PRESETS_NORMALIZED.linear.outHandle).toEqual({
+      x: 0.33,
+      y: 0.33,
+    });
+    expect(EASING_PRESETS_NORMALIZED.linear.inHandle).toEqual({
+      x: 0.33,
+      y: 0.33,
+    });
   });
 
   test("has easeIn preset", () => {
     expect(EASING_PRESETS_NORMALIZED.easeIn).toBeDefined();
-    expect(EASING_PRESETS_NORMALIZED.easeIn.outHandle).toEqual({ x: 0.42, y: 0 });
+    expect(EASING_PRESETS_NORMALIZED.easeIn.outHandle).toEqual({
+      x: 0.42,
+      y: 0,
+    });
   });
 
   test("has easeOut preset", () => {
     expect(EASING_PRESETS_NORMALIZED.easeOut).toBeDefined();
-    expect(EASING_PRESETS_NORMALIZED.easeOut.inHandle).toEqual({ x: 0.58, y: 1 });
+    expect(EASING_PRESETS_NORMALIZED.easeOut.inHandle).toEqual({
+      x: 0.58,
+      y: 1,
+    });
   });
 
   test("has easeInOut preset", () => {
     expect(EASING_PRESETS_NORMALIZED.easeInOut).toBeDefined();
-    expect(EASING_PRESETS_NORMALIZED.easeInOut.outHandle).toEqual({ x: 0.42, y: 0 });
-    expect(EASING_PRESETS_NORMALIZED.easeInOut.inHandle).toEqual({ x: 0.58, y: 1 });
+    expect(EASING_PRESETS_NORMALIZED.easeInOut.outHandle).toEqual({
+      x: 0.42,
+      y: 0,
+    });
+    expect(EASING_PRESETS_NORMALIZED.easeInOut.inHandle).toEqual({
+      x: 0.58,
+      y: 1,
+    });
   });
 
   test("has easeOutBack preset with overshoot", () => {
@@ -760,7 +802,7 @@ describe("interpolation - BUG #2 FIX VERIFICATION", () => {
   /**
    * BUG #2 (FIXED): fps=0 caused division by zero in applyPropertyExpression
    * Location: interpolation.ts lines 318, 322
-   * 
+   *
    * Fix: Added validateFps() from utils/fpsUtils.ts to fall back to 16
    */
   test("BUG #2 FIXED: fps=0 now uses fallback fps=16", () => {
@@ -770,7 +812,9 @@ describe("interpolation - BUG #2 FIX VERIFICATION", () => {
     ]);
     // Add a mock expression with proper type
     // Type guard ensures safe property assignment for expression testing
-    const prop: AnimatableProperty<number> & { expression?: PropertyExpression } = {
+    const prop: AnimatableProperty<number> & {
+      expression?: PropertyExpression;
+    } = {
       ...baseProp,
       expression: {
         enabled: true,
@@ -782,7 +826,7 @@ describe("interpolation - BUG #2 FIX VERIFICATION", () => {
 
     // fps=0 should now be validated and fall back to 16
     const result = interpolateProperty(prop, 50, 0, "layer1");
-    
+
     // After fix: should return a finite number (expression may still fail for other reasons,
     // but the division by zero in context building is fixed)
     expect(Number.isFinite(result)).toBe(true);
@@ -793,7 +837,9 @@ describe("interpolation - BUG #2 FIX VERIFICATION", () => {
       createKeyframe(0, 0),
       createKeyframe(100, 100),
     ]);
-    const prop: AnimatableProperty<number> & { expression?: PropertyExpression } = {
+    const prop: AnimatableProperty<number> & {
+      expression?: PropertyExpression;
+    } = {
       ...baseProp,
       expression: {
         enabled: true,
@@ -805,7 +851,7 @@ describe("interpolation - BUG #2 FIX VERIFICATION", () => {
 
     // Negative fps should now be validated and fall back to 16
     const result = interpolateProperty(prop, 50, -30, "layer1");
-    
+
     // After fix: should return a finite number
     expect(Number.isFinite(result)).toBe(true);
   });
@@ -815,7 +861,9 @@ describe("interpolation - BUG #2 FIX VERIFICATION", () => {
       createKeyframe(0, 0),
       createKeyframe(100, 100),
     ]);
-    const prop: AnimatableProperty<number> & { expression?: PropertyExpression } = {
+    const prop: AnimatableProperty<number> & {
+      expression?: PropertyExpression;
+    } = {
       ...baseProp,
       expression: {
         enabled: true,
@@ -827,7 +875,7 @@ describe("interpolation - BUG #2 FIX VERIFICATION", () => {
 
     // NaN fps should now be validated and fall back to 16
     const result = interpolateProperty(prop, 50, NaN, "layer1");
-    
+
     expect(Number.isFinite(result)).toBe(true);
   });
 
@@ -836,7 +884,9 @@ describe("interpolation - BUG #2 FIX VERIFICATION", () => {
       createKeyframe(0, 0),
       createKeyframe(100, 100),
     ]);
-    const prop: AnimatableProperty<number> & { expression?: PropertyExpression } = {
+    const prop: AnimatableProperty<number> & {
+      expression?: PropertyExpression;
+    } = {
       ...baseProp,
       expression: {
         enabled: true,
@@ -848,7 +898,7 @@ describe("interpolation - BUG #2 FIX VERIFICATION", () => {
 
     // Infinity fps should now be validated and fall back to 16
     const result = interpolateProperty(prop, 50, Infinity, "layer1");
-    
+
     expect(Number.isFinite(result)).toBe(true);
   });
 });

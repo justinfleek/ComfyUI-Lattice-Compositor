@@ -1,0 +1,9 @@
+# nix build script uses cfg_aliases to set platform-specific cfg values
+# These are needed for the correct cfg conditions to be defined
+
+# Skip the build script - we'll provide the cfg values directly
+buildscript.run = false
+
+# Set cfg values that the build script would have set
+# These are needed for Linux target
+cfgs = ["linux_android", "linux"]

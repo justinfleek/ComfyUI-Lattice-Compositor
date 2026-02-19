@@ -1,0 +1,78 @@
+# INTERNAL (Stores) Issues - Fix with typeGuards.ts
+
+src/stores/actions/effectActions.ts:213:): any {
+src/stores/actions/effectActions.ts:75:  value: any,
+src/stores/actions/layer/layerDefaults.ts:111:      } as unknown as AnyLayerData;
+src/stores/actions/layer/layerDefaults.ts:177:      } as unknown as AnyLayerData;
+src/stores/actions/layer/layerDefaults.ts:199:      } as unknown as AnyLayerData;
+src/stores/actions/layer/layerDefaults.ts:212:      } as unknown as AnyLayerData;
+src/stores/actions/layer/layerDefaults.ts:218:      } as unknown as AnyLayerData;
+src/stores/actions/layer/layerDefaults.ts:224:      } as unknown as AnyLayerData;
+src/stores/actions/layer/layerDefaults.ts:232:      } as unknown as AnyLayerData;
+src/stores/actions/layer/layerDefaults.ts:254:      } as unknown as AnyLayerData;
+src/stores/actions/layer/layerDefaults.ts:265:      } as unknown as AnyLayerData;
+src/stores/actions/layer/layerDefaults.ts:352:      } as unknown as AnyLayerData;
+src/stores/actions/layer/layerDefaults.ts:368:      } as unknown as AnyLayerData;
+src/stores/actions/layer/layerDefaults.ts:383:      } as unknown as AnyLayerData;
+src/stores/actions/layer/layerDefaults.ts:394:      } as unknown as AnyLayerData;
+src/stores/actions/layer/layerDefaults.ts:402:      } as unknown as AnyLayerData;
+src/stores/actions/layer/layerDefaults.ts:415:      } as unknown as AnyLayerData;
+src/stores/actions/layer/layerDefaults.ts:423:      } as unknown as AnyLayerData;
+src/stores/actions/layer/layerDefaults.ts:88:      } as unknown as AnyLayerData;
+src/stores/actions/physicsActions/bake.ts:121:    const physicsData = (layer.data as unknown as Record<string, unknown>)?.physics as
+src/stores/actions/physicsActions/rigidBody.ts:111:  const physicsData = (layer.data as unknown as Record<string, unknown>)?.physics as
+src/stores/actions/physicsActions/simulation.ts:102:    const physicsData = (layer.data as unknown as Record<string, unknown>)?.physics as
+src/stores/actions/physicsActions/simulation.ts:69:    const physicsData = (layer.data as unknown as Record<string, unknown>)?.physics as
+src/stores/actions/projectActions/assets.ts:241:  (exportProject.meta as unknown as Record<string, unknown>).exportedAt =
+src/stores/actions/projectActions/assets.ts:245:  (exportProject as unknown as Record<string, unknown>)._assetManifest = assetManifest;
+src/stores/actions/projectActions/assets.ts:28:        const data = layer.data as unknown as Record<string, unknown>;
+src/stores/actions/projectActions/history.ts:26:  const engine = (window as unknown as { __latticeEngine?: {
+src/stores/actions/projectActions/serialization.ts:104:    store.project = projectWithoutSnapConfig as unknown as LatticeProject;
+src/stores/actions/projectActions/serialization.ts:57:        (project as unknown as { schemaVersion?: number }).schemaVersion ?? 1;
+src/stores/actions/projectActions/serialization.ts:85:    const projectWithSnap = project as unknown as Record<string, unknown>;
+src/stores/actions/projectActions/serialization.ts:88:        (store as unknown as Record<string, unknown>).snapConfig = projectWithSnap.snapConfig;
+src/stores/actions/projectActions/server.ts:78:          (project as unknown as { schemaVersion?: number }).schemaVersion ?? 1;
+src/stores/actions/textAnimatorActions/utility.ts:88: * Check if a layer has any text animators
+src/stores/assetStore.ts:371:        (stored.config as any)[textureType] = url;
+src/stores/assetStore.ts:980:          const value = (stored.config as any)[key];
+src/stores/compositorStore.ts:2142:      value: any,
+src/stores/compositorStore.ts:2148:        propertyName as any,
+src/stores/compositorStore.ts:2713:          return [(value as any).x, (value as any).y, (value as any).z ?? 0];
+src/stores/compositorStore.ts:856:     * Check if a control point has any keyframes
+src/stores/effectStore/index.ts:190:      updateStylePropertyImpl(compositorStore, layerId, styleType, property, value as any);
+src/stores/keyframeStore/index.ts:235:      newValue: any,
+src/stores/keyframeStore/index.ts:245:      updates: { frame?: number; value?: any },
+src/stores/keyframeStore/index.ts:313:      value: any,
+src/stores/keyframeStore/property.ts:23:  value: any,
+src/stores/keyframeStore/query.ts:105:    const prop = (layer.transform as any)[propName];
+src/stores/keyframeStore/query.ts:30:    const prop = (layer.transform as any)[propName];
+src/stores/keyframeStore/query.ts:50:    const prop = (layer.transform as any)[propName];
+src/stores/keyframeStore/query.ts:87:    const prop = (layer.transform as any)[propName];
+src/stores/layerStore/crud.ts:177:      (layer.data as unknown as Record<string, unknown>).pathLayerId === layerId
+src/stores/layerStore/crud.ts:179:      (layer.data as unknown as Record<string, unknown>).pathLayerId = null;
+src/stores/layerStore/crud.ts:274:    const transformRecord = layer.transform as unknown as Record<
+src/stores/layerStore/crud.ts:63:    const splineData = layerData as unknown as {
+src/stores/layerStore/spline.ts:414: * Check if a control point has any keyframes
+src/stores/presetStore.ts:261:      delete (duplicated as any).id;
+src/stores/presetStore.ts:262:      delete (duplicated as any).createdAt;
+src/stores/presetStore.ts:263:      delete (duplicated as any).updatedAt;
+src/__tests__/stores/keyframeActions.property.test.ts:136:  return layer as unknown as Layer;
+src/__tests__/stores/keyframeActions.property.test.ts:97:    type: "number" as any,
+src/__tests__/stores/keyframeActions.test.ts:222:    (store.getActiveComp() as any).currentFrame = 15;
+src/__tests__/stores/keyframeActions.test.ts:290:    (store.getActiveComp() as any).currentFrame = 45;
+src/__tests__/stores/keyframeActions.test.ts:45:    type: "number" as any,
+src/__tests__/stores/projectActions.test.ts:101:function createMockLayer(id: string, type: string = "solid", data: any = {}): Layer {
+src/__tests__/stores/projectActions.test.ts:105:    type: type as any,
+src/__tests__/stores/projectActions.test.ts:394:        "asset-1": { id: "asset-1", type: "image", filename: "test.png" } as any,
+src/__tests__/stores/projectActions.test.ts:409:      const projectJson = JSON.stringify(createMockProject({ meta: { name: "Imported" } as any }));
+src/__tests__/stores/projectActions.test.ts:765:        "used-001": { id: "used-001", type: "image", filename: "used.png" } as any,
+src/__tests__/stores/projectActions.test.ts:766:        "unused-001": { id: "unused-001", type: "image", filename: "unused.png" } as any,
+src/__tests__/stores/projectActions.test.ts:783:        "used-001": { id: "used-001", type: "image", filename: "used.png" } as any,
+src/__tests__/stores/projectActions.test.ts:798:        "unused-001": { id: "unused-001", type: "image", filename: "unused.png" } as any,
+src/__tests__/stores/projectActions.test.ts:821:        "used-001": { id: "used-001", type: "image", filename: "used.png" } as any,
+src/__tests__/stores/projectActions.test.ts:822:        "unused-001": { id: "unused-001", type: "image", filename: "unused1.png" } as any,
+src/__tests__/stores/projectActions.test.ts:823:        "unused-002": { id: "unused-002", type: "image", filename: "unused2.png" } as any,
+src/__tests__/stores/projectActions.test.ts:901:      (store.project.compositions.main.layers[0].data as any).emitter.config.nested.deeply.value = 100;
+src/__tests__/stores/projectActions.test.ts:910:        (store.project.compositions.main.layers[0].data as any).emitter.config.nested.deeply.value
+src/__tests__/stores/projectActions.test.ts:951:      (layer as any).data = null;
+src/__tests__/stores/projectActions.test.ts:962:        "no-name": { id: "no-name", type: "image" } as any,

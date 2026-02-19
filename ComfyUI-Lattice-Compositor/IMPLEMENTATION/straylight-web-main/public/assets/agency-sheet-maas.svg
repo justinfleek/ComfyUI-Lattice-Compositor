@@ -1,0 +1,310 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" font-family="system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="headerGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#0969da;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#54aeff;stop-opacity:1" />
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1200" height="900" fill="#0f1216"/>
+  
+  <!-- Subtle grid -->
+  <defs>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1a1f24" stroke-width="0.5"/>
+    </pattern>
+  </defs>
+  <rect width="1200" height="900" fill="url(#grid)" opacity="0.5"/>
+  
+  <!-- Header -->
+  <text x="60" y="70" font-size="42" font-weight="300" fill="url(#headerGrad)" filter="url(#glow)">// MAAS BIOLABS //</text>
+  <text x="60" y="100" font-size="14" fill="#54aeff" letter-spacing="4">HYPERMODERN</text>
+  <text x="260" y="100" font-size="14" fill="#3a424f" letter-spacing="2">LIGHT MODE CHROMATIC SERIES</text>
+  
+  <!-- Divider -->
+  <line x1="60" y1="120" x2="1140" y2="120" stroke="#0969da" stroke-width="1" opacity="0.3"/>
+  
+  <!-- Theme Cards -->
+  
+  <!-- NEOFORM -->
+  <g transform="translate(60, 150)">
+    <!-- Card background preview -->
+    <rect width="250" height="340" rx="8" fill="#f5f7fa"/>
+    <rect y="280" width="250" height="60" rx="0 0 8 8" fill="#0f1216"/>
+    
+    <!-- Code preview area -->
+    <g transform="translate(20, 20)">
+      <text y="20" font-size="11" fill="#8896a8">// maas-neoform</text>
+      <text y="40" font-size="11" fill="#0969da">const</text>
+      <text y="40" x="35" font-size="11" fill="#2d3848">signal</text>
+      <text y="40" x="80" font-size="11" fill="#0550ae">=</text>
+      <text y="40" x="95" font-size="11" fill="#218bff">"clean"</text>
+      <text y="60" font-size="11" fill="#0969da">function</text>
+      <text y="60" x="55" font-size="11" fill="#0550ae">init</text>
+      <text y="60" x="75" font-size="11" fill="#2d3848">() {</text>
+      <text y="80" x="10" font-size="11" fill="#1f6feb">return</text>
+      <text y="80" x="50" font-size="11" fill="#54aeff">42</text>
+      <text y="100" font-size="11" fill="#2d3848">}</text>
+    </g>
+    
+    <!-- Palette strip -->
+    <g transform="translate(20, 130)">
+      <rect width="26" height="26" rx="4" fill="#f5f7fa" stroke="#d4dbe6"/>
+      <rect x="30" width="26" height="26" rx="4" fill="#e8ecf2"/>
+      <rect x="60" width="26" height="26" rx="4" fill="#d4dbe6"/>
+      <rect x="90" width="26" height="26" rx="4" fill="#8896a8"/>
+      <rect x="120" width="26" height="26" rx="4" fill="#5c6b7d"/>
+      <rect x="150" width="26" height="26" rx="4" fill="#2d3848"/>
+      <rect x="180" width="26" height="26" rx="4" fill="#1d2530"/>
+    </g>
+    <g transform="translate(20, 170)">
+      <rect width="26" height="26" rx="4" fill="#0550ae"/>
+      <rect x="30" width="26" height="26" rx="4" fill="#0969da"/>
+      <rect x="60" width="26" height="26" rx="4" fill="#1f6feb"/>
+      <rect x="90" width="26" height="26" rx="4" fill="#218bff"/>
+      <rect x="120" width="26" height="26" rx="4" fill="#54aeff"/>
+      <rect x="150" width="26" height="26" rx="4" fill="#0550ae"/>
+      <rect x="180" width="26" height="26" rx="4" fill="#1b4b91"/>
+    </g>
+    
+    <!-- Stats -->
+    <text x="20" y="230" font-size="10" fill="#5c6b7d">BASE00</text>
+    <text x="20" y="245" font-size="12" fill="#2d3848" font-family="monospace">#f5f7fa</text>
+    <text x="110" y="230" font-size="10" fill="#5c6b7d">HERO</text>
+    <text x="110" y="245" font-size="12" fill="#218bff" font-family="monospace">#218bff</text>
+    
+    <!-- Label area -->
+    <text x="20" y="305" font-size="18" font-weight="600" fill="#54aeff">NEOFORM</text>
+    <text x="20" y="325" font-size="11" fill="#596775">Clean room schematics • Daily driver</text>
+  </g>
+  
+  <!-- BIOPTIC -->
+  <g transform="translate(340, 150)">
+    <rect width="250" height="340" rx="8" fill="#faf8f5"/>
+    <rect y="280" width="250" height="60" rx="0 0 8 8" fill="#0f1216"/>
+    
+    <g transform="translate(20, 20)">
+      <text y="20" font-size="11" fill="#8a8378">// maas-bioptic</text>
+      <text y="40" font-size="11" fill="#0969da">const</text>
+      <text y="40" x="35" font-size="11" fill="#33302a">signal</text>
+      <text y="40" x="80" font-size="11" fill="#0550ae">=</text>
+      <text y="40" x="95" font-size="11" fill="#218bff">"warm"</text>
+      <text y="60" font-size="11" fill="#0969da">function</text>
+      <text y="60" x="55" font-size="11" fill="#0550ae">init</text>
+      <text y="60" x="75" font-size="11" fill="#33302a">() {</text>
+      <text y="80" x="10" font-size="11" fill="#1f6feb">return</text>
+      <text y="80" x="50" font-size="11" fill="#54aeff">42</text>
+      <text y="100" font-size="11" fill="#33302a">}</text>
+    </g>
+    
+    <g transform="translate(20, 130)">
+      <rect width="26" height="26" rx="4" fill="#faf8f5" stroke="#e2dcd2"/>
+      <rect x="30" width="26" height="26" rx="4" fill="#f0ece5"/>
+      <rect x="60" width="26" height="26" rx="4" fill="#e2dcd2"/>
+      <rect x="90" width="26" height="26" rx="4" fill="#8a8378"/>
+      <rect x="120" width="26" height="26" rx="4" fill="#5c574e"/>
+      <rect x="150" width="26" height="26" rx="4" fill="#33302a"/>
+      <rect x="180" width="26" height="26" rx="4" fill="#201e1a"/>
+    </g>
+    <g transform="translate(20, 170)">
+      <rect width="26" height="26" rx="4" fill="#0550ae"/>
+      <rect x="30" width="26" height="26" rx="4" fill="#0969da"/>
+      <rect x="60" width="26" height="26" rx="4" fill="#1f6feb"/>
+      <rect x="90" width="26" height="26" rx="4" fill="#218bff"/>
+      <rect x="120" width="26" height="26" rx="4" fill="#54aeff"/>
+      <rect x="150" width="26" height="26" rx="4" fill="#0550ae"/>
+      <rect x="180" width="26" height="26" rx="4" fill="#6e5494"/>
+    </g>
+    
+    <text x="20" y="230" font-size="10" fill="#5c574e">BASE00</text>
+    <text x="20" y="245" font-size="12" fill="#33302a" font-family="monospace">#faf8f5</text>
+    <text x="110" y="230" font-size="10" fill="#5c574e">ACCENT</text>
+    <text x="110" y="245" font-size="12" fill="#6e5494" font-family="monospace">#6e5494</text>
+    
+    <text x="20" y="305" font-size="18" font-weight="600" fill="#54aeff">BIOPTIC</text>
+    <text x="20" y="325" font-size="11" fill="#596775">Warm cream paper • Long reading</text>
+  </g>
+  
+  <!-- GHOST -->
+  <g transform="translate(620, 150)">
+    <rect width="250" height="340" rx="8" fill="#e8ecf0"/>
+    <rect y="280" width="250" height="60" rx="0 0 8 8" fill="#0f1216"/>
+    
+    <g transform="translate(20, 20)">
+      <text y="20" font-size="11" fill="#7a8a9c">// maas-ghost</text>
+      <text y="40" font-size="11" fill="#4080c4">const</text>
+      <text y="40" x="35" font-size="11" fill="#384452">signal</text>
+      <text y="40" x="80" font-size="11" fill="#3272b5">=</text>
+      <text y="40" x="95" font-size="11" fill="#5a9de3">"soft"</text>
+      <text y="60" font-size="11" fill="#4080c4">function</text>
+      <text y="60" x="55" font-size="11" fill="#3272b5">init</text>
+      <text y="60" x="75" font-size="11" fill="#384452">() {</text>
+      <text y="80" x="10" font-size="11" fill="#4d8fd4">return</text>
+      <text y="80" x="50" font-size="11" fill="#6aabef">42</text>
+      <text y="100" font-size="11" fill="#384452">}</text>
+    </g>
+    
+    <g transform="translate(20, 130)">
+      <rect width="26" height="26" rx="4" fill="#e8ecf0" stroke="#c8d1dc"/>
+      <rect x="30" width="26" height="26" rx="4" fill="#dce2e9"/>
+      <rect x="60" width="26" height="26" rx="4" fill="#c8d1dc"/>
+      <rect x="90" width="26" height="26" rx="4" fill="#7a8a9c"/>
+      <rect x="120" width="26" height="26" rx="4" fill="#556270"/>
+      <rect x="150" width="26" height="26" rx="4" fill="#384452"/>
+      <rect x="180" width="26" height="26" rx="4" fill="#252e38"/>
+    </g>
+    <g transform="translate(20, 170)">
+      <rect width="26" height="26" rx="4" fill="#3272b5"/>
+      <rect x="30" width="26" height="26" rx="4" fill="#4080c4"/>
+      <rect x="60" width="26" height="26" rx="4" fill="#4d8fd4"/>
+      <rect x="90" width="26" height="26" rx="4" fill="#5a9de3"/>
+      <rect x="120" width="26" height="26" rx="4" fill="#6aabef"/>
+      <rect x="150" width="26" height="26" rx="4" fill="#3272b5"/>
+      <rect x="180" width="26" height="26" rx="4" fill="#5c6e85"/>
+    </g>
+    
+    <text x="20" y="230" font-size="10" fill="#556270">BASE00</text>
+    <text x="20" y="245" font-size="12" fill="#384452" font-family="monospace">#e8ecf0</text>
+    <text x="110" y="230" font-size="10" fill="#556270">L%</text>
+    <text x="110" y="245" font-size="12" fill="#384452" font-family="monospace">92%</text>
+    
+    <text x="20" y="305" font-size="18" font-weight="600" fill="#54aeff">GHOST</text>
+    <text x="20" y="325" font-size="11" fill="#596775">Low contrast • Photosensitivity</text>
+  </g>
+  
+  <!-- TESSIER -->
+  <g transform="translate(900, 150)">
+    <rect width="250" height="340" rx="8" fill="#ffffff"/>
+    <rect y="280" width="250" height="60" rx="0 0 8 8" fill="#0f1216"/>
+    
+    <g transform="translate(20, 20)">
+      <text y="20" font-size="11" fill="#6b7a8a">// maas-tessier</text>
+      <text y="40" font-size="11" fill="#0758c9">const</text>
+      <text y="40" x="35" font-size="11" fill="#1a2028">signal</text>
+      <text y="40" x="80" font-size="11" fill="#0349b4">=</text>
+      <text y="40" x="95" font-size="11" fill="#0078ff">"max"</text>
+      <text y="60" font-size="11" fill="#0758c9">function</text>
+      <text y="60" x="55" font-size="11" fill="#0349b4">init</text>
+      <text y="60" x="75" font-size="11" fill="#1a2028">() {</text>
+      <text y="80" x="10" font-size="11" fill="#0066e0">return</text>
+      <text y="80" x="50" font-size="11" fill="#2090ff">42</text>
+      <text y="100" font-size="11" fill="#1a2028">}</text>
+    </g>
+    
+    <g transform="translate(20, 130)">
+      <rect width="26" height="26" rx="4" fill="#ffffff" stroke="#d8e0e8"/>
+      <rect x="30" width="26" height="26" rx="4" fill="#f0f3f6"/>
+      <rect x="60" width="26" height="26" rx="4" fill="#d8e0e8"/>
+      <rect x="90" width="26" height="26" rx="4" fill="#6b7a8a"/>
+      <rect x="120" width="26" height="26" rx="4" fill="#424d5b"/>
+      <rect x="150" width="26" height="26" rx="4" fill="#1a2028"/>
+      <rect x="180" width="26" height="26" rx="4" fill="#0d1117"/>
+    </g>
+    <g transform="translate(20, 170)">
+      <rect width="26" height="26" rx="4" fill="#0349b4"/>
+      <rect x="30" width="26" height="26" rx="4" fill="#0758c9"/>
+      <rect x="60" width="26" height="26" rx="4" fill="#0066e0"/>
+      <rect x="90" width="26" height="26" rx="4" fill="#0078ff"/>
+      <rect x="120" width="26" height="26" rx="4" fill="#2090ff"/>
+      <rect x="150" width="26" height="26" rx="4" fill="#0349b4"/>
+      <rect x="180" width="26" height="26" rx="4" fill="#7c3aed"/>
+    </g>
+    
+    <text x="20" y="230" font-size="10" fill="#424d5b">BASE00</text>
+    <text x="20" y="245" font-size="12" fill="#1a2028" font-family="monospace">#ffffff</text>
+    <text x="110" y="230" font-size="10" fill="#424d5b">CONTRAST</text>
+    <text x="110" y="245" font-size="12" fill="#1a2028" font-family="monospace">21:1</text>
+    
+    <text x="20" y="305" font-size="18" font-weight="600" fill="#54aeff">TESSIER</text>
+    <text x="20" y="325" font-size="11" fill="#596775">Maximum contrast • Clinical QA</text>
+  </g>
+  
+  <!-- Comparison strip -->
+  <g transform="translate(60, 520)">
+    <text y="0" font-size="12" fill="#596775" letter-spacing="2">LUMINANCE COMPARISON</text>
+    
+    <!-- Background gradient showing the range -->
+    <rect y="20" width="1080" height="60" rx="4" fill="#1a1f24"/>
+    
+    <!-- Neoform marker -->
+    <g transform="translate(50, 30)">
+      <rect width="80" height="40" rx="4" fill="#f5f7fa"/>
+      <text x="40" y="55" font-size="9" fill="#596775" text-anchor="middle">97% L</text>
+    </g>
+    
+    <!-- Bioptic marker -->
+    <g transform="translate(300, 30)">
+      <rect width="80" height="40" rx="4" fill="#faf8f5"/>
+      <text x="40" y="55" font-size="9" fill="#596775" text-anchor="middle">97% L (warm)</text>
+    </g>
+    
+    <!-- Ghost marker -->
+    <g transform="translate(550, 30)">
+      <rect width="80" height="40" rx="4" fill="#e8ecf0"/>
+      <text x="40" y="55" font-size="9" fill="#596775" text-anchor="middle">92% L</text>
+    </g>
+    
+    <!-- Tessier marker -->
+    <g transform="translate(800, 30)">
+      <rect width="80" height="40" rx="4" fill="#ffffff"/>
+      <text x="40" y="55" font-size="9" fill="#596775" text-anchor="middle">100% L</text>
+    </g>
+    
+    <!-- Ono-sendai dark reference -->
+    <g transform="translate(980, 30)">
+      <rect width="80" height="40" rx="4" fill="#191c20"/>
+      <text x="40" y="55" font-size="9" fill="#596775" text-anchor="middle">11% L (ono)</text>
+    </g>
+  </g>
+  
+  <!-- Design notes -->
+  <g transform="translate(60, 630)">
+    <text y="0" font-size="12" fill="#596775" letter-spacing="2">DESIGN NOTES</text>
+    
+    <g transform="translate(0, 25)">
+      <rect width="350" height="100" rx="4" fill="#1a1f24"/>
+      <text x="15" y="25" font-size="11" fill="#54aeff">Hue Discipline</text>
+      <text x="15" y="45" font-size="10" fill="#8896a8">All variants maintain 211° blue as primary</text>
+      <text x="15" y="60" font-size="10" fill="#8896a8">accent hue. Hero color shifts to darker</text>
+      <text x="15" y="75" font-size="10" fill="#8896a8">values (#218bff → #0969da) to preserve</text>
+      <text x="15" y="90" font-size="10" fill="#8896a8">visual weight on light backgrounds.</text>
+    </g>
+    
+    <g transform="translate(370, 25)">
+      <rect width="350" height="100" rx="4" fill="#1a1f24"/>
+      <text x="15" y="25" font-size="11" fill="#54aeff">Comment Legibility</text>
+      <text x="15" y="45" font-size="10" fill="#8896a8">Comments calibrated to ~55-60% luminance</text>
+      <text x="15" y="60" font-size="10" fill="#8896a8">for comfortable reading without competing</text>
+      <text x="15" y="75" font-size="10" fill="#8896a8">with code. Maintains 4.5:1 contrast ratio</text>
+      <text x="15" y="90" font-size="10" fill="#8896a8">per WCAG AA guidelines.</text>
+    </g>
+    
+    <g transform="translate(740, 25)">
+      <rect width="350" height="100" rx="4" fill="#1a1f24"/>
+      <text x="15" y="25" font-size="11" fill="#54aeff">Use Case Mapping</text>
+      <text x="15" y="45" font-size="10" fill="#8896a8">neoform: IDE, terminal, daily coding</text>
+      <text x="15" y="60" font-size="10" fill="#8896a8">bioptic: markdown, org-mode, reading</text>
+      <text x="15" y="75" font-size="10" fill="#8896a8">ghost: late night, migraine-friendly</text>
+      <text x="15" y="90" font-size="10" fill="#8896a8">tessier: presentations, accessibility</text>
+    </g>
+  </g>
+  
+  <!-- Footer -->
+  <line x1="60" y1="770" x2="1140" y2="770" stroke="#0969da" stroke-width="1" opacity="0.3"/>
+  <text x="60" y="800" font-size="10" fill="#3a424f">HYPERMODERN</text>
+  <text x="60" y="815" font-size="10" fill="#3a424f">github.com/b7r6/hypermodern-emacs</text>
+  
+  <text x="1140" y="800" font-size="10" fill="#3a424f" text-anchor="end">BASE16 COMPATIBLE</text>
+  <text x="1140" y="815" font-size="10" fill="#3a424f" text-anchor="end">maas-* light series v1.0</text>
+  
+  <!-- Watermark -->
+  <text x="600" y="860" font-size="9" fill="#0969da" text-anchor="middle" letter-spacing="6">THE BIOTECH COMPLEMENT TO ONO-SENDAI'S CHROME</text>
+</svg>

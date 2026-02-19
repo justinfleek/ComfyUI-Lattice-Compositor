@@ -1,0 +1,44 @@
+# cpu-template-helper - CPU template generation tool
+
+rust_binary(
+    name = "cpu-template-helper",
+    srcs = glob(["src/**/*.rs"]) + ["src/utils/mock_kernel/kernel.bin"],
+    crate = "cpu_template_helper",
+    crate_root = "src/main.rs",
+    edition = "2024",
+    env = {
+        "CARGO_PKG_VERSION": "1.15.0-dev",
+    },
+    deps = [
+        "//firecracker/src/vmm:vmm",
+        "//third-party/rust:clap",
+        "//third-party/rust:displaydoc",
+        "//third-party/rust:libc",
+        "//third-party/rust:serde",
+        "//third-party/rust:serde_json",
+        "//third-party/rust:thiserror",
+        "//third-party/rust:vmm-sys-util",
+    ],
+    visibility = ["PUBLIC"],
+)
+
+rust_test(
+    name = "cpu-template-helper-test",
+    srcs = glob(["src/**/*.rs"]) + ["src/utils/mock_kernel/kernel.bin"],
+    crate = "cpu_template_helper",
+    crate_root = "src/main.rs",
+    edition = "2024",
+    env = {
+        "CARGO_PKG_VERSION": "1.15.0-dev",
+    },
+    deps = [
+        "//firecracker/src/vmm:vmm",
+        "//third-party/rust:clap",
+        "//third-party/rust:displaydoc",
+        "//third-party/rust:libc",
+        "//third-party/rust:serde",
+        "//third-party/rust:serde_json",
+        "//third-party/rust:thiserror",
+        "//third-party/rust:vmm-sys-util",
+    ],
+)

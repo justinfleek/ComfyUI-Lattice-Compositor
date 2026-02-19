@@ -1,4 +1,5 @@
 packages: .
+         ../IMPLEMENTATION/haskemathesis-main
 
 -- Use current GHC from PATH or nix develop
 -- With Nix: add ghc to devShell and run cabal build
@@ -10,3 +11,8 @@ packages: .
 -- Optional: enable -Wall for stricter builds (recommended for porting)
 package lattice
   ghc-options: -Wall -Wcompat -Widentities
+
+-- Constrain to use consistent crypton ecosystem
+constraints:
+  tls >= 2.0 && < 2.2,
+  crypton-x509-store >= 1.6 && < 1.7

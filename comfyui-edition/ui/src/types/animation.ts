@@ -4,6 +4,8 @@
 // Extracted from project.ts for better modularity
 // ════════════════════════════════════════════════════════════════════════════
 
+import { generateKeyframeId } from "@/utils/uuid5";
+
 /**
  * Animatable property with optional keyframes and expressions
  */
@@ -154,20 +156,20 @@ export function createAnimatableProperty<T>(
 
 /**
  * Create a default keyframe with deterministic ID generation
- * 
+ *
  * BEZIER HANDLE DEFAULTS:
  * - inHandle: { frame: -5, value: 0, enabled: true }
  * - outHandle: { frame: 5, value: 0, enabled: true }
- * 
+ *
  * The ±5 frame offset creates a gentle ease curve by default.
  * At 30fps: 5 frames = ~0.167 seconds of influence
  * At 16fps: 5 frames = ~0.313 seconds of influence
- * 
+ *
  * A value of 0 means flat tangent (no acceleration at the keyframe).
- * 
+ *
  * These defaults were chosen to provide reasonable ease-in/ease-out
  * behavior without requiring manual handle adjustment for most animations.
- * 
+ *
  * @param layerId - Layer ID for deterministic keyframe ID generation
  * @param propertyPath - Property path for deterministic keyframe ID generation
  * @param frame - Frame number (must be finite)
@@ -191,13 +193,11 @@ export function createKeyframe<T>(
   }
 
   // Deterministic ID generation: same layer/property/frame/value always produces same ID
-  const valueStr = typeof value === "object" && value !== null && "x" in value && "y" in value
-    ? `${(value as { x: number; y: number }).x},${(value as { x: number; y: number }).y}${"z" in value ? `,${(value as { x: number; y: number; z?: number }).z}` : ""}`
-    : String(value);
-  
-  // Import here to avoid circular dependency
-  const { generateKeyframeId } = require("@/utils/uuid5");
-  
+  const valueStr =
+    typeof value === "object" && value !== null && "x" in value && "y" in value
+      ? `${(value as { x: number; y: number }).x},${(value as { x: number; y: number }).y}${"z" in value ? `,${(value as { x: number; y: number; z?: number }).z}` : ""}`
+      : String(value);
+
   return {
     id: generateKeyframeId(layerId, propertyPath, frame, valueStr),
     frame,

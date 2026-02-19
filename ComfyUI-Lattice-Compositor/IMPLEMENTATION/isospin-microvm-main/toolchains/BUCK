@@ -1,0 +1,81 @@
+load("@nix//:flake.bzl", "flake")
+load("@nix//toolchains:rust.bzl", "nix_rust_toolchain")
+load("@nix//toolchains:cxx.bzl", "nix_cxx_toolchain")
+load("@nix//toolchains:python.bzl", "nix_python_bootstrap_toolchain")
+load("@prelude//toolchains:genrule.bzl", "system_genrule_toolchain")
+load("@prelude//tests:test_toolchain.bzl", "noop_test_toolchain")
+load("@prelude//toolchains:remote_test_execution.bzl", "remote_test_execution_toolchain")
+
+### Nix Packages ###
+
+flake.package(
+    name = "rustc",
+    binary = "rustc",
+    binaries = ["rustdoc"],
+    path = "//nix:flake",
+)
+
+flake.package(
+    name = "clippy",
+    binary = "clippy-driver",
+    path = "//nix:flake",
+)
+
+flake.package(
+    name = "nix_cc",
+    binaries = ["ar", "cc", "c++", "nm", "objcopy", "ranlib", "strip"],
+    package = "cxx",
+    path = "//nix:flake",
+)
+
+flake.package(
+    name = "python",
+    binary = "python3",
+    package = "python3",
+    path = "//nix:flake",
+)
+
+### Native Libraries ###
+
+flake.package(
+    name = "aws-lc",
+    path = "//toolchains/nix:flake",
+)
+
+### Toolchains ###
+
+system_genrule_toolchain(
+    name = "genrule",
+    visibility = ["PUBLIC"],
+)
+
+nix_rust_toolchain(
+    name = "rust",
+    clippy = ":clippy",
+    default_edition = "2024",
+    rustc = ":rustc",
+    rustdoc = ":rustc[rustdoc]",
+    visibility = ["PUBLIC"],
+)
+
+nix_cxx_toolchain(
+    name = "cxx",
+    nix_cc = ":nix_cc",
+    visibility = ["PUBLIC"],
+)
+
+nix_python_bootstrap_toolchain(
+    name = "python_bootstrap",
+    python = ":python",
+    visibility = ["PUBLIC"],
+)
+
+noop_test_toolchain(
+    name = "test",
+    visibility = ["PUBLIC"],
+)
+
+remote_test_execution_toolchain(
+    name = "remote_test_execution",
+    visibility = ["PUBLIC"],
+)

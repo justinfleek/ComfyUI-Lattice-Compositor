@@ -1,0 +1,106 @@
+<!-- wallpapers/templates/villa-straylight.svg.template -->
+<!-- "The one rectilinear chamber in the complex" — Neuromancer -->
+<!-- Rendered with ono-sendai-razorgirl palette @ 2560x1440 -->
+<svg width="2560" height="1440" viewBox="0 0 2560 1440" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      @font-face {
+        font-family: 'Berkeley Mono';
+        src: local('Berkeley Mono Medium'), local('BerkeleyMono-Medium');
+      }
+      .mono { 
+        font-family: 'Berkeley Mono', 'SF Mono', 'Consolas', monospace; 
+        font-feature-settings: 'liga' 1, 'calt' 1;
+      }
+    </style>
+  </defs>
+  
+  <!-- Background: razorgirl base00 #111417 -->
+  <rect width="2560" height="1440" fill="#111417"/>
+  
+  <!-- myelin4.py quantization kernel - top left -->
+  <g transform="translate(60, 60)" opacity="0.85">
+    <text x="0" y="0" class="mono" fill="#596775" font-size="20" font-weight="400">
+      <tspan x="0" dy="0" fill="#80ccff" font-weight="500">// myelin4.py — NVFP4 codegen for Myelin compiler</tspan>
+    </text>
+    <text x="0" y="44" class="mono" fill="#596775" font-size="24" font-weight="400">
+      <tspan x="0" dy="0"><tspan fill="#54aeff" font-weight="600">def</tspan> <tspan fill="#b6e3ff">quantize</tspan>(w: torch.Tensor) -&gt; Tuple[...]:</tspan>
+      <tspan x="0" dy="44">    <tspan fill="#596775">"""block_size=16, FP4E2M1, FP8E4M3FN scales"""</tspan></tspan>
+      <tspan x="0" dy="44">    w = w.float().reshape(o, -1, <tspan fill="#80ccff">16</tspan>)</tspan>
+      <tspan x="0" dy="44">    scales = (w.abs().amax(<tspan fill="#80ccff">2</tspan>) / <tspan fill="#80ccff">6.0</tspan>).clamp(min=<tspan fill="#80ccff">1e-12</tspan>)</tspan>
+      <tspan x="0" dy="44">    g = max(scales.max().item() / <tspan fill="#80ccff">448</tspan>, <tspan fill="#80ccff">1e-12</tspan>)</tspan>
+      <tspan x="0" dy="44">    s_fp8 = _f32_to_fp8(scales / g)</tspan>
+      <tspan x="0" dy="44">    w_fp4 = _f32_to_fp4((w / (_fp8_to_f32(s_fp8) * g)...</tspan>
+      <tspan x="0" dy="44">    <tspan fill="#54aeff" font-weight="600">return</tspan> w_fp4, s_fp8, g</tspan>
+      <tspan x="0" dy="66"></tspan>
+      <tspan x="0" dy="44" fill="#596775">// CuTe layout algebra — coordinate → offset</tspan>
+      <tspan x="0" dy="44"><tspan fill="#b6e3ff">eval_L</tspan>(x₀,…,x₍ₙ₋₁₎) = <tspan fill="#80ccff">Σᵢ xᵢ · dᵢ</tspan></tspan>
+      <tspan x="0" dy="44"><tspan fill="#b6e3ff">size</tspan>: ∏ᵢ Mᵢ    <tspan fill="#b6e3ff">cosize</tspan>: 1 + max{eval_L(c)}</tspan>
+    </text>
+  </g>
+  
+  <!-- Tactic selection / benchmark results - top right -->
+  <g transform="translate(2500, 60)" opacity="0.85">
+    <text x="0" y="0" class="mono" fill="#80ccff" font-size="20" font-weight="500" text-anchor="end">
+      <tspan x="0" dy="0">MYELIN::TACTICS</tspan>
+    </text>
+    <text x="0" y="32" class="mono" fill="#596775" font-size="20" font-weight="400" text-anchor="end">
+      <tspan x="0" dy="0">━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</tspan>
+      <tspan x="0" dy="32" fill="#b6e3ff">cutlass3x_sm120_bstensorop</tspan>
+      <tspan x="0" dy="32" fill="#596775">s16864gemm_block_scaled</tspan>
+      <tspan x="0" dy="32" fill="#54aeff">ue4m3xe2m1_ue4m3xe2m1_f32_f16</tspan>
+      <tspan x="0" dy="32">━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</tspan>
+      <tspan x="0" dy="32" fill="#b6e3ff" font-weight="500">tactic_id    cost_ms    kernel</tspan>
+      <tspan x="0" dy="32"><tspan fill="#54aeff">1</tspan>            0.171      pingpong</tspan>
+      <tspan x="0" dy="32"><tspan fill="#596775">2</tspan>            0.188      standard</tspan>
+      <tspan x="0" dy="32"><tspan fill="#596775">5</tspan>            0.193      stream_k</tspan>
+      <tspan x="0" dy="32">━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</tspan>
+      <tspan x="0" dy="32" fill="#80ccff" font-weight="500">fusion: qkv_matmul + residual</tspan>
+    </text>
+  </g>
+  
+  <!-- Main statement - lower left -->
+  <g transform="translate(120, 1368)">
+    <text x="0" y="0" class="mono" font-size="48" font-weight="500">
+      <tspan fill="#54aeff" font-weight="700">//</tspan>
+      <tspan fill="#b6e3ff" dx="24">VILLA</tspan>
+      <tspan fill="#54aeff" font-weight="700" dx="24">//</tspan>
+      <tspan fill="#b6e3ff" dx="24">STRAYLIGHT</tspan>
+      <tspan fill="#54aeff" font-weight="700" dx="24">//</tspan>
+      <tspan fill="#b6e3ff" dx="24">PAPERS</tspan>
+    </text>
+  </g>
+  
+  <!-- Lineage / attribution - bottom right -->
+  <g transform="translate(2500, 1080)" opacity="0.85">
+    <text x="0" y="0" class="mono" fill="#596775" font-size="20" font-weight="400" text-anchor="end">
+      <tspan x="0" dy="0" fill="#80ccff">// nvfuser lineage</tspan>
+      <tspan x="0" dy="32" fill="#596775">INRIA polyhedral → isl</tspan>
+      <tspan x="0" dy="32" fill="#596775">Tensor Comprehensions → nvfuser</tspan>
+      <tspan x="0" dy="32" fill="#596775">Bastoul, Feautrier, Cohen</tspan>
+      <tspan x="0" dy="32" fill="#596775">Sarofeen, Maruyama</tspan>
+      <tspan x="0" dy="32">━━━━━━━━━━━━━━━━━━━━━━━━</tspan>
+      <tspan x="0" dy="32" fill="#54aeff" font-weight="600">Deep Linear Chain</tspan>
+      <tspan x="0" dy="32" fill="#80ccff" font-weight="700">1200.06 TFLOPS</tspan>
+      <tspan x="0" dy="32" fill="#596775">RTX PRO 6000 Blackwell</tspan>
+    </text>
+  </g>
+  
+  <!-- s4 invocation command - center -->
+  <g transform="translate(896, 648)" opacity="0.6">
+    <text x="0" y="0" class="mono" fill="#b6e3ff" font-size="36" font-weight="600">
+      <tspan x="0" dy="0">$ s4 compile --target=myelin --model=flux-dev</tspan>
+    </text>
+    <rect x="590" y="-16" width="12" height="24" fill="#54aeff" opacity="0.9">
+      <animate attributeName="opacity" values="0.9;0;0.9" dur="1s" repeatCount="indefinite"/>
+    </rect>
+  </g>
+  
+  <!-- The thesis - subtle, lower center -->
+  <g transform="translate(1280, 1224)" opacity="0.4">
+    <text x="0" y="0" class="mono" fill="#596775" font-size="20" font-weight="400" text-anchor="middle">
+      <tspan x="0" dy="0">the one rectilinear chamber in the complex</tspan>
+      <tspan x="0" dy="28">— the tensor core is the chamber —</tspan>
+    </text>
+  </g>
+</svg>

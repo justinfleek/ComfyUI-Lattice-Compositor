@@ -1,0 +1,51 @@
+# Library component (exports cli_print_error_chain)
+rust_library(
+    name = "cloud_hypervisor_lib",
+    srcs = ["src/lib.rs"],
+    crate = "cloud_hypervisor",
+    edition = "2024",
+    deps = [
+        "//third-party/rust:log",
+    ],
+    visibility = ["PUBLIC"],
+)
+
+rust_binary(
+    name = "cloud-hypervisor",
+    srcs = glob(["src/**/*.rs"], exclude = ["src/lib.rs", "src/bin/**"]),
+    crate = "cloud_hypervisor_bin",
+    edition = "2024",
+    env = {
+        "BUILD_VERSION": "buck2-dev",
+        "CARGO_PKG_AUTHORS": "Cloud Hypervisor Contributors",
+        "CARGO_PKG_VERSION": "43.0.0",
+        "CARGO_BIN_NAME": "cloud-hypervisor",
+    },
+    features = [
+        "kvm",
+        "io_uring",
+    ],
+    deps = [
+        ":cloud_hypervisor_lib",
+        "//cloud-hypervisor/api_client:api_client",
+        "//cloud-hypervisor/event_monitor:event_monitor",
+        "//cloud-hypervisor/hypervisor:hypervisor",
+        "//cloud-hypervisor/option_parser:option_parser",
+        "//cloud-hypervisor/tpm:tpm",
+        "//cloud-hypervisor/tracer:tracer",
+        "//cloud-hypervisor/vmm:vmm",
+        "//third-party/rust:anyhow",
+        "//third-party/rust:clap",
+        "//third-party/rust:env_logger",
+        "//third-party/rust:epoll",
+        "//third-party/rust:libc",
+        "//third-party/rust:log",
+        "//third-party/rust:seccompiler",
+        "//third-party/rust:serde_json",
+        "//third-party/rust:signal-hook",
+        "//third-party/rust:thiserror",
+        "//third-party/rust:vm-memory",
+        "//third-party/rust:vmm-sys-util",
+    ],
+    visibility = ["PUBLIC"],
+)

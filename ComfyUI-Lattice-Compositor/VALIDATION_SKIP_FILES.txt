@@ -1,0 +1,7 @@
+# Files that should be skipped from validation (generated/external files)
+# These files should be regenerated or redownloaded, not manually edited
+
+# Generated Nix files (regenerate with: dhall text < generate-nix.dhall)
+NEWSPECS/aleph-b7r6-continuity-0x08/docs/rfc/aleph-008-continuity/examples/generated-nvidia-packages.nix
+
+# Add other problematic files here as needed

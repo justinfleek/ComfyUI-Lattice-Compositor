@@ -3,322 +3,374 @@
  * Lines: 172
  * Exports: 12 (10 types/interfaces, 2 functions)
  * Functions to test: createAnimatableProperty, createKeyframe
- * 
+ *
  * This file defines the foundational types for ALL animations in the system.
  * EVERY animated property uses AnimatableProperty<T>.
  * EVERY keyframe uses Keyframe<T>.
  */
 
-import { describe, test, expect } from 'vitest';
+import { describe, expect, test } from "vitest";
 import {
-  createAnimatableProperty,
-  createKeyframe,
   type AnimatableProperty,
-  type Keyframe,
-  type PropertyExpression,
-  type BezierHandle,
-  type ControlMode,
   type BaseInterpolationType,
+  type BezierHandle,
+  type ClipboardKeyframe,
+  type ControlMode,
+  createAnimatableProperty,
+  createKeyframe as createKeyframeProd,
   type EasingType,
   type InterpolationType,
+  type Keyframe,
+  type PropertyExpression,
   type PropertyValue,
-  type ClipboardKeyframe,
-} from '@/types/animation';
+} from "@/types/animation";
+
+// Test wrapper for createKeyframe with default layerId/propertyPath
+const TEST_LAYER_ID = "test-layer";
+const TEST_PROPERTY_PATH = "test.property";
+function createKeyframe<T>(
+  frame: number,
+  value: T,
+  interpolation: InterpolationType = "linear",
+): Keyframe<T> {
+  return createKeyframeProd(
+    TEST_LAYER_ID,
+    TEST_PROPERTY_PATH,
+    frame,
+    value,
+    interpolation,
+  );
+}
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // createAnimatableProperty TESTS
 // ════════════════════════════════════════════════════════════════════════════
 
-describe('createAnimatableProperty', () => {
+describe("createAnimatableProperty", () => {
   //                                                    // basic // functionality
-  describe('basic functionality', () => {
-    test('creates property with required fields', () => {
-      const prop = createAnimatableProperty('testProp', 42);
-      
-      expect(prop.name).toBe('testProp');
+  describe("basic functionality", () => {
+    test("creates property with required fields", () => {
+      const prop = createAnimatableProperty("testProp", 42);
+
+      expect(prop.name).toBe("testProp");
       expect(prop.value).toBe(42);
-      expect(prop.type).toBe('number'); // default
+      expect(prop.type).toBe("number"); // default
       expect(prop.animated).toBe(false);
       expect(prop.keyframes).toEqual([]);
       expect(prop.group).toBeUndefined();
     });
 
-    test('creates property with all parameters', () => {
-      const prop = createAnimatableProperty('position', { x: 10, y: 20 }, 'position', 'Transform');
-      
-      expect(prop.name).toBe('position');
+    test("creates property with all parameters", () => {
+      const prop = createAnimatableProperty(
+        "position",
+        { x: 10, y: 20 },
+        "position",
+        "Transform",
+      );
+
+      expect(prop.name).toBe("position");
       expect(prop.value).toEqual({ x: 10, y: 20 });
-      expect(prop.type).toBe('position');
-      expect(prop.group).toBe('Transform');
+      expect(prop.type).toBe("position");
+      expect(prop.group).toBe("Transform");
     });
 
-    test('id starts with prop_ prefix', () => {
-      const prop = createAnimatableProperty('test', 0);
-      expect(prop.id.startsWith('prop_')).toBe(true);
+    test("id starts with prop_ prefix", () => {
+      const prop = createAnimatableProperty("test", 0);
+      expect(prop.id.startsWith("prop_")).toBe(true);
     });
 
-    test('id contains property name', () => {
-      const prop = createAnimatableProperty('myProperty', 0);
-      expect(prop.id).toContain('myProperty');
+    test("id contains property name", () => {
+      const prop = createAnimatableProperty("myProperty", 0);
+      expect(prop.id).toContain("myProperty");
     });
   });
 
   //                                                 // all // supported // types
-  describe('type parameter variations', () => {
-    test('type: number (default)', () => {
-      const prop = createAnimatableProperty('opacity', 100);
-      expect(prop.type).toBe('number');
+  describe("type parameter variations", () => {
+    test("type: number (default)", () => {
+      const prop = createAnimatableProperty("opacity", 100);
+      expect(prop.type).toBe("number");
     });
 
-    test('type: number (explicit)', () => {
-      const prop = createAnimatableProperty('rotation', 45, 'number');
-      expect(prop.type).toBe('number');
+    test("type: number (explicit)", () => {
+      const prop = createAnimatableProperty("rotation", 45, "number");
+      expect(prop.type).toBe("number");
     });
 
-    test('type: position', () => {
-      const prop = createAnimatableProperty('pos', { x: 0, y: 0 }, 'position');
-      expect(prop.type).toBe('position');
+    test("type: position", () => {
+      const prop = createAnimatableProperty("pos", { x: 0, y: 0 }, "position");
+      expect(prop.type).toBe("position");
     });
 
-    test('type: color', () => {
-      const prop = createAnimatableProperty('fill', '#ff0000', 'color');
-      expect(prop.type).toBe('color');
+    test("type: color", () => {
+      const prop = createAnimatableProperty("fill", "#ff0000", "color");
+      expect(prop.type).toBe("color");
     });
 
-    test('type: enum', () => {
-      const prop = createAnimatableProperty('blendMode', 'normal', 'enum');
-      expect(prop.type).toBe('enum');
+    test("type: enum", () => {
+      const prop = createAnimatableProperty("blendMode", "normal", "enum");
+      expect(prop.type).toBe("enum");
     });
 
-    test('type: vector3', () => {
-      const prop = createAnimatableProperty('orientation', { x: 0, y: 0, z: 0 }, 'vector3');
-      expect(prop.type).toBe('vector3');
+    test("type: vector3", () => {
+      const prop = createAnimatableProperty(
+        "orientation",
+        { x: 0, y: 0, z: 0 },
+        "vector3",
+      );
+      expect(prop.type).toBe("vector3");
     });
   });
 
   //                                                            // value // types
-  describe('value type variations', () => {
-    test('number value', () => {
-      const prop = createAnimatableProperty<number>('opacity', 50);
-      expect(typeof prop.value).toBe('number');
+  describe("value type variations", () => {
+    test("number value", () => {
+      const prop = createAnimatableProperty<number>("opacity", 50);
+      expect(typeof prop.value).toBe("number");
       expect(prop.value).toBe(50);
     });
 
-    test('string value (hex color)', () => {
-      const prop = createAnimatableProperty<string>('color', '#ff00ff', 'color');
-      expect(typeof prop.value).toBe('string');
-      expect(prop.value).toBe('#ff00ff');
+    test("string value (hex color)", () => {
+      const prop = createAnimatableProperty<string>(
+        "color",
+        "#ff00ff",
+        "color",
+      );
+      expect(typeof prop.value).toBe("string");
+      expect(prop.value).toBe("#ff00ff");
     });
 
-    test('Vec2 value', () => {
-      const prop = createAnimatableProperty('scale', { x: 100, y: 100 }, 'position');
+    test("Vec2 value", () => {
+      const prop = createAnimatableProperty(
+        "scale",
+        { x: 100, y: 100 },
+        "position",
+      );
       expect(prop.value).toEqual({ x: 100, y: 100 });
     });
 
-    test('Vec3 value', () => {
-      const prop = createAnimatableProperty('position3d', { x: 0, y: 0, z: 0 }, 'vector3');
+    test("Vec3 value", () => {
+      const prop = createAnimatableProperty(
+        "position3d",
+        { x: 0, y: 0, z: 0 },
+        "vector3",
+      );
       expect(prop.value).toEqual({ x: 0, y: 0, z: 0 });
     });
 
-    test('RGBA value', () => {
-      const prop = createAnimatableProperty('color', { r: 255, g: 0, b: 0, a: 1 }, 'color');
+    test("RGBA value", () => {
+      const prop = createAnimatableProperty(
+        "color",
+        { r: 255, g: 0, b: 0, a: 1 },
+        "color",
+      );
       expect(prop.value).toEqual({ r: 255, g: 0, b: 0, a: 1 });
     });
   });
 
   //                                                             // edge // cases
-  describe('boundary values', () => {
-    test('value: 0', () => {
-      const prop = createAnimatableProperty('zero', 0);
+  describe("boundary values", () => {
+    test("value: 0", () => {
+      const prop = createAnimatableProperty("zero", 0);
       expect(prop.value).toBe(0);
     });
 
-    test('value: 1', () => {
-      const prop = createAnimatableProperty('one', 1);
+    test("value: 1", () => {
+      const prop = createAnimatableProperty("one", 1);
       expect(prop.value).toBe(1);
     });
 
-    test('value: -1', () => {
-      const prop = createAnimatableProperty('negOne', -1);
+    test("value: -1", () => {
+      const prop = createAnimatableProperty("negOne", -1);
       expect(prop.value).toBe(-1);
     });
 
-    test('value: -0 (preserves -0, which === 0 in JS)', () => {
-      const prop = createAnimatableProperty('negZero', -0);
+    test("value: -0 (preserves -0, which === 0 in JS)", () => {
+      const prop = createAnimatableProperty("negZero", -0);
       // -0 === 0 in standard JS equality, but Object.is distinguishes them
       // This is NOT a bug - the value is preserved correctly
       expect(prop.value === 0).toBe(true); // Standard equality
       expect(Object.is(prop.value, -0)).toBe(true); // Value is preserved as -0
     });
 
-    test('value: large positive', () => {
-      const prop = createAnimatableProperty('large', 1e10);
+    test("value: large positive", () => {
+      const prop = createAnimatableProperty("large", 1e10);
       expect(prop.value).toBe(1e10);
     });
 
-    test('value: large negative', () => {
-      const prop = createAnimatableProperty('largeNeg', -1e10);
+    test("value: large negative", () => {
+      const prop = createAnimatableProperty("largeNeg", -1e10);
       expect(prop.value).toBe(-1e10);
     });
 
-    test('value: very small positive', () => {
-      const prop = createAnimatableProperty('tiny', 1e-10);
+    test("value: very small positive", () => {
+      const prop = createAnimatableProperty("tiny", 1e-10);
       expect(prop.value).toBeCloseTo(1e-10, 15);
     });
 
-    test('value: MAX_SAFE_INTEGER', () => {
-      const prop = createAnimatableProperty('max', Number.MAX_SAFE_INTEGER);
+    test("value: MAX_SAFE_INTEGER", () => {
+      const prop = createAnimatableProperty("max", Number.MAX_SAFE_INTEGER);
       expect(prop.value).toBe(Number.MAX_SAFE_INTEGER);
     });
 
-    test('value: MIN_SAFE_INTEGER', () => {
-      const prop = createAnimatableProperty('min', Number.MIN_SAFE_INTEGER);
+    test("value: MIN_SAFE_INTEGER", () => {
+      const prop = createAnimatableProperty("min", Number.MIN_SAFE_INTEGER);
       expect(prop.value).toBe(Number.MIN_SAFE_INTEGER);
     });
   });
 
   //                                                             // edge // cases
-  describe('special float values', () => {
-    test('value: NaN (preserves NaN)', () => {
-      const prop = createAnimatableProperty('nan', NaN);
+  describe("special float values", () => {
+    test("value: NaN (preserves NaN)", () => {
+      const prop = createAnimatableProperty("nan", NaN);
       expect(Number.isNaN(prop.value)).toBe(true);
     });
 
-    test('value: Infinity', () => {
-      const prop = createAnimatableProperty('inf', Infinity);
+    test("value: Infinity", () => {
+      const prop = createAnimatableProperty("inf", Infinity);
       expect(prop.value).toBe(Infinity);
     });
 
-    test('value: -Infinity', () => {
-      const prop = createAnimatableProperty('negInf', -Infinity);
+    test("value: -Infinity", () => {
+      const prop = createAnimatableProperty("negInf", -Infinity);
       expect(prop.value).toBe(-Infinity);
     });
   });
 
   //                                                             // edge // cases
-  describe('empty and special string values', () => {
-    test('name: empty string', () => {
-      const prop = createAnimatableProperty('', 0);
-      expect(prop.name).toBe('');
-      expect(prop.id).toContain('prop_');
+  describe("empty and special string values", () => {
+    test("name: empty string", () => {
+      const prop = createAnimatableProperty("", 0);
+      expect(prop.name).toBe("");
+      expect(prop.id).toContain("prop_");
     });
 
-    test('name: whitespace only', () => {
-      const prop = createAnimatableProperty('   ', 0);
-      expect(prop.name).toBe('   ');
+    test("name: whitespace only", () => {
+      const prop = createAnimatableProperty("   ", 0);
+      expect(prop.name).toBe("   ");
     });
 
-    test('name: special characters', () => {
-      const prop = createAnimatableProperty('test-prop_123.value', 0);
-      expect(prop.name).toBe('test-prop_123.value');
+    test("name: special characters", () => {
+      const prop = createAnimatableProperty("test-prop_123.value", 0);
+      expect(prop.name).toBe("test-prop_123.value");
     });
 
-    test('name: unicode characters', () => {
-      const prop = createAnimatableProperty('位置', { x: 0, y: 0 }, 'position');
-      expect(prop.name).toBe('位置');
+    test("name: unicode characters", () => {
+      const prop = createAnimatableProperty("位置", { x: 0, y: 0 }, "position");
+      expect(prop.name).toBe("位置");
     });
 
-    test('value: empty string', () => {
-      const prop = createAnimatableProperty<string>('empty', '', 'enum');
-      expect(prop.value).toBe('');
+    test("value: empty string", () => {
+      const prop = createAnimatableProperty<string>("empty", "", "enum");
+      expect(prop.value).toBe("");
     });
 
-    test('value: null (stores null)', () => {
-      const prop = createAnimatableProperty<null>('nullable', null);
+    test("value: null (stores null)", () => {
+      const prop = createAnimatableProperty<null>("nullable", null);
       expect(prop.value).toBeNull();
     });
 
-    test('value: undefined (stores undefined)', () => {
-      const prop = createAnimatableProperty<undefined>('undef', undefined);
+    test("value: undefined (stores undefined)", () => {
+      const prop = createAnimatableProperty<undefined>("undef", undefined);
       expect(prop.value).toBeUndefined();
     });
 
-    test('value: empty object', () => {
-      const prop = createAnimatableProperty('emptyObj', {});
+    test("value: empty object", () => {
+      const prop = createAnimatableProperty("emptyObj", {});
       expect(prop.value).toEqual({});
     });
 
-    test('value: empty array', () => {
-      const prop = createAnimatableProperty('emptyArr', []);
+    test("value: empty array", () => {
+      const prop = createAnimatableProperty("emptyArr", []);
       expect(prop.value).toEqual([]);
     });
   });
 
   //                                                          // id // uniqueness
-  describe('ID generation', () => {
-    test('creates unique IDs for same inputs', () => {
+  describe("ID generation", () => {
+    test("creates unique IDs for same inputs", () => {
       const ids = new Set<string>();
       for (let i = 0; i < 100; i++) {
-        const prop = createAnimatableProperty('test', 0);
+        const prop = createAnimatableProperty("test", 0);
         ids.add(prop.id);
       }
       // Should have 100 unique IDs
       expect(ids.size).toBe(100);
     });
 
-    test('ID format: prop_name_timestamp_random', () => {
-      const prop = createAnimatableProperty('myProp', 0);
+    test("ID format: prop_name_timestamp_random", () => {
+      const prop = createAnimatableProperty("myProp", 0);
       //                                                                        // id
       expect(prop.id).toMatch(/^prop_myProp_\d+_[a-z0-9]+$/);
     });
   });
 
   //                                                // return // type // contract
-  describe('return type contract', () => {
-    test('returns object with all required fields', () => {
-      const prop = createAnimatableProperty('test', 42);
-      
+  describe("return type contract", () => {
+    test("returns object with all required fields", () => {
+      const prop = createAnimatableProperty("test", 42);
+
       // All required fields from AnimatableProperty<T>
-      expect(prop).toHaveProperty('id');
-      expect(prop).toHaveProperty('name');
-      expect(prop).toHaveProperty('type');
-      expect(prop).toHaveProperty('value');
-      expect(prop).toHaveProperty('animated');
-      expect(prop).toHaveProperty('keyframes');
+      expect(prop).toHaveProperty("id");
+      expect(prop).toHaveProperty("name");
+      expect(prop).toHaveProperty("type");
+      expect(prop).toHaveProperty("value");
+      expect(prop).toHaveProperty("animated");
+      expect(prop).toHaveProperty("keyframes");
     });
 
-    test('keyframes is always an empty array initially', () => {
-      const prop = createAnimatableProperty('test', 0);
+    test("keyframes is always an empty array initially", () => {
+      const prop = createAnimatableProperty("test", 0);
       expect(Array.isArray(prop.keyframes)).toBe(true);
       expect(prop.keyframes.length).toBe(0);
     });
 
-    test('animated is always false initially', () => {
-      const prop = createAnimatableProperty('test', 0);
+    test("animated is always false initially", () => {
+      const prop = createAnimatableProperty("test", 0);
       expect(prop.animated).toBe(false);
     });
 
-    test('expression is undefined by default', () => {
-      const prop = createAnimatableProperty('test', 0);
+    test("expression is undefined by default", () => {
+      const prop = createAnimatableProperty("test", 0);
       expect(prop.expression).toBeUndefined();
     });
   });
 
   //                                                        // group // parameter
-  describe('group parameter', () => {
-    test('undefined group when not provided', () => {
-      const prop = createAnimatableProperty('test', 0);
+  describe("group parameter", () => {
+    test("undefined group when not provided", () => {
+      const prop = createAnimatableProperty("test", 0);
       expect(prop.group).toBeUndefined();
     });
 
-    test('group: Transform', () => {
-      const prop = createAnimatableProperty('position', { x: 0, y: 0 }, 'position', 'Transform');
-      expect(prop.group).toBe('Transform');
+    test("group: Transform", () => {
+      const prop = createAnimatableProperty(
+        "position",
+        { x: 0, y: 0 },
+        "position",
+        "Transform",
+      );
+      expect(prop.group).toBe("Transform");
     });
 
-    test('group: Text', () => {
-      const prop = createAnimatableProperty('fontSize', 24, 'number', 'Text');
-      expect(prop.group).toBe('Text');
+    test("group: Text", () => {
+      const prop = createAnimatableProperty("fontSize", 24, "number", "Text");
+      expect(prop.group).toBe("Text");
     });
 
-    test('group: More Options', () => {
-      const prop = createAnimatableProperty('motionBlur', 0, 'number', 'More Options');
-      expect(prop.group).toBe('More Options');
+    test("group: More Options", () => {
+      const prop = createAnimatableProperty(
+        "motionBlur",
+        0,
+        "number",
+        "More Options",
+      );
+      expect(prop.group).toBe("More Options");
     });
 
-    test('group: empty string', () => {
-      const prop = createAnimatableProperty('test', 0, 'number', '');
-      expect(prop.group).toBe('');
+    test("group: empty string", () => {
+      const prop = createAnimatableProperty("test", 0, "number", "");
+      expect(prop.group).toBe("");
     });
   });
 });
@@ -327,82 +379,102 @@ describe('createAnimatableProperty', () => {
 // createKeyframe TESTS
 // ════════════════════════════════════════════════════════════════════════════
 
-describe('createKeyframe', () => {
+describe("createKeyframe", () => {
   //                                                    // basic // functionality
-  describe('basic functionality', () => {
-    test('creates keyframe with required fields', () => {
+  describe("basic functionality", () => {
+    test("creates keyframe with required fields", () => {
       const kf = createKeyframe(0, 100);
-      
+
       expect(kf.frame).toBe(0);
       expect(kf.value).toBe(100);
-      expect(kf.interpolation).toBe('linear'); // default
+      expect(kf.interpolation).toBe("linear"); // default
     });
 
-    test('creates keyframe with all parameters', () => {
-      const kf = createKeyframe(30, 50, 'bezier');
-      
+    test("creates keyframe with all parameters", () => {
+      const kf = createKeyframe(30, 50, "bezier");
+
       expect(kf.frame).toBe(30);
       expect(kf.value).toBe(50);
-      expect(kf.interpolation).toBe('bezier');
+      expect(kf.interpolation).toBe("bezier");
     });
 
-    test('id starts with kf_ prefix', () => {
+    test("id starts with kf_ prefix", () => {
       const kf = createKeyframe(0, 0);
-      expect(kf.id.startsWith('kf_')).toBe(true);
+      expect(kf.id.startsWith("kf_")).toBe(true);
     });
 
-    test('id contains frame number', () => {
+    test("id contains frame number", () => {
       const kf = createKeyframe(42, 0);
-      expect(kf.id).toContain('42');
+      expect(kf.id).toContain("42");
     });
   });
 
   //                                                    // interpolation // types
-  describe('interpolation types', () => {
+  describe("interpolation types", () => {
     // Base types
-    test('interpolation: linear (default)', () => {
+    test("interpolation: linear (default)", () => {
       const kf = createKeyframe(0, 0);
-      expect(kf.interpolation).toBe('linear');
+      expect(kf.interpolation).toBe("linear");
     });
 
-    test('interpolation: linear (explicit)', () => {
-      const kf = createKeyframe(0, 0, 'linear');
-      expect(kf.interpolation).toBe('linear');
+    test("interpolation: linear (explicit)", () => {
+      const kf = createKeyframe(0, 0, "linear");
+      expect(kf.interpolation).toBe("linear");
     });
 
-    test('interpolation: bezier', () => {
-      const kf = createKeyframe(0, 0, 'bezier');
-      expect(kf.interpolation).toBe('bezier');
+    test("interpolation: bezier", () => {
+      const kf = createKeyframe(0, 0, "bezier");
+      expect(kf.interpolation).toBe("bezier");
     });
 
-    test('interpolation: hold', () => {
-      const kf = createKeyframe(0, 0, 'hold');
-      expect(kf.interpolation).toBe('hold');
+    test("interpolation: hold", () => {
+      const kf = createKeyframe(0, 0, "hold");
+      expect(kf.interpolation).toBe("hold");
     });
 
     // Easing functions (all 30)
     const easingTypes: EasingType[] = [
-      'easeInSine', 'easeOutSine', 'easeInOutSine',
-      'easeInQuad', 'easeOutQuad', 'easeInOutQuad',
-      'easeInCubic', 'easeOutCubic', 'easeInOutCubic',
-      'easeInQuart', 'easeOutQuart', 'easeInOutQuart',
-      'easeInQuint', 'easeOutQuint', 'easeInOutQuint',
-      'easeInExpo', 'easeOutExpo', 'easeInOutExpo',
-      'easeInCirc', 'easeOutCirc', 'easeInOutCirc',
-      'easeInBack', 'easeOutBack', 'easeInOutBack',
-      'easeInElastic', 'easeOutElastic', 'easeInOutElastic',
-      'easeInBounce', 'easeOutBounce', 'easeInOutBounce',
+      "easeInSine",
+      "easeOutSine",
+      "easeInOutSine",
+      "easeInQuad",
+      "easeOutQuad",
+      "easeInOutQuad",
+      "easeInCubic",
+      "easeOutCubic",
+      "easeInOutCubic",
+      "easeInQuart",
+      "easeOutQuart",
+      "easeInOutQuart",
+      "easeInQuint",
+      "easeOutQuint",
+      "easeInOutQuint",
+      "easeInExpo",
+      "easeOutExpo",
+      "easeInOutExpo",
+      "easeInCirc",
+      "easeOutCirc",
+      "easeInOutCirc",
+      "easeInBack",
+      "easeOutBack",
+      "easeInOutBack",
+      "easeInElastic",
+      "easeOutElastic",
+      "easeInOutElastic",
+      "easeInBounce",
+      "easeOutBounce",
+      "easeInOutBounce",
     ];
 
-    test.each(easingTypes)('interpolation: %s', (easing) => {
+    test.each(easingTypes)("interpolation: %s", (easing) => {
       const kf = createKeyframe(0, 0, easing);
       expect(kf.interpolation).toBe(easing);
     });
   });
 
   //                                              // default // bezier // handles
-  describe('default bezier handles', () => {
-    test('inHandle has correct defaults', () => {
+  describe("default bezier handles", () => {
+    test("inHandle has correct defaults", () => {
       const kf = createKeyframe(0, 0);
       expect(kf.inHandle).toEqual({
         frame: -5,
@@ -411,7 +483,7 @@ describe('createKeyframe', () => {
       });
     });
 
-    test('outHandle has correct defaults', () => {
+    test("outHandle has correct defaults", () => {
       const kf = createKeyframe(0, 0);
       expect(kf.outHandle).toEqual({
         frame: 5,
@@ -420,103 +492,107 @@ describe('createKeyframe', () => {
       });
     });
 
-    test('controlMode defaults to smooth', () => {
+    test("controlMode defaults to smooth", () => {
       const kf = createKeyframe(0, 0);
-      expect(kf.controlMode).toBe('smooth');
+      expect(kf.controlMode).toBe("smooth");
     });
   });
 
   //                                                           // frame // values
-  describe('frame boundary values', () => {
-    test('frame: 0 (first frame)', () => {
+  describe("frame boundary values", () => {
+    test("frame: 0 (first frame)", () => {
       const kf = createKeyframe(0, 100);
       expect(kf.frame).toBe(0);
     });
 
-    test('frame: 1', () => {
+    test("frame: 1", () => {
       const kf = createKeyframe(1, 100);
       expect(kf.frame).toBe(1);
     });
 
-    test('frame: -1 (negative)', () => {
+    test("frame: -1 (negative)", () => {
       const kf = createKeyframe(-1, 100);
       expect(kf.frame).toBe(-1);
     });
 
-    test('frame: 80 (standard composition end)', () => {
+    test("frame: 80 (standard composition end)", () => {
       const kf = createKeyframe(80, 100);
       expect(kf.frame).toBe(80);
     });
 
-    test('frame: 10000 (very long composition)', () => {
+    test("frame: 10000 (very long composition)", () => {
       const kf = createKeyframe(10000, 100);
       expect(kf.frame).toBe(10000);
     });
 
-    test('frame: 0.5 (fractional frame)', () => {
+    test("frame: 0.5 (fractional frame)", () => {
       const kf = createKeyframe(0.5, 100);
       expect(kf.frame).toBe(0.5);
     });
 
-    test('frame: 29.97 (NTSC timecode)', () => {
+    test("frame: 29.97 (NTSC timecode)", () => {
       const kf = createKeyframe(29.97, 100);
       expect(kf.frame).toBeCloseTo(29.97, 5);
     });
   });
 
   //                                                            // value // types
-  describe('value type variations', () => {
-    test('number value', () => {
+  describe("value type variations", () => {
+    test("number value", () => {
       const kf = createKeyframe<number>(0, 42);
       expect(kf.value).toBe(42);
     });
 
-    test('string value (hex color)', () => {
-      const kf = createKeyframe<string>(0, '#ff0000');
-      expect(kf.value).toBe('#ff0000');
+    test("string value (hex color)", () => {
+      const kf = createKeyframe<string>(0, "#ff0000");
+      expect(kf.value).toBe("#ff0000");
     });
 
-    test('Vec2 value', () => {
+    test("Vec2 value", () => {
       const kf = createKeyframe(0, { x: 100, y: 200 });
       expect(kf.value).toEqual({ x: 100, y: 200 });
     });
 
-    test('Vec3 value', () => {
+    test("Vec3 value", () => {
       const kf = createKeyframe(0, { x: 0, y: 0, z: 100 });
       expect(kf.value).toEqual({ x: 0, y: 0, z: 100 });
     });
 
-    test('RGBA value', () => {
+    test("RGBA value", () => {
       const kf = createKeyframe(0, { r: 255, g: 128, b: 0, a: 0.5 });
       expect(kf.value).toEqual({ r: 255, g: 128, b: 0, a: 0.5 });
     });
   });
 
   //                                                // special // float // values
-  describe('special float values - validation', () => {
-    test('frame: NaN throws error (prevents silent interpolation failure)', () => {
-      expect(() => createKeyframe(NaN, 0)).toThrow('Invalid keyframe frame');
+  describe("special float values - validation", () => {
+    test("frame: NaN throws error (prevents silent interpolation failure)", () => {
+      expect(() => createKeyframe(NaN, 0)).toThrow("Invalid keyframe frame");
     });
 
-    test('frame: Infinity throws error', () => {
-      expect(() => createKeyframe(Infinity, 0)).toThrow('Invalid keyframe frame');
+    test("frame: Infinity throws error", () => {
+      expect(() => createKeyframe(Infinity, 0)).toThrow(
+        "Invalid keyframe frame",
+      );
     });
 
-    test('frame: -Infinity throws error', () => {
-      expect(() => createKeyframe(-Infinity, 0)).toThrow('Invalid keyframe frame');
+    test("frame: -Infinity throws error", () => {
+      expect(() => createKeyframe(-Infinity, 0)).toThrow(
+        "Invalid keyframe frame",
+      );
     });
 
-    test('value: NaN', () => {
+    test("value: NaN", () => {
       const kf = createKeyframe<number>(0, NaN);
       expect(Number.isNaN(kf.value)).toBe(true);
     });
 
-    test('value: Infinity', () => {
+    test("value: Infinity", () => {
       const kf = createKeyframe<number>(0, Infinity);
       expect(kf.value).toBe(Infinity);
     });
 
-    test('value: -0 (preserves -0, which === 0 in JS)', () => {
+    test("value: -0 (preserves -0, which === 0 in JS)", () => {
       const kf = createKeyframe(0, -0);
       // -0 === 0 in standard JS equality, but Object.is distinguishes them
       // This is NOT a bug - the value is preserved correctly
@@ -526,37 +602,46 @@ describe('createKeyframe', () => {
   });
 
   //                                                          // id // uniqueness
-  describe('ID generation', () => {
-    test('creates unique IDs for same inputs', () => {
+  describe("ID generation", () => {
+    test("creates deterministic IDs for same inputs", () => {
+      // Deterministic: same layer/property/frame/value = same ID
+      const kf1 = createKeyframe(0, 0);
+      const kf2 = createKeyframe(0, 0);
+      expect(kf1.id).toBe(kf2.id);
+    });
+
+    test("creates unique IDs for different inputs", () => {
       const ids = new Set<string>();
       for (let i = 0; i < 100; i++) {
-        const kf = createKeyframe(0, 0);
+        // Different frame values = unique IDs
+        const kf = createKeyframe(i, i);
         ids.add(kf.id);
       }
       expect(ids.size).toBe(100);
     });
 
-    test('ID format: kf_frame_timestamp_random', () => {
+    test("ID format: kf_frame_hash", () => {
       const kf = createKeyframe(42, 0);
-      expect(kf.id).toMatch(/^kf_42_\d+_[a-z0-9]+$/);
+      // Format: kf_<frame>_<16-char-hex-hash>
+      expect(kf.id).toMatch(/^kf_42_[a-f0-9]{16}$/);
     });
   });
 
   //                                                // return // type // contract
-  describe('return type contract', () => {
-    test('returns object with all required fields', () => {
+  describe("return type contract", () => {
+    test("returns object with all required fields", () => {
       const kf = createKeyframe(0, 0);
-      
-      expect(kf).toHaveProperty('id');
-      expect(kf).toHaveProperty('frame');
-      expect(kf).toHaveProperty('value');
-      expect(kf).toHaveProperty('interpolation');
-      expect(kf).toHaveProperty('inHandle');
-      expect(kf).toHaveProperty('outHandle');
-      expect(kf).toHaveProperty('controlMode');
+
+      expect(kf).toHaveProperty("id");
+      expect(kf).toHaveProperty("frame");
+      expect(kf).toHaveProperty("value");
+      expect(kf).toHaveProperty("interpolation");
+      expect(kf).toHaveProperty("inHandle");
+      expect(kf).toHaveProperty("outHandle");
+      expect(kf).toHaveProperty("controlMode");
     });
 
-    test('does NOT have spatial tangents by default', () => {
+    test("does NOT have spatial tangents by default", () => {
       const kf = createKeyframe(0, 0);
       expect(kf.spatialInTangent).toBeUndefined();
       expect(kf.spatialOutTangent).toBeUndefined();
@@ -564,25 +649,25 @@ describe('createKeyframe', () => {
   });
 
   //                                                                     // empty
-  describe('empty and null values', () => {
-    test('value: null', () => {
+  describe("empty and null values", () => {
+    test("value: null", () => {
       const kf = createKeyframe<null>(0, null);
       expect(kf.value).toBeNull();
     });
 
-    test('value: undefined', () => {
+    test("value: undefined", () => {
       const kf = createKeyframe<undefined>(0, undefined);
       expect(kf.value).toBeUndefined();
     });
 
-    test('value: empty object', () => {
+    test("value: empty object", () => {
       const kf = createKeyframe(0, {});
       expect(kf.value).toEqual({});
     });
 
-    test('value: empty string', () => {
-      const kf = createKeyframe<string>(0, '');
-      expect(kf.value).toBe('');
+    test("value: empty string", () => {
+      const kf = createKeyframe<string>(0, "");
+      expect(kf.value).toBe("");
     });
   });
 });
@@ -591,47 +676,47 @@ describe('createKeyframe', () => {
 //                                         // type // definitions // validation
 // ════════════════════════════════════════════════════════════════════════════
 
-describe('Type definitions (compile-time validation)', () => {
+describe("Type definitions (compile-time validation)", () => {
   // These tests verify the types exist and can be used
   // They won't catch runtime bugs but ensure interface compliance
 
-  test('AnimatableProperty interface structure', () => {
+  test("AnimatableProperty interface structure", () => {
     const prop: AnimatableProperty<number> = {
-      id: 'test',
-      name: 'test',
-      type: 'number',
+      id: "test",
+      name: "test",
+      type: "number",
       value: 0,
       animated: false,
       keyframes: [],
     };
-    expect(prop.id).toBe('test');
+    expect(prop.id).toBe("test");
   });
 
-  test('PropertyExpression interface structure', () => {
+  test("PropertyExpression interface structure", () => {
     const expr: PropertyExpression = {
       enabled: true,
-      type: 'preset',
-      name: 'jitter',
+      type: "preset",
+      name: "jitter",
       params: { amplitude: 10, frequency: 1 },
     };
     expect(expr.enabled).toBe(true);
-    expect(expr.type).toBe('preset');
+    expect(expr.type).toBe("preset");
   });
 
-  test('Keyframe interface structure', () => {
+  test("Keyframe interface structure", () => {
     const kf: Keyframe<number> = {
-      id: 'kf1',
+      id: "kf1",
       frame: 0,
       value: 100,
-      interpolation: 'linear',
+      interpolation: "linear",
       inHandle: { frame: -5, value: 0, enabled: true },
       outHandle: { frame: 5, value: 0, enabled: true },
-      controlMode: 'smooth',
+      controlMode: "smooth",
     };
     expect(kf.frame).toBe(0);
   });
 
-  test('BezierHandle interface structure', () => {
+  test("BezierHandle interface structure", () => {
     const handle: BezierHandle = {
       frame: -5,
       value: 10,
@@ -641,48 +726,48 @@ describe('Type definitions (compile-time validation)', () => {
     expect(handle.enabled).toBe(true);
   });
 
-  test('ControlMode type values', () => {
-    const modes: ControlMode[] = ['symmetric', 'smooth', 'corner'];
+  test("ControlMode type values", () => {
+    const modes: ControlMode[] = ["symmetric", "smooth", "corner"];
     expect(modes.length).toBe(3);
   });
 
-  test('BaseInterpolationType values', () => {
-    const types: BaseInterpolationType[] = ['linear', 'bezier', 'hold'];
+  test("BaseInterpolationType values", () => {
+    const types: BaseInterpolationType[] = ["linear", "bezier", "hold"];
     expect(types.length).toBe(3);
   });
 
-  test('PropertyValue can be number', () => {
+  test("PropertyValue can be number", () => {
     const val: PropertyValue = 42;
     expect(val).toBe(42);
   });
 
-  test('PropertyValue can be string', () => {
-    const val: PropertyValue = '#ff0000';
-    expect(val).toBe('#ff0000');
+  test("PropertyValue can be string", () => {
+    const val: PropertyValue = "#ff0000";
+    expect(val).toBe("#ff0000");
   });
 
-  test('PropertyValue can be Vec2', () => {
+  test("PropertyValue can be Vec2", () => {
     const val: PropertyValue = { x: 10, y: 20 };
     expect(val).toEqual({ x: 10, y: 20 });
   });
 
-  test('PropertyValue can be Vec3', () => {
+  test("PropertyValue can be Vec3", () => {
     const val: PropertyValue = { x: 0, y: 0, z: 100 };
     expect(val).toEqual({ x: 0, y: 0, z: 100 });
   });
 
-  test('PropertyValue can be RGBA', () => {
+  test("PropertyValue can be RGBA", () => {
     const val: PropertyValue = { r: 255, g: 0, b: 0, a: 1 };
     expect(val).toEqual({ r: 255, g: 0, b: 0, a: 1 });
   });
 
-  test('ClipboardKeyframe structure', () => {
+  test("ClipboardKeyframe structure", () => {
     const clip: ClipboardKeyframe = {
-      layerId: 'layer_1',
-      propertyPath: 'transform.position',
+      layerId: "layer_1",
+      propertyPath: "transform.position",
       keyframes: [],
     };
-    expect(clip.layerId).toBe('layer_1');
-    expect(clip.propertyPath).toBe('transform.position');
+    expect(clip.layerId).toBe("layer_1");
+    expect(clip.propertyPath).toBe("transform.position");
   });
 });

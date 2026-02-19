@@ -1,0 +1,272 @@
+src/components/canvas/MeshWarpPinEditor.vue:413:function updatePinProperty(pinId: string, property: string, value: any): void {
+src/components/canvas/SplineEditor.vue:344:  const getVal = (prop: any, defaultVal: any) => {
+src/components/curve-editor/CurveEditor.vue:483:function getNumericValue(value: any): number {
+src/components/curve-editor/CurveEditorCanvas.vue:800:function formatValue(value: any): string {
+src/components/dialogs/MotionSketchPanel.vue:201:  apply: [keyframes: any[]];
+src/components/dialogs/PathSuggestionDialog.vue:178:  (e: "accept", result: { keyframes: any[]; splines: any[] }): void;
+src/components/dialogs/TemplateBuilderDialog.vue:498:  type: any;
+src/components/dialogs/TemplateBuilderDialog.vue:737:function setNestedProperty(obj: any, path: string, value: any) {
+src/components/export/ComfyUIExportDialog.vue:35:  cameraKeyframes: any[];
+src/components/export/ComfyUIExportDialog.vue:44:  exported: [result: any];
+src/components/layout/LeftSidebar.vue:67:  environmentUpdate: [settings: any];
+src/components/layout/LeftSidebar.vue:68:  environmentLoad: [settings: any];
+src/components/layout/RightSidebar.vue:165:  engine: any;
+src/components/layout/WorkspaceLayout.vue:690:function onComfyUIExportComplete(result: any) {
+src/components/layout/WorkspaceLayout.vue:785:        (a: any, b: any) => a.frame - b.frame,
+src/components/layout/WorkspaceLayout.vue:1013:function onPathSuggestionPreview(suggestions: any[]) {
+src/components/layout/WorkspaceLayout.vue:1018:function onPathSuggestionAccept(result: { keyframes: any[]; splines: any[] }) {
+src/components/layout/WorkspaceLayout.vue:1050:      const controlPoints = (spline.points || []).map((p: any, i: number) => ({
+src/components/layout/WorkspaceLayout.vue:1138:function handlePreferencesSave(preferences: any) {
+src/components/panels/AssetsPanel.vue:703:function onEnvironmentUpdate(settings: any) {
+src/components/panels/AssetsPanel.vue:725:  (e: "environment-update", settings: any): void;
+src/components/panels/AssetsPanel.vue:726:  (e: "environment-load", settings: any): void;
+src/components/panels/EffectControlsPanel.vue:291:function removeEffect(effect: any) {
+src/components/panels/EffectControlsPanel.vue:295:function toggleEffect(effect: any) {
+src/components/panels/EffectControlsPanel.vue:299:function toggleExpand(effect: any) {
+src/components/panels/EffectControlsPanel.vue:303:function updateParam(effectId: string, paramKey: string, value: any) {
+src/components/panels/EffectControlsPanel.vue:315:  const effect = layer.value.effects.find((e: any) => e.id === effectId);
+src/components/panels/EffectControlsPanel.vue:324:function formatColor(val: any) {
+src/components/panels/EffectControlsPanel.vue:339:  const effect = layer.value.effects.find((e: any) => e.id === effectId);
+src/components/panels/ExposedPropertyControl.vue:264:function updateValue(value: any) {
+src/components/panels/ExposedPropertyControl.vue:278:function colorToHex(color: any): string {
+src/components/panels/LayerDecompositionPanel.vue:394:function getLayerZ(layer: any): number {
+src/components/panels/PropertiesPanel.vue:61:                @link="(target: any) => onPropertyLink('transform.position.x', target)"
+src/components/preview/HDPreviewWindow.vue:119:  engine?: any;
+src/components/properties/CameraProperties.vue:652:function update(key: keyof CameraLayerData | string, value: any) {
+src/components/properties/CameraProperties.vue:681:function updatePathConfig(key: keyof CameraPathFollowing, value: any) {
+src/components/properties/CameraProperties.vue:694:function updateShakeConfig(key: keyof CameraShakeData, value: any) {
+src/components/properties/CameraProperties.vue:713:function updateRackFocusConfig(key: keyof CameraRackFocusData, value: any) {
+src/components/properties/DepthflowProperties.vue:690:function updateConfig(key: keyof DepthflowLayerData, value: any): void {
+src/components/properties/DepthflowProperties.vue:694:function updateDepthflowConfig(key: keyof DepthflowConfig, value: any): void {
+src/components/properties/DepthflowProperties.vue:706:  value: any,
+src/components/properties/LightProperties.vue:187:function update(key: keyof LightData, value: any) {
+src/components/properties/particle/ParticleAudioBindingsSection.vue:191:  (e: "update", id: string, key: keyof AudioBindingConfig, value: any): void;
+src/components/properties/particle/ParticleCollisionSection.vue:185:  (e: "update", key: keyof CollisionConfig, value: any): void;
+src/components/properties/particle/ParticleCollisionSection.vue:188:function update(key: keyof CollisionConfig, value: any): void {
+src/components/properties/particle/ParticleFlockingSection.vue:150:  (e: "update", key: keyof FlockingConfig, value: any): void;
+src/components/properties/particle/ParticleFlockingSection.vue:153:function update(key: keyof FlockingConfig, value: any): void {
+src/components/properties/particle/ParticleForceFieldsSection.vue:236:  (e: "updateWell", id: string, key: keyof GravityWellConfig, value: any): void;
+src/components/properties/particle/ParticleForceFieldsSection.vue:239:  (e: "updateVortex", id: string, key: keyof VortexConfig, value: any): void;
+src/components/properties/particle/ParticleModulationsSection.vue:105:    value: any,
+src/components/properties/particle/ParticleRenderSection.vue:324:  (e: "update", key: keyof ParticleRenderOptions, value: any): void;
+src/components/properties/particle/ParticleRenderSection.vue:325:  (e: "updateConnection", key: keyof ConnectionRenderConfig, value: any): void;
+src/components/properties/particle/ParticleRenderSection.vue:328:function update(key: keyof ParticleRenderOptions, value: any): void {
+src/components/properties/particle/ParticleSubEmittersSection.vue:149:  (e: "update", id: string, key: keyof SubEmitterConfig, value: any): void;
+src/components/properties/particle/ParticleTurbulenceSection.vue:88:  (e: "update", id: string, key: keyof TurbulenceFieldConfig, value: any): void;
+src/components/properties/particle/ParticleVisualizationSection.vue:84:  (e: "update", key: keyof VisualizationConfig, value: any): void;
+src/components/properties/particle/ParticleVisualizationSection.vue:87:function update(key: keyof VisualizationConfig, value: any): void {
+src/components/properties/ParticleProperties.vue:1453:  value: any,
+src/components/properties/ParticleProperties.vue:1463:  value: any,
+src/components/properties/ParticleProperties.vue:1480:  value: any,
+src/components/properties/ParticleProperties.vue:1565:  value: any,
+src/components/properties/ParticleProperties.vue:1593:function updateVortex(id: string, key: keyof VortexConfig, value: any): void {
+src/components/properties/ParticleProperties.vue:1622:  value: any,
+src/components/properties/ParticleProperties.vue:1648:  value: any,
+src/components/properties/ParticleProperties.vue:1658:  value: any,
+src/components/properties/ParticleProperties.vue:1672:  value: any,
+src/components/properties/ParticleProperties.vue:1698:function updateFlocking(key: keyof FlockingConfig, value: any): void {
+src/components/properties/ParticleProperties.vue:1705:function updateCollision(key: keyof CollisionConfig, value: any): void {
+src/components/properties/ParticleProperties.vue:1722:  value: any,
+src/components/properties/ParticleProperties.vue:1754:  value: any,
+src/components/properties/ParticleProperties.vue:1772:  value: any,
+src/components/properties/ParticleProperties.vue:2024:    const particleLifetimes = new Map<number, { birth: number; death: number; keyframes: any[] }>();
+src/components/properties/PathProperties.vue:251:function update(key: keyof PathLayerData | string, value: any) {
+src/components/properties/shape-editors/StrokeEditor.vue:219:function updateMeta(key: string, value: any) {
+src/components/properties/shape-editors/StrokeEditor.vue:261:  const hasKf = animProp.keyframes.some((k: any) => k.frame === frame);
+src/components/properties/shape-editors/StrokeEditor.vue:264:      (k: any) => k.frame !== frame,
+src/components/properties/shape-editors/WigglePathsEditor.vue:60:function updateMeta(key: string, value: any) {
+src/components/properties/shape-editors/ZigZagEditor.vue:38:function updateMeta(key: string, value: any) {
+src/components/properties/ShapeProperties.vue:624:function update(key: keyof SplineData | string, value: any) {
+src/components/properties/ShapeProperties.vue:971:function updateEffectMeta(effectId: string, key: string, value: any) {
+src/components/properties/TextProperties.vue:842:const props = defineProps<{ layer: any }>();
+src/components/properties/TextProperties.vue:950:  value: any,
+src/components/properties/TextProperties.vue:979:  value: any,
+src/components/properties/TextProperties.vue:1019:): any {
+src/components/properties/TextProperties.vue:1053:  value: any,
+src/components/properties/TextProperties.vue:1094:  value: any,
+src/components/properties/TextProperties.vue:1143:  return props.layer.properties?.find((p: any) => p.name === name);
+src/components/properties/TextProperties.vue:1159:function updateData(key: string, val: any) {
+src/components/properties/TextProperties.vue:1211:    (kf: any) => kf.frame === currentFrame,
+src/components/properties/TextProperties.vue:1227:  let newValue: any;
+src/components/timeline/EnhancedLayerTrack.vue:356:  () => props.allLayers?.filter((l: any) => l.id !== props.layer.id) || [],
+src/components/timeline/EnhancedLayerTrack.vue:363:  const transformProps: any[] = [];
+src/components/timeline/EnhancedLayerTrack.vue:366:  const add = (path: string, name: string, prop: any) => {
+src/components/timeline/EnhancedLayerTrack.vue:560:    props.layer.properties.forEach((p: any) => {
+src/components/timeline/PropertyTrack.vue:312:  props.property.keyframes?.some((k: any) => k.frame === store.currentFrame),
+src/components/timeline/PropertyTrack.vue:321:  return [...kfs].sort((a: any, b: any) => a.frame - b.frame);
+src/components/timeline/PropertyTrack.vue:325:  return sortedKeyframes.value.some((kf: any) => kf.frame < store.currentFrame);
+src/components/timeline/PropertyTrack.vue:329:  return sortedKeyframes.value.some((kf: any) => kf.frame > store.currentFrame);
+src/components/timeline/PropertyTrack.vue:339:    (kf: any) => selectedKeyframeIds.value.has(kf.id) && kf.interpolation === "bezier"
+src/components/timeline/PropertyTrack.vue:351:    (kf: any) => kf.frame < store.currentFrame,
+src/components/timeline/PropertyTrack.vue:361:    (kf: any) => kf.frame > store.currentFrame,
+src/components/timeline/PropertyTrack.vue:378:function updateValDirect(v: any) {
+src/components/timeline/TimelinePanel.vue:372:function updateLayer(id: string, u: any) {
+src/composables/useAssetHandlers.ts:32:    storedSvg.document.paths.forEach((path: any, index: number) => {
+src/composables/useAssetHandlers.ts:80:    const layer = store.layers.find((l: any) => l.id === selectedLayerIds[0]);
+src/composables/useAssetHandlers.ts:102:  function onEnvironmentUpdate(settings: any) {
+src/composables/useAssetHandlers.ts:113:  async function onEnvironmentLoad(settings: any) {
+src/composables/useCurveEditorCoords.ts:129:export function getNumericValue(value: any): number {
+src/composables/useCurveEditorInteraction.ts:57:  getNumericValue: (value: any) => number;
+src/composables/useCurveEditorInteraction.ts:62:  store: any;
+src/composables/useKeyboardShortcuts.ts:82:  assetStore: any;
+src/composables/useKeyboardShortcuts.ts:1037:        const checkForKeyframes = (obj: any) => {
+src/composables/useShapeDrawing.ts:31:  keyframes: any[];
+src/composables/useShapeDrawing.ts:255:    let group = shapeData.contents.find((c: any) => c.type === "group");
+src/composables/useShapeDrawing.ts:271:    let generator: any;
+src/composables/useSplineInteraction.ts:63:  store: any;
+src/composables/useSplineInteraction.ts:308:    const layer = store.layers.find((l: any) => l.id === layerId.value);
+src/composables/useSplineInteraction.ts:499:      const layer = store.layers.find((l: any) => l.id === layerId.value);
+src/composables/useSplineInteraction.ts:514:        const updates: any = { x: layerPos.x, y: layerPos.y };
+src/composables/useSplineInteraction.ts:531:        const updates: any = { handleIn: { x: layerPos.x, y: layerPos.y } };
+src/composables/useSplineInteraction.ts:542:        const updates: any = { handleOut: { x: layerPos.x, y: layerPos.y } };
+src/composables/useSplineInteraction.ts:571:        const updates: any = { x: newX };
+src/composables/useSplineInteraction.ts:594:        const updates: any = { y: newY };
+src/composables/useSplineInteraction.ts:627:      const layer = store.layers.find((l: any) => l.id === layerId.value);
+src/composables/useSplineInteraction.ts:841:        const layer = store.layers.find((l: any) => l.id === layerId.value);
+src/engine/animation/KeyframeEvaluator.ts:19:  private cache: Map<string, { frame: number; value: any }> = new Map();
+src/engine/animation/KeyframeEvaluator.ts:293:    value: any,
+src/engine/core/SceneManager.ts:285:      const patchChild = (child: any) => {
+src/engine/core/SceneManager.ts:347:    const ensureMethods = (obj: any, depth = 0) => {
+src/engine/layers/ShapeLayer.ts:280:  onApplyEvaluatedState(state: any): void {
+src/engine/TransformControlsManager.ts:126:      (event: any) => {
+src/services/ai/depthEstimation.ts:312:        layers: (parsed.layers || []).map((layer: any) => ({
+src/services/ai/stateSerializer.ts:166:  value: any;
+src/services/ai/stateSerializer.ts:174:  value: any;
+src/services/ai/stateSerializer.ts:526:function serializeLayerData(type: string, data: any): Record<string, any> {
+src/services/ai/toolDefinitions.ts:21:  result?: any;
+src/services/arcLength.ts:330:  pathCommands: any[],
+src/services/comfyui/comfyuiClient.ts:63:  private messageHandlers: Map<string, (data: any) => void> = new Map();
+src/services/comfyui/comfyuiClient.ts:413:  onMessage(type: string, handler: (data: any) => void): void {
+src/services/comfyui/comfyuiClient.ts:424:  private handleWebSocketMessage(data: any): void {
+src/services/comfyui/workflowTemplates.ts:28:  cameraData?: any;
+src/services/comfyui/workflowTemplates.ts:55:  motionData?: any;
+src/services/dataImport.ts:485:): any[] | null {
+src/services/dataImport.ts:502:export function getJSONValue(asset: JSONDataAsset, path: string): any {
+src/services/effectProcessor.ts:291:  [key: string]: any;
+src/services/export/depthRenderer.ts:449:  keyframes: any[],
+src/services/expressions/expressionHelpers.ts:20:export function subtractValues(a: any, b: any): number | number[] {
+src/services/expressions/expressionHelpers.ts:33:export function addValues(a: any, b: any): number | number[] {
+src/services/expressions/expressionHelpers.ts:46:export function scaleValue(v: any, s: number): number | number[] {
+src/services/expressions/expressionHelpers.ts:59:export function lerpValues(a: any, b: any, t: number): number | number[] {
+src/services/expressions/layerContentExpressions.ts:30:  layerData: any,
+src/services/expressions/layerContentExpressions.ts:67:function getTextSourceRect(data: any, includeExtents: boolean): SourceRect {
+src/services/expressions/layerContentExpressions.ts:81:function getShapeSourceRect(data: any, includeExtents: boolean): SourceRect {
+src/services/expressions/layerContentExpressions.ts:93:  paths.forEach((path: any) => {
+src/services/expressions/layerContentExpressions.ts:95:    points.forEach((point: any) => {
+src/services/expressions/layerContentExpressions.ts:131:function getSolidSourceRect(data: any): SourceRect {
+src/services/expressions/layerContentExpressions.ts:146:function getMediaSourceRect(data: any): SourceRect {
+src/services/expressions/layerContentExpressions.ts:166:export function textSource(layerData: any): TextSourceInfo {
+src/services/expressions/layerContentExpressions.ts:199:  effects: any[] | undefined,
+src/services/expressions/layerContentExpressions.ts:203:): any {
+src/services/expressions/layerContentExpressions.ts:206:  const effect = effects.find((e: any) => e.name === effectName);
+src/services/expressions/sesEvaluator.ts:92:export function createExpressionCompartment(ctx: ExpressionContext): any {
+src/services/expressions/sesEvaluator.ts:332:      log: (...args: any[]) => console.log("[Expression]", ...args),
+src/services/expressions/sesEvaluator.ts:333:      warn: (...args: any[]) => console.warn("[Expression]", ...args),
+src/services/expressions/types.ts:136:  fillColor: any;
+src/services/expressions/types.ts:137:  strokeColor: any;
+src/services/gpuEffectDispatcher.ts:643:  ): any {
+src/services/interpolation.ts:557:    const result: any = {
+src/services/jsonValidation.ts:35:  data: any,
+src/services/matteExporter.ts:377:  private buildPathCommands(splineData: SplineData): any[] | null {
+src/services/matteExporter.ts:381:    const pathCommands: any[] = [];
+src/services/modelExport.ts:814:  data: any;
+src/services/particleSystem.ts:1344:    config: any,
+src/services/particleSystem.ts:1443:    config: any,
+src/services/particleSystem.ts:2239:  static deserialize(data: any): ParticleSystem {
+src/services/plugins/PluginManager.ts:59:  getProject(): any;
+src/services/plugins/PluginManager.ts:62:  getLayer(id: string): any;
+src/services/plugins/PluginManager.ts:63:  getComposition(id: string): any;
+src/services/plugins/PluginManager.ts:64:  getAsset(id: string): any;
+src/services/plugins/PluginManager.ts:67:  on(event: PluginEvent, callback: (...args: any[]) => void): () => void;
+src/services/plugins/PluginManager.ts:68:  off(event: PluginEvent, callback: (...args: any[]) => void): void;
+src/services/plugins/PluginManager.ts:92:    debug(...args: any[]): void;
+src/services/plugins/PluginManager.ts:93:    info(...args: any[]): void;
+src/services/plugins/PluginManager.ts:94:    warn(...args: any[]): void;
+src/services/plugins/PluginManager.ts:95:    error(...args: any[]): void;
+src/services/plugins/PluginManager.ts:111:  component: any; // Vue component
+src/services/plugins/PluginManager.ts:130:  action: (contextData: any) => void;
+src/services/plugins/PluginManager.ts:149:  defaultValue: any;
+src/services/plugins/PluginManager.ts:153:  options?: { label: string; value: any }[];
+src/services/plugins/PluginManager.ts:161:  export: (frames: ImageData[], options: any) => Promise<Blob>;
+src/services/plugins/PluginManager.ts:483:  emit(event: PluginEvent, ...args: any[]): void {
+src/services/preprocessorService.ts:44:  default: any;
+src/services/projectMigration.ts:33:  [key: string]: any;
+src/services/projectMigration.ts:53:export type MigrationFunction = (project: any) => any;
+src/services/projectMigration.ts:76:    migrate: (project: any) => {
+src/services/projectMigration.ts:141:export function getProjectVersion(project: any): number {
+src/services/projectMigration.ts:153:export function needsMigration(project: any): boolean {
+src/services/projectMigration.ts:180:export function migrateProject(project: any): MigrationResult {
+src/services/projectMigration.ts:268:export function stampProjectVersion(project: any): any {
+src/services/templateBuilder.ts:392:export function getPropertyValue(layer: Layer, propertyPath: string): any {
+src/services/templateBuilder.ts:394:  let current: any = layer;
+src/services/templateBuilder.ts:422:  value: any,
+src/services/templateBuilder.ts:425:  let current: any = layer;
+src/services/templateBuilder.ts:470:): any {
+src/services/templateBuilder.ts:565:function serializeComposition(composition: Composition): any {
+src/services/templateBuilder.ts:582:): any[] {
+src/services/templateBuilder.ts:601:  const collectedAssets: any[] = [];
+src/services/templateBuilder.ts:624:): any[] {
+src/services/templateBuilder.ts:625:  const fonts: any[] = [];
+src/stores/actions/effectActions.ts:75:  value: any,
+src/stores/actions/effectActions.ts:213:): any {
+src/stores/compositorStore.ts:2142:      value: any,
+src/stores/keyframeStore/index.ts:235:      newValue: any,
+src/stores/keyframeStore/index.ts:245:      updates: { frame?: number; value?: any },
+src/stores/keyframeStore/index.ts:313:      value: any,
+src/stores/keyframeStore/property.ts:23:  value: any,
+src/types/assets.ts:149:  sourceData?: any;
+src/types/dataAsset.ts:36:  sourceData: any; // Parsed JSON object
+src/types/dataAsset.ts:68:  sourceData: any;
+src/types/dataAsset.ts:123:  sourceData?: any;
+src/types/dataAsset.ts:178:  [key: string]: any; // Additional properties
+src/types/effects.ts:38:  value: any;
+src/types/effects.ts:39:  defaultValue: any;
+src/types/effects.ts:43:  options?: Array<{ label: string; value: any }>;
+src/types/effects.ts:3200:      value: any;
+src/types/project.ts:185:  sourceData?: any;
+src/types/templateBuilder.ts:135:  defaultValue?: any;
+src/types/templateBuilder.ts:258:  composition: any; // Serialized composition
+src/types/templateBuilder.ts:361:  let defaultValue: any;
+src/utils/logger.ts:93:    debug(message: string, ...args: any[]): void {
+src/utils/logger.ts:99:    info(message: string, ...args: any[]): void {
+src/utils/logger.ts:105:    warn(message: string, ...args: any[]): void {
+src/utils/logger.ts:111:    error(message: string, ...args: any[]): void {
+src/utils/logger.ts:120:    log(level: LogLevel, message: string, ...args: any[]): void {
+src/utils/logger.ts:155:    table(data: any): void {
+src/workers/expressionWorker.ts:14:let Compartment: any = null;
+src/workers/expressionWorker.ts:15:let harden: any = null;
+src/__mocks__/three.ts:291:  index: any = null;
+src/__mocks__/three.ts:293:  setAttribute(_name: string, _attr: any) {
+src/__mocks__/three.ts:328:  map: any = null;
+src/__mocks__/three.ts:334:  map: any = null;
+src/__mocks__/three.ts:351:  map: any = null;
+src/__mocks__/three.ts:474:  image: any = null;
+src/__mocks__/three.ts:505:  setRenderTarget(_target: any) {}
+src/__mocks__/three.ts:507:    _target: any,
+src/__mocks__/three.ts:512:    _buffer: any,
+src/__mocks__/three.ts:524:  constructor(width: number, height: number, _options?: any) {
+src/__mocks__/three.ts:628:  intersectObjects(_objects: Object3D[], _recursive?: boolean): any[] {
+src/__tests__/export/modelExport.test.ts:317:  ): (layer: any, frame: number) => { x: number; y: number } {
+src/__tests__/export/modelExport.test.ts:318:    return (_layer: any, frame: number) => positions[frame] || { x: 0, y: 0 };
+src/__tests__/integration/store-engine.integration.test.ts:380:      expect(layers.some((l: any) => l.type === 'solid')).toBe(true);
+src/__tests__/integration/store-engine.integration.test.ts:381:      expect(layers.some((l: any) => l.type === 'text')).toBe(true);
+src/__tests__/integration/store-engine.integration.test.ts:382:      expect(layers.some((l: any) => l.type === 'shape')).toBe(true);
+src/__tests__/integration/store-engine.integration.test.ts:399:      const savedLayer = parsed.compositions[parsed.mainCompositionId].layers.find((l: any) => l.id === layer.id);
+src/__tests__/integration/store-engine.integration.test.ts:417:      const savedLayer = parsed.compositions[store.activeCompositionId].layers.find((l: any) => l.id === layer.id);
+src/__tests__/security/jsonSanitizer.test.ts:236:      const data: any = { safe: "value" };
+src/__tests__/services/serialization.property.test.ts:36:function normalizeForJson(obj: any): any {
+src/__tests__/services/serialization.property.test.ts:50:    const result: any = {};
+src/__tests__/services/serialization.property.test.ts:79:function deepEqual(a: any, b: any, path = ''): { equal: boolean; diff?: string } {
+src/__tests__/services/serialization.property.test.ts:702:    let nested: any = { value: 42 };
+src/__tests__/services/serialization.property.test.ts:710:    let current: any = result;
+src/__tests__/services/serialization.property.test.ts:748:    const circular: any = { name: 'test' };
+src/__tests__/stores/projectActions.test.ts:101:function createMockLayer(id: string, type: string = "solid", data: any = {}): Layer {
+src/__tests__/tutorials/tutorial-01-fundamentals.test.ts:7836:        const compNames = Object.values(parsed.compositions).map((c: any) => c.name);
+src/__tests__/types/project.test.ts:46:function createMinimalLayer(type: LayerType, data: any = null): Layer {
+src/__tests__/types/shapes.property.test.ts:47:function verifyAnimatableProperty(prop: any, expectedType?: string) {
+src/__tests__/_deprecated/integration/layer-creation-pipeline.test.ts:177:      keypoints.forEach((kp: any, _idx: number) => {
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:244:    const createNestedLayer = (depth: number): any => {
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:455:    const layer: any = {
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:730:    const keyframes2: any[] = []; // Empty keyframes
+src/__tests__/_deprecated/services/export/attackSurface.test.ts:950:    const comp: any = {
+src/__tests__/_deprecated/_archived/tutorials/tutorial-01-fundamentals.test.ts:7819:        const compNames = Object.values(parsed.compositions).map((c: any) => c.name);

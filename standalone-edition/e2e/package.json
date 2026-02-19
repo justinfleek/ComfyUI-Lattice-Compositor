@@ -1,0 +1,24 @@
+{
+  "name": "lattice-e2e",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui",
+    "test:headed": "PUPPETEER_HEADLESS=false vitest run",
+    "test:debug": "PUPPETEER_HEADLESS=false PUPPETEER_SLOWMO=100 vitest run",
+    "test:property": "vitest run --testNamePattern=property",
+    "test:integration": "vitest run --testNamePattern=integration",
+    "test:memory": "node --expose-gc node_modules/vitest/vitest.mjs run --testNamePattern=memory",
+    "serve": "miniserve --spa --index index.html --port 8080 --interfaces 127.0.0.1 ../lattice-core/purescript/public"
+  },
+  "devDependencies": {
+    "puppeteer": "^24.0.0",
+    "vitest": "^3.0.0",
+    "pixelmatch": "^6.0.0",
+    "pngjs": "^7.0.0",
+    "fast-check": "^4.5.3"
+  }
+}

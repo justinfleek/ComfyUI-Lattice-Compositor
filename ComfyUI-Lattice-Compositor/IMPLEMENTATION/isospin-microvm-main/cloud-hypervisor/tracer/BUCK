@@ -1,0 +1,14 @@
+rust_library(
+    name = "tracer",
+    srcs = glob(["src/**/*.rs"]),
+    crate = "tracer",
+    crate_root = "src/lib.rs",
+    edition = "2024",
+    deps = [
+        "//third-party/rust:libc",
+        "//third-party/rust:log",
+        "//third-party/rust:serde",
+        "//third-party/rust:serde_json",
+    ],
+    visibility = ["PUBLIC"],
+)

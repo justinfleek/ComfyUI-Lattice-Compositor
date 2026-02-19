@@ -1,0 +1,177 @@
+# INTERNAL (Components) Issues - Fix with typeGuards.ts
+
+src/components/canvas/MeshWarpPinEditor.vue:206:  return (layer.data as any)?.warpPins ?? (layer.data as any)?.puppetPins ?? [];
+src/components/canvas/MeshWarpPinEditor.vue:352:    (layer.data as any)?.warpPins ?? (layer.data as any)?.puppetPins ?? [];
+src/components/canvas/MeshWarpPinEditor.vue:355:      ...(layer.data as any),
+src/components/canvas/MeshWarpPinEditor.vue:370:    (layer.data as any)?.warpPins ?? (layer.data as any)?.puppetPins ?? [];
+src/components/canvas/MeshWarpPinEditor.vue:373:      ...(layer.data as any),
+src/components/canvas/MeshWarpPinEditor.vue:391:    (layer.data as any)?.warpPins ?? (layer.data as any)?.puppetPins ?? [];
+src/components/canvas/MeshWarpPinEditor.vue:407:      ...(layer.data as any),
+src/components/canvas/MeshWarpPinEditor.vue:413:function updatePinProperty(pinId: string, property: string, value: any): void {
+src/components/canvas/MeshWarpPinEditor.vue:420:    (layer.data as any)?.warpPins ?? (layer.data as any)?.puppetPins ?? [];
+src/components/canvas/MeshWarpPinEditor.vue:433:      ...(layer.data as any),
+src/components/canvas/SplineEditor.vue:344:  const getVal = (prop: any, defaultVal: any) => {
+src/components/canvas/SplineEditor.vue:550:  visibleControlPoints: visibleControlPoints as any,
+src/components/canvas/SplineEditor.vue:552:  overlayStyle: overlayStyle as any,
+src/components/canvas/ThreeCanvas.vue:1389:            (layer.transform.position?.value as any)?.z ??
+src/components/canvas/ThreeCanvas.vue:1450:        z: transform.scale.z ?? (layer.transform.scale?.value as any)?.z ?? 100,
+src/components/canvas/ThreeCanvas.vue:562:              (layer.data as any).assetId = item.id;
+src/components/canvas/ThreeCanvas.vue:563:              (layer.data as any).source = asset.data;
+src/components/canvas/ThreeCanvas.vue:577:            (layer.data as any).assetId = item.id;
+src/components/canvas/ThreeCanvas.vue:856:          l.type === "camera" && (l.data as any)?.cameraId === activeCameraId,
+src/components/curve-editor/CurveEditorCanvas.vue:800:function formatValue(value: any): string {
+src/components/curve-editor/CurveEditor.vue:483:function getNumericValue(value: any): number {
+src/components/dialogs/DecomposeDialog.vue:355:      layer.data as unknown as import("@/types/project").SolidLayerData;
+src/components/dialogs/DecomposeDialog.vue:413:        (layer.data as any).source = decomposed.image;
+src/components/dialogs/DecomposeDialog.vue:423:      (nestedLayer.data as any).compositionId = nestedComp.id;
+src/components/dialogs/DecomposeDialog.vue:431:        (layer.data as any).source = decomposed.image;
+src/components/dialogs/ExportDialog.vue:433:  const engine = (window as any).__latticeEngine;
+src/components/dialogs/ExportDialog.vue:533:  const engine = (window as any).__latticeEngine;
+src/components/dialogs/FrameInterpolationDialog.vue:303:  const engine = (window as any).__latticeEngine;
+src/components/dialogs/MotionSketchPanel.vue:201:  apply: [keyframes: any[]];
+src/components/dialogs/PathSuggestionDialog.vue:178:  (e: "accept", result: { keyframes: any[]; splines: any[] }): void;
+src/components/dialogs/PathSuggestionDialog.vue:483:          intent: intent as any,
+src/components/dialogs/PathSuggestionDialog.vue:512:    keyframes: [] as any[],
+src/components/dialogs/PathSuggestionDialog.vue:513:    splines: [] as any[],
+src/components/dialogs/TemplateBuilderDialog.vue:498:  type: any;
+src/components/dialogs/TemplateBuilderDialog.vue:737:function setNestedProperty(obj: any, path: string, value: any) {
+src/components/dialogs/VectorizeDialog.vue:338:    const layerData = layer.data as any;
+src/components/dialogs/VectorizeDialog.vue:401:      const layerData = layer.data as any;
+src/components/export/ComfyUIExportDialog.vue:35:  cameraKeyframes: any[];
+src/components/export/ComfyUIExportDialog.vue:44:  exported: [result: any];
+src/components/layout/LeftSidebar.vue:67:  environmentUpdate: [settings: any];
+src/components/layout/LeftSidebar.vue:68:  environmentLoad: [settings: any];
+src/components/layout/RightSidebar.vue:165:  engine: any;
+src/components/layout/WorkspaceLayout.vue:1013:function onPathSuggestionPreview(suggestions: any[]) {
+src/components/layout/WorkspaceLayout.vue:1018:function onPathSuggestionAccept(result: { keyframes: any[]; splines: any[] }) {
+src/components/layout/WorkspaceLayout.vue:1050:      const controlPoints = (spline.points || []).map((p: any, i: number) => ({
+src/components/layout/WorkspaceLayout.vue:1138:function handlePreferencesSave(preferences: any) {
+src/components/layout/WorkspaceLayout.vue:1162:    const mem = (performance as any).memory;
+src/components/layout/WorkspaceLayout.vue:453:  currentTool: currentTool as unknown as Ref<string>,
+src/components/layout/WorkspaceLayout.vue:454:  leftTab: leftTab as unknown as Ref<string>,
+src/components/layout/WorkspaceLayout.vue:659:      window.AudioContext || (window as any).webkitAudioContext
+src/components/layout/WorkspaceLayout.vue:690:function onComfyUIExportComplete(result: any) {
+src/components/layout/WorkspaceLayout.vue:772:    const transform = layer.transform as any;
+src/components/layout/WorkspaceLayout.vue:785:        (a: any, b: any) => a.frame - b.frame,
+src/components/layout/WorkspaceLayout.vue:879:    const transform = layer.transform as any;
+src/components/panels/AIChatPanel.vue:209:    (agent as any).config.model = selectedModel.value;
+src/components/panels/AssetsPanel.vue:522:    assetStore.registerPrimitiveMesh(selectedPrimitive.value as any);
+src/components/panels/AssetsPanel.vue:703:function onEnvironmentUpdate(settings: any) {
+src/components/panels/AssetsPanel.vue:725:  (e: "environment-update", settings: any): void;
+src/components/panels/AssetsPanel.vue:726:  (e: "environment-load", settings: any): void;
+src/components/panels/AudioPanel.vue:1551:      } as any;
+src/components/panels/AudioPanel.vue:849:    const splineData = splineLayer.data as any;
+src/components/panels/EffectControlsPanel.vue:291:function removeEffect(effect: any) {
+src/components/panels/EffectControlsPanel.vue:295:function toggleEffect(effect: any) {
+src/components/panels/EffectControlsPanel.vue:299:function toggleExpand(effect: any) {
+src/components/panels/EffectControlsPanel.vue:303:function updateParam(effectId: string, paramKey: string, value: any) {
+src/components/panels/EffectControlsPanel.vue:315:  const effect = layer.value.effects.find((e: any) => e.id === effectId);
+src/components/panels/EffectControlsPanel.vue:324:function formatColor(val: any) {
+src/components/panels/EffectControlsPanel.vue:339:  const effect = layer.value.effects.find((e: any) => e.id === effectId);
+src/components/panels/ExposedPropertyControl.vue:264:function updateValue(value: any) {
+src/components/panels/ExposedPropertyControl.vue:278:function colorToHex(color: any): string {
+src/components/panels/LayerDecompositionPanel.vue:349:      store as any, // Type cast for simplified store interface
+src/components/panels/LayerDecompositionPanel.vue:394:function getLayerZ(layer: any): number {
+src/components/panels/Model3DProperties.vue:296:const layerData = computed(() => layer.value?.data as any);
+src/components/panels/PropertiesPanel.vue:1119:  (audioPathAnimation.value as any)[key] = value;
+src/components/panels/PropertiesPanel.vue:1120:  (selectedLayer.value.audioPathAnimation as any)[key] = value;
+src/components/panels/PropertiesPanel.vue:61:                @link="(target: any) => onPropertyLink('transform.position.x', target)"
+src/components/preview/HDPreviewWindow.vue:119:  engine?: any;
+src/components/properties/CameraProperties.vue:652:function update(key: keyof CameraLayerData | string, value: any) {
+src/components/properties/CameraProperties.vue:681:function updatePathConfig(key: keyof CameraPathFollowing, value: any) {
+src/components/properties/CameraProperties.vue:694:function updateShakeConfig(key: keyof CameraShakeData, value: any) {
+src/components/properties/CameraProperties.vue:713:function updateRackFocusConfig(key: keyof CameraRackFocusData, value: any) {
+src/components/properties/CameraProperties.vue:798:  const animProp = (cameraData.value as any)[dataKey] as
+src/components/properties/CameraProperties.vue:939:  const animProp = (cameraData.value as any)[dataKey] as
+src/components/properties/CameraProperties.vue:955:  let animProp = (cameraData.value as any)[dataKey] as
+src/components/properties/CameraProperties.vue:978:  let animProp = (cameraData.value as any)[dataKey] as
+src/components/properties/DepthflowProperties.vue:690:function updateConfig(key: keyof DepthflowLayerData, value: any): void {
+src/components/properties/DepthflowProperties.vue:694:function updateDepthflowConfig(key: keyof DepthflowConfig, value: any): void {
+src/components/properties/DepthflowProperties.vue:706:  value: any,
+src/components/properties/ExpressionInput.vue:314:      const params = props.currentExpression.params as any;
+src/components/properties/LightProperties.vue:171:    (props.layer.data as unknown as LightData) || {
+src/components/properties/LightProperties.vue:187:function update(key: keyof LightData, value: any) {
+src/components/properties/LightProperties.vue:192:    } as unknown as typeof props.layer.data,
+src/components/properties/particle/ParticleAudioBindingsSection.vue:191:  (e: "update", id: string, key: keyof AudioBindingConfig, value: any): void;
+src/components/properties/particle/ParticleCollisionSection.vue:185:  (e: "update", key: keyof CollisionConfig, value: any): void;
+src/components/properties/particle/ParticleCollisionSection.vue:188:function update(key: keyof CollisionConfig, value: any): void {
+src/components/properties/particle/ParticleFlockingSection.vue:150:  (e: "update", key: keyof FlockingConfig, value: any): void;
+src/components/properties/particle/ParticleFlockingSection.vue:153:function update(key: keyof FlockingConfig, value: any): void {
+src/components/properties/particle/ParticleForceFieldsSection.vue:236:  (e: "updateWell", id: string, key: keyof GravityWellConfig, value: any): void;
+src/components/properties/particle/ParticleForceFieldsSection.vue:239:  (e: "updateVortex", id: string, key: keyof VortexConfig, value: any): void;
+src/components/properties/particle/ParticleModulationsSection.vue:105:    value: any,
+src/components/properties/particle/ParticleRenderSection.vue:324:  (e: "update", key: keyof ParticleRenderOptions, value: any): void;
+src/components/properties/particle/ParticleRenderSection.vue:325:  (e: "updateConnection", key: keyof ConnectionRenderConfig, value: any): void;
+src/components/properties/particle/ParticleRenderSection.vue:328:function update(key: keyof ParticleRenderOptions, value: any): void {
+src/components/properties/particle/ParticleSubEmittersSection.vue:149:  (e: "update", id: string, key: keyof SubEmitterConfig, value: any): void;
+src/components/properties/particle/ParticleTurbulenceSection.vue:88:  (e: "update", id: string, key: keyof TurbulenceFieldConfig, value: any): void;
+src/components/properties/particle/ParticleVisualizationSection.vue:84:  (e: "update", key: keyof VisualizationConfig, value: any): void;
+src/components/properties/particle/ParticleVisualizationSection.vue:87:function update(key: keyof VisualizationConfig, value: any): void {
+src/components/properties/ParticleProperties.vue:1453:  value: any,
+src/components/properties/ParticleProperties.vue:1463:  value: any,
+src/components/properties/ParticleProperties.vue:1480:  value: any,
+src/components/properties/ParticleProperties.vue:1565:  value: any,
+src/components/properties/ParticleProperties.vue:1593:function updateVortex(id: string, key: keyof VortexConfig, value: any): void {
+src/components/properties/ParticleProperties.vue:1622:  value: any,
+src/components/properties/ParticleProperties.vue:1648:  value: any,
+src/components/properties/ParticleProperties.vue:1658:  value: any,
+src/components/properties/ParticleProperties.vue:1672:  value: any,
+src/components/properties/ParticleProperties.vue:1698:function updateFlocking(key: keyof FlockingConfig, value: any): void {
+src/components/properties/ParticleProperties.vue:1705:function updateCollision(key: keyof CollisionConfig, value: any): void {
+src/components/properties/ParticleProperties.vue:1722:  value: any,
+src/components/properties/ParticleProperties.vue:1754:  value: any,
+src/components/properties/ParticleProperties.vue:1772:  value: any,
+src/components/properties/ParticleProperties.vue:2003:    const engine = (window as any).__latticeEngine;
+src/components/properties/ParticleProperties.vue:2024:    const particleLifetimes = new Map<number, { birth: number; death: number; keyframes: any[] }>();
+src/components/properties/ParticleProperties.vue:2098:  const engine = (window as any).__latticeEngine;
+src/components/properties/ParticleProperties.vue:2103:    (particleLayer as any).clearCache();
+src/components/properties/PathProperties.vue:251:function update(key: keyof PathLayerData | string, value: any) {
+src/components/properties/PhysicsProperties.vue:510:  const data = (layer.data as any)?.physics;
+src/components/properties/shape-editors/StrokeEditor.vue:219:function updateMeta(key: string, value: any) {
+src/components/properties/shape-editors/StrokeEditor.vue:226:  (updated as any)[prop] = { ...(updated as any)[prop], value };
+src/components/properties/shape-editors/StrokeEditor.vue:258:  const animProp = (updated as any)[prop];
+src/components/properties/shape-editors/StrokeEditor.vue:261:  const hasKf = animProp.keyframes.some((k: any) => k.frame === frame);
+src/components/properties/shape-editors/StrokeEditor.vue:264:      (k: any) => k.frame !== frame,
+src/components/properties/shape-editors/WigglePathsEditor.vue:60:function updateMeta(key: string, value: any) {
+src/components/properties/shape-editors/ZigZagEditor.vue:38:function updateMeta(key: string, value: any) {
+src/components/properties/ShapeProperties.vue:624:function update(key: keyof SplineData | string, value: any) {
+src/components/properties/ShapeProperties.vue:760:    const currentValue = (shapeData.value as any)[dataKey] ?? 0;
+src/components/properties/ShapeProperties.vue:936:  const prop = (effect as any)[propName] as
+src/components/properties/ShapeProperties.vue:949:  const prop = (effect as any)[propName] as
+src/components/properties/ShapeProperties.vue:961:  const prop = (effect as any)[propName];
+src/components/properties/ShapeProperties.vue:965:    (effect as any)[propName] = value;
+src/components/properties/ShapeProperties.vue:971:function updateEffectMeta(effectId: string, key: string, value: any) {
+src/components/properties/ShapeProperties.vue:976:  (effect as any)[key] = value;
+src/components/properties/ShapeProperties.vue:985:  const prop = (effect as any)[propName] as
+src/components/properties/TextProperties.vue:1019:): any {
+src/components/properties/TextProperties.vue:1053:  value: any,
+src/components/properties/TextProperties.vue:1094:  value: any,
+src/components/properties/TextProperties.vue:1143:  return props.layer.properties?.find((p: any) => p.name === name);
+src/components/properties/TextProperties.vue:1159:function updateData(key: string, val: any) {
+src/components/properties/TextProperties.vue:1211:    (kf: any) => kf.frame === currentFrame,
+src/components/properties/TextProperties.vue:1227:  let newValue: any;
+src/components/properties/TextProperties.vue:842:const props = defineProps<{ layer: any }>();
+src/components/properties/TextProperties.vue:950:  value: any,
+src/components/properties/TextProperties.vue:979:  value: any,
+src/components/timeline/EnhancedLayerTrack.vue:356:  () => props.allLayers?.filter((l: any) => l.id !== props.layer.id) || [],
+src/components/timeline/EnhancedLayerTrack.vue:363:  const transformProps: any[] = [];
+src/components/timeline/EnhancedLayerTrack.vue:366:  const add = (path: string, name: string, prop: any) => {
+src/components/timeline/EnhancedLayerTrack.vue:501:    const splineData = props.layer.data as any;
+src/components/timeline/EnhancedLayerTrack.vue:560:    props.layer.properties.forEach((p: any) => {
+src/components/timeline/LayerTrack.vue:124:    const prop = (props.layer.transform as any)[propName];
+src/components/timeline/PropertyTrack.vue:312:  props.property.keyframes?.some((k: any) => k.frame === store.currentFrame),
+src/components/timeline/PropertyTrack.vue:321:  return [...kfs].sort((a: any, b: any) => a.frame - b.frame);
+src/components/timeline/PropertyTrack.vue:325:  return sortedKeyframes.value.some((kf: any) => kf.frame < store.currentFrame);
+src/components/timeline/PropertyTrack.vue:329:  return sortedKeyframes.value.some((kf: any) => kf.frame > store.currentFrame);
+src/components/timeline/PropertyTrack.vue:339:    (kf: any) => selectedKeyframeIds.value.has(kf.id) && kf.interpolation === "bezier"
+src/components/timeline/PropertyTrack.vue:351:    (kf: any) => kf.frame < store.currentFrame,
+src/components/timeline/PropertyTrack.vue:361:    (kf: any) => kf.frame > store.currentFrame,
+src/components/timeline/PropertyTrack.vue:378:function updateValDirect(v: any) {
+src/components/timeline/TimelinePanel.vue:350:  else newLayer = store.createLayer(type as any);
+src/components/timeline/TimelinePanel.vue:372:function updateLayer(id: string, u: any) {
+src/components/timeline/TimelinePanel.vue:424:        (layer.data as any).compositionId = item.id;
+src/components/timeline/TimelinePanel.vue:438:            (layer.data as any).assetId = item.id;
+src/components/timeline/TimelinePanel.vue:469:              (layer.data as any).assetId = item.id;
+src/components/timeline/TimelinePanel.vue:470:              (layer.data as any).source = asset.data;
+src/components/timeline/TimelinePanel.vue:511:                (layer.data as any).assetId = item.id;
+src/components/timeline/TimelinePanel.vue:512:                (layer.data as any).source = asset.data;

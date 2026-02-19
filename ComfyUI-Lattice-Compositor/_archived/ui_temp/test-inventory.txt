@@ -1,0 +1,2641 @@
+
+[1m[46m RUN [49m[22m [36mv4.0.15 [39m[90m/mnt/c/Users/justi/desktop/compositor/ui[39m
+
+ [32m✓[39m src/__tests__/types/meshWarp.test.ts[2m > [22mcreateDefaultWarpPin - new pin types[2m > [22mcreates position pin correctly[32m 1[2mms[22m[39m
+ [32m✓[39m src/__tests__/types/meshWarp.test.ts[2m > [22mcreateDefaultWarpPin - new pin types[2m > [22mcreates starch pin correctly[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/types/meshWarp.test.ts[2m > [22mcreateDefaultWarpPin - new pin types[2m > [22mcreates rotation pin correctly[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/types/meshWarp.test.ts[2m > [22mcreateDefaultWarpPin - new pin types[2m > [22mcreates overlap pin correctly[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/types/meshWarp.test.ts[2m > [22mcreateDefaultWarpPin - new pin types[2m > [22mcreates bend pin correctly[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/types/meshWarp.test.ts[2m > [22mcreateDefaultWarpPin - new pin types[2m > [22mcreates advanced pin correctly[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/types/meshWarp.test.ts[2m > [22mcreateDefaultWarpPin - new pin types[2m > [22moverlap pin has animatable inFront property[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/types/meshWarp.test.ts[2m > [22mcreateDefaultWarpPin - new pin types[2m > [22mpins have descriptive names based on type[32m 0[2mms[22m[39m
+[90mstdout[2m | src/__tests__/services/alphaToMesh.test.ts[2m > [22m[2mgenerateMeshFromAlpha[2m > [22m[2mbasic functionality[2m > [22m[2mgenerates mesh from fully opaque image
+[22m[39m[Lattice] [AlphaToMesh] Generating mesh from alpha: 100x100, target triangles: 200
+[Lattice] [AlphaToMesh] Mesh generated: 103 vertices, 126 triangles
+
+[90mstdout[2m | src/__tests__/services/alphaToMesh.test.ts[2m > [22m[2mgenerateMeshFromAlpha[2m > [22m[2mbasic functionality[2m > [22m[2mgenerates mesh from image with circular alpha
+[22m[39m[Lattice] [AlphaToMesh] Generating mesh from alpha: 100x100, target triangles: 200
+[Lattice] [AlphaToMesh] Mesh generated: 103 vertices, 158 triangles
+
+[90mstdout[2m | src/__tests__/services/alphaToMesh.test.ts[2m > [22m[2mgenerateMeshFromAlpha[2m > [22m[2mbasic functionality[2m > [22m[2mhandles completely transparent image with fallback mesh
+[22m[39m[Lattice] [AlphaToMesh] Generating mesh from alpha: 100x100, target triangles: 200
+
+[90mstderr[2m | src/__tests__/services/alphaToMesh.test.ts[2m > [22m[2mgenerateMeshFromAlpha[2m > [22m[2mbasic functionality[2m > [22m[2mhandles completely transparent image with fallback mesh
+[22m[39m[Lattice] [AlphaToMesh] No alpha content found, creating full-image mesh
+
+[90mstdout[2m | src/__tests__/services/alphaToMesh.test.ts[2m > [22m[2mgenerateMeshFromAlpha[2m > [22m[2mbasic functionality[2m > [22m[2mhandles image with partial transparency threshold
+[22m[39m[Lattice] [AlphaToMesh] Generating mesh from alpha: 100x100, target triangles: 200
+[Lattice] [AlphaToMesh] Mesh generated: 103 vertices, 150 triangles
+
+[90mstdout[2m | src/__tests__/services/alphaToMesh.test.ts[2m > [22m[2mgenerateMeshFromAlpha[2m > [22m[2moptions[2m > [22m[2mrespects triangleCount option for density
+[22m[39m[Lattice] [AlphaToMesh] Generating mesh from alpha: 200x200, target triangles: 50
+[Lattice] [AlphaToMesh] Mesh generated: 160 vertices, 156 triangles
+[Lattice] [AlphaToMesh] Generating mesh from alpha: 200x200, target triangles: 500
+[Lattice] [AlphaToMesh] Mesh generated: 253 vertices, 342 triangles
+
+[90mstdout[2m | src/__tests__/services/alphaToMesh.test.ts[2m > [22m[2mgenerateMeshFromAlpha[2m > [22m[2moptions[2m > [22m[2mrespects expansion option
+[22m[39m[Lattice] [AlphaToMesh] Generating mesh from alpha: 100x100, target triangles: 200
+[Lattice] [AlphaToMesh] Mesh generated: 103 vertices, 188 triangles
+[Lattice] [AlphaToMesh] Generating mesh from alpha: 100x100, target triangles: 200
+[Lattice] [AlphaToMesh] Mesh generated: 103 vertices, 188 triangles
+
+[90mstdout[2m | src/__tests__/services/alphaToMesh.test.ts[2m > [22m[2mgenerateMeshFromAlpha[2m > [22m[2moptions[2m > [22m[2mrespects alphaThreshold option
+[22m[39m[Lattice] [AlphaToMesh] Generating mesh from alpha: 100x100, target triangles: 200
+[Lattice] [AlphaToMesh] Mesh generated: 103 vertices, 134 triangles
+[Lattice] [AlphaToMesh] Generating mesh from alpha: 100x100, target triangles: 200
+[Lattice] [AlphaToMesh] Mesh generated: 103 vertices, 158 triangles
+
+[90mstdout[2m | src/__tests__/services/alphaToMesh.test.ts[2m > [22m[2mgenerateMeshFromAlpha[2m > [22m[2moptions[2m > [22m[2mrespects minBoundarySpacing option
+[22m[39m[Lattice] [AlphaToMesh] Generating mesh from alpha: 200x200, target triangles: 200
+[Lattice] [AlphaToMesh] Mesh generated: 398 vertices, 394 triangles
+[Lattice] [AlphaToMesh] Generating mesh from alpha: 200x200, target triangles: 200
+[Lattice] [AlphaToMesh] Mesh generated: 103 vertices, 166 triangles
+
+[90mstdout[2m | src/__tests__/services/alphaToMesh.test.ts[2m > [22m[2mgenerateMeshFromAlpha[2m > [22m[2moutput format[2m > [22m[2mreturns proper Float32Array for vertices
+[22m[39m[Lattice] [AlphaToMesh] Generating mesh from alpha: 50x50, target triangles: 200
+[Lattice] [AlphaToMesh] Mesh generated: 103 vertices, 166 triangles
+
+[90mstdout[2m | src/__tests__/services/alphaToMesh.test.ts[2m > [22m[2mgenerateMeshFromAlpha[2m > [22m[2moutput format[2m > [22m[2mreturns proper Uint32Array for triangles
+[22m[39m[Lattice] [AlphaToMesh] Generating mesh from alpha: 50x50, target triangles: 200
+[Lattice] [AlphaToMesh] Mesh generated: 103 vertices, 166 triangles
+
+[90mstdout[2m | src/__tests__/services/alphaToMesh.test.ts[2m > [22m[2mgenerateMeshFromAlpha[2m > [22m[2moutput format[2m > [22m[2mreturns accurate bounds
+[22m[39m[Lattice] [AlphaToMesh] Generating mesh from alpha: 100x100, target triangles: 200
+[Lattice] [AlphaToMesh] Mesh generated: 103 vertices, 166 triangles
+
+[90mstdout[2m | src/__tests__/services/alphaToMesh.test.ts[2m > [22m[2mgenerateMeshFromAlpha[2m > [22m[2medge cases[2m > [22m[2mhandles very small image with appropriate mesh size
+[22m[39m[Lattice] [AlphaToMesh] Generating mesh from alpha: 5x5, target triangles: 200
+[Lattice] [AlphaToMesh] Mesh generated: 102 vertices, 190 triangles
+
+[90mstdout[2m | src/__tests__/services/alphaToMesh.test.ts[2m > [22m[2mgenerateMeshFromAlpha[2m > [22m[2medge cases[2m > [22m[2mhandles single pixel alpha with fallback to full-image mesh
+[22m[39m[Lattice] [AlphaToMesh] Generating mesh from alpha: 50x50, target triangles: 200
+
+[90mstderr[2m | src/__tests__/services/alphaToMesh.test.ts[2m > [22m[2mgenerateMeshFromAlpha[2m > [22m[2medge cases[2m > [22m[2mhandles single pixel alpha with fallback to full-image mesh
+[22m[39m[Lattice] [AlphaToMesh] No alpha content found, creating full-image mesh
+
+[90mstdout[2m | src/__tests__/services/alphaToMesh.test.ts[2m > [22m[2mgenerateMeshFromAlpha[2m > [22m[2medge cases[2m > [22m[2mhandles diagonal line with bounds covering the line
+[22m[39m[Lattice] [AlphaToMesh] Generating mesh from alpha: 100x100, target triangles: 200
+[Lattice] [AlphaToMesh] Mesh generated: 56 vertices, 61 triangles
+
+[90mstdout[2m | src/__tests__/services/alphaToMesh.test.ts[2m > [22m[2mgenerateMeshFromAlpha[2m > [22m[2medge cases[2m > [22m[2mhandles complex shape (ring) covering outer boundary
+[22m[39m[Lattice] [AlphaToMesh] Generating mesh from alpha: 100x100, target triangles: 200
+[Lattice] [AlphaToMesh] Mesh generated: 98 vertices, 148 triangles
+
+[90mstdout[2m | src/__tests__/services/alphaToMesh.test.ts[2m > [22m[2mgenerateMeshFromAlpha[2m > [22m[2medge cases[2m > [22m[2mhandles non-square image with correct aspect ratio
+[22m[39m[Lattice] [AlphaToMesh] Generating mesh from alpha: 200x50, target triangles: 200
+[Lattice] [AlphaToMesh] Mesh generated: 103 vertices, 102 triangles
+
+[90mstdout[2m | src/__tests__/services/alphaToMesh.test.ts[2m > [22m[2mgenerateMeshFromAlpha[2m > [22m[2mtriangulation quality[2m > [22m[2mproduces valid triangles (no degenerate triangles)
+[22m[39m[Lattice] [AlphaToMesh] Generating mesh from alpha: 100x100, target triangles: 200
+[Lattice] [AlphaToMesh] Mesh generated: 103 vertices, 126 triangles
+
+[90mstdout[2m | src/__tests__/services/alphaToMesh.test.ts[2m > [22m[2mgenerateMeshFromAlpha[2m > [22m[2mtriangulation quality[2m > [22m[2mproduces connected mesh where all triangles reference valid vertices
+[22m[39m[Lattice] [AlphaToMesh] Generating mesh from alpha: 100x100, target triangles: 200
+[Lattice] [AlphaToMesh] Mesh generated: 103 vertices, 126 triangles
+
+ [32m✓[39m src/__tests__/services/alphaToMesh.test.ts[2m > [22mgenerateMeshFromAlpha[2m > [22mbasic functionality[2m > [22mgenerates mesh from fully opaque image[32m 13[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/alphaToMesh.test.ts[2m > [22mgenerateMeshFromAlpha[2m > [22mbasic functionality[2m > [22mgenerates mesh from image with circular alpha[32m 9[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/alphaToMesh.test.ts[2m > [22mgenerateMeshFromAlpha[2m > [22mbasic functionality[2m > [22mhandles completely transparent image with fallback mesh[32m 1[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/alphaToMesh.test.ts[2m > [22mgenerateMeshFromAlpha[2m > [22mbasic functionality[2m > [22mhandles image with partial transparency threshold[32m 1[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/alphaToMesh.test.ts[2m > [22mgenerateMeshFromAlpha[2m > [22moptions[2m > [22mrespects triangleCount option for density[32m 9[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/alphaToMesh.test.ts[2m > [22mgenerateMeshFromAlpha[2m > [22moptions[2m > [22mrespects expansion option[32m 2[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/alphaToMesh.test.ts[2m > [22mgenerateMeshFromAlpha[2m > [22moptions[2m > [22mrespects alphaThreshold option[32m 1[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/alphaToMesh.test.ts[2m > [22mgenerateMeshFromAlpha[2m > [22moptions[2m > [22mrespects minBoundarySpacing option[32m 23[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/alphaToMesh.test.ts[2m > [22mgenerateMeshFromAlpha[2m > [22moutput format[2m > [22mreturns proper Float32Array for vertices[32m 5[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/alphaToMesh.test.ts[2m > [22mgenerateMeshFromAlpha[2m > [22moutput format[2m > [22mreturns proper Uint32Array for triangles[32m 4[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/alphaToMesh.test.ts[2m > [22mgenerateMeshFromAlpha[2m > [22moutput format[2m > [22mreturns accurate bounds[32m 1[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/alphaToMesh.test.ts[2m > [22mgenerateMeshFromAlpha[2m > [22medge cases[2m > [22mhandles very small image with appropriate mesh size[32m 1[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/alphaToMesh.test.ts[2m > [22mgenerateMeshFromAlpha[2m > [22medge cases[2m > [22mhandles single pixel alpha with fallback to full-image mesh[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/alphaToMesh.test.ts[2m > [22mgenerateMeshFromAlpha[2m > [22medge cases[2m > [22mhandles diagonal line with bounds covering the line[32m 1[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/alphaToMesh.test.ts[2m > [22mgenerateMeshFromAlpha[2m > [22medge cases[2m > [22mhandles complex shape (ring) covering outer boundary[32m 1[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/alphaToMesh.test.ts[2m > [22mgenerateMeshFromAlpha[2m > [22medge cases[2m > [22mhandles non-square image with correct aspect ratio[32m 2[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/alphaToMesh.test.ts[2m > [22mgenerateMeshFromAlpha[2m > [22mtriangulation quality[2m > [22mproduces valid triangles (no degenerate triangles)[32m 6[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/alphaToMesh.test.ts[2m > [22mgenerateMeshFromAlpha[2m > [22mtriangulation quality[2m > [22mproduces connected mesh where all triangles reference valid vertices[32m 5[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/speedGraph.test.ts[2m > [22mSpeed Graph[2m > [22mSpeed Calculation Logic[2m > [22mconstant speed for linear interpolation[32m 1[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/speedGraph.test.ts[2m > [22mSpeed Graph[2m > [22mSpeed Calculation Logic[2m > [22mzero speed at hold keyframes[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/speedGraph.test.ts[2m > [22mSpeed Graph[2m > [22mSpeed Calculation Logic[2m > [22mvariable speed for bezier interpolation[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/speedGraph.test.ts[2m > [22mSpeed Graph[2m > [22mSpeed Calculation Logic[2m > [22mspeed graph derivative formula[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/speedGraph.test.ts[2m > [22mSpeed Graph[2m > [22mSpeed Graph UI[2m > [22mgraph mode can be set to speed[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/speedGraph.test.ts[2m > [22mSpeed Graph[2m > [22mSpeed Graph UI[2m > [22mgraph mode can be set to value[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/speedGraph.test.ts[2m > [22mSpeed Graph[2m > [22mSpeed Graph UI[2m > [22mY axis units for position speed[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/speedGraph.test.ts[2m > [22mSpeed Graph[2m > [22mSpeed Graph UI[2m > [22mY axis units for rotation speed[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/speedGraph.test.ts[2m > [22mSpeed Graph[2m > [22mSpeed Graph UI[2m > [22mspeed range starts at 0[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/speedGraph.test.ts[2m > [22mSpeed Graph[2m > [22mSpeed Graph UI[2m > [22mspeed range auto-scales to max speed[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/speedGraph.test.ts[2m > [22mSpeed Graph[2m > [22mSpeed Graph Rendering[2m > [22mspeed curve samples at sub-frame resolution[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/speedGraph.test.ts[2m > [22mSpeed Graph[2m > [22mSpeed Graph Rendering[2m > [22mspeed curve uses two-pass rendering[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/speedGraph.test.ts[2m > [22mSpeed Graph[2m > [22mCubic Bezier Speed[2m > [22mease-in-out creates bell curve speed[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/speedGraph.test.ts[2m > [22mSpeed Graph[2m > [22mCubic Bezier Speed[2m > [22mlinear bezier has constant speed[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/speedGraph.test.ts[2m > [22mSpeed Graph[2m > [22mCubic Bezier Speed[2m > [22mease-in starts slow then accelerates[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/speedGraph.test.ts[2m > [22mSpeed Graph[2m > [22mCubic Bezier Speed[2m > [22mease-out starts fast then decelerates[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/speedGraph.test.ts[2m > [22mSpeed Graph[2m > [22mSpeed Graph Value Range[2m > [22mcomputes max speed across all curves[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/speedGraph.test.ts[2m > [22mSpeed Graph[2m > [22mSpeed Graph Value Range[2m > [22madds padding to max speed[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/speedGraph.test.ts[2m > [22mSpeed Graph[2m > [22mSpeed Graph Value Range[2m > [22mdefaults to 100 for minimum max speed[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/speedGraph.test.ts[2m > [22mSpeed Graph[2m > [22mTutorial 04 Speed Graph Steps[2m > [22mSpeed Graph view exists in Curve Editor[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/speedGraph.test.ts[2m > [22mSpeed Graph[2m > [22mTutorial 04 Speed Graph Steps[2m > [22mSpeed Graph shows derivative of property values[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/speedGraph.test.ts[2m > [22mSpeed Graph[2m > [22mTutorial 04 Speed Graph Steps[2m > [22mSpeed Graph creates bell curve for ease animations[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/speedGraph.test.ts[2m > [22mSpeed Graph[2m > [22mTutorial 04 Speed Graph Steps[2m > [22mSpeed Graph Y axis shows velocity units[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/speedGraph.test.ts[2m > [22mSpeed Graph[2m > [22mDeterminism[2m > [22mspeed calculation is deterministic[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/speedGraph.test.ts[2m > [22mSpeed Graph[2m > [22mDeterminism[2m > [22mspeed graph same at any playhead position[32m 0[2mms[22m[39m
+ [2m[90m↓[39m[22m src/__tests__/services/expressionValidator.test.ts[2m > [22mExpression Validator - DoS Protection[2m > [22misExpressionSafe - Infinite Loops[2m > [22mshould BLOCK while(true){}
+ [2m[90m↓[39m[22m src/__tests__/services/expressionValidator.test.ts[2m > [22mExpression Validator - DoS Protection[2m > [22misExpressionSafe - Infinite Loops[2m > [22mshould BLOCK while(1){}
+ [2m[90m↓[39m[22m src/__tests__/services/expressionValidator.test.ts[2m > [22mExpression Validator - DoS Protection[2m > [22misExpressionSafe - Infinite Loops[2m > [22mshould BLOCK for(;;){}
+ [2m[90m↓[39m[22m src/__tests__/services/expressionValidator.test.ts[2m > [22mExpression Validator - DoS Protection[2m > [22misExpressionSafe - Infinite Loops[2m > [22mshould BLOCK do{}while(true)
+ [2m[90m↓[39m[22m src/__tests__/services/expressionValidator.test.ts[2m > [22mExpression Validator - DoS Protection[2m > [22misExpressionSafe - Recursion Bombs[2m > [22mshould BLOCK (function f(){f()})()
+ [2m[90m↓[39m[22m src/__tests__/services/expressionValidator.test.ts[2m > [22mExpression Validator - DoS Protection[2m > [22misExpressionSafe - Recursion Bombs[2m > [22mshould BLOCK arrow recursion
+ [2m[90m↓[39m[22m src/__tests__/services/expressionValidator.test.ts[2m > [22mExpression Validator - DoS Protection[2m > [22misExpressionSafe - Recursion Bombs[2m > [22mshould BLOCK Y-combinator style
+ [2m[90m↓[39m[22m src/__tests__/services/expressionValidator.test.ts[2m > [22mExpression Validator - DoS Protection[2m > [22misExpressionSafe - Memory Bombs[2m > [22mshould ALLOW small string repeat (1e7 completes fast)
+ [2m[90m↓[39m[22m src/__tests__/services/expressionValidator.test.ts[2m > [22mExpression Validator - DoS Protection[2m > [22misExpressionSafe - Memory Bombs[2m > [22mshould ALLOW small array allocation (1e7 completes fast)
+ [2m[90m↓[39m[22m src/__tests__/services/expressionValidator.test.ts[2m > [22mExpression Validator - DoS Protection[2m > [22misExpressionSafe - Memory Bombs[2m > [22mshould BLOCK large array allocation (1e8 takes 18+ seconds)
+ [2m[90m↓[39m[22m src/__tests__/services/expressionValidator.test.ts[2m > [22mExpression Validator - DoS Protection[2m > [22misExpressionSafe - SES Escape Attempts[2m > [22mshould BLOCK Function constructor
+ [2m[90m↓[39m[22m src/__tests__/services/expressionValidator.test.ts[2m > [22mExpression Validator - DoS Protection[2m > [22misExpressionSafe - SES Escape Attempts[2m > [22mshould BLOCK new Function
+ [2m[90m↓[39m[22m src/__tests__/services/expressionValidator.test.ts[2m > [22mExpression Validator - DoS Protection[2m > [22misExpressionSafe - SES Escape Attempts[2m > [22mshould BLOCK eval
+ [2m[90m↓[39m[22m src/__tests__/services/expressionValidator.test.ts[2m > [22mExpression Validator - DoS Protection[2m > [22misExpressionSafe - SES Escape Attempts[2m > [22mshould BLOCK setTimeout
+ [2m[90m↓[39m[22m src/__tests__/services/expressionValidator.test.ts[2m > [22mExpression Validator - DoS Protection[2m > [22misExpressionSafe - SES Escape Attempts[2m > [22mshould BLOCK globalThis access
+ [2m[90m↓[39m[22m src/__tests__/services/expressionValidator.test.ts[2m > [22mExpression Validator - DoS Protection[2m > [22misExpressionSafe - SES Escape Attempts[2m > [22mshould BLOCK window access
+ [2m[90m↓[39m[22m src/__tests__/services/expressionValidator.test.ts[2m > [22mExpression Validator - DoS Protection[2m > [22misExpressionSafe - SES Escape Attempts[2m > [22mshould BLOCK constructor escape
+ [2m[90m↓[39m[22m src/__tests__/services/expressionValidator.test.ts[2m > [22mExpression Validator - DoS Protection[2m > [22misExpressionSafe - Obfuscation Bypasses[2m > [22mshould BLOCK while with comment
+ [2m[90m↓[39m[22m src/__tests__/services/expressionValidator.test.ts[2m > [22mExpression Validator - DoS Protection[2m > [22misExpressionSafe - Obfuscation Bypasses[2m > [22mshould BLOCK while with expression
+ [2m[90m↓[39m[22m src/__tests__/services/expressionValidator.test.ts[2m > [22mExpression Validator - DoS Protection[2m > [22misExpressionSafe - Obfuscation Bypasses[2m > [22mshould BLOCK variable indirection
+ [2m[90m↓[39m[22m src/__tests__/services/expressionValidator.test.ts[2m > [22mExpression Validator - DoS Protection[2m > [22misExpressionSafe - Valid Expressions (must ALLOW)[2m > [22mshould ALLOW value * 2
+ [2m[90m↓[39m[22m src/__tests__/services/expressionValidator.test.ts[2m > [22mExpression Validator - DoS Protection[2m > [22misExpressionSafe - Valid Expressions (must ALLOW)[2m > [22mshould ALLOW sin(time * PI)
+ [2m[90m↓[39m[22m src/__tests__/services/expressionValidator.test.ts[2m > [22mExpression Validator - DoS Protection[2m > [22misExpressionSafe - Valid Expressions (must ALLOW)[2m > [22mshould ALLOW frame / 30
+ [2m[90m↓[39m[22m src/__tests__/services/expressionValidator.test.ts[2m > [22mExpression Validator - DoS Protection[2m > [22misExpressionSafe - Valid Expressions (must ALLOW)[2m > [22mshould ALLOW bounded loop
+ [2m[90m↓[39m[22m src/__tests__/services/expressionValidator.test.ts[2m > [22mExpression Validator - DoS Protection[2m > [22misExpressionSafe - Valid Expressions (must ALLOW)[2m > [22mshould ALLOW ternary operator
+ [2m[90m↓[39m[22m src/__tests__/services/expressionValidator.test.ts[2m > [22mExpression Validator - DoS Protection[2m > [22misExpressionSafe - Valid Expressions (must ALLOW)[2m > [22mshould ALLOW random() (seeded)
+ [2m[90m↓[39m[22m src/__tests__/services/expressionValidator.test.ts[2m > [22mExpression Validator - DoS Protection[2m > [22misExpressionSafe - Valid Expressions (must ALLOW)[2m > [22mshould ALLOW small array operations
+ [2m[90m↓[39m[22m src/__tests__/services/expressionValidator.test.ts[2m > [22mExpression Validator - DoS Protection[2m > [22misExpressionSafe - Valid Expressions (must ALLOW)[2m > [22mshould ALLOW small string operations
+ [2m[90m↓[39m[22m src/__tests__/services/expressionValidator.test.ts[2m > [22mExpression Validator - DoS Protection[2m > [22mvalidateProjectExpressions[2m > [22mshould BLOCK project with malicious expression in position
+ [2m[90m↓[39m[22m src/__tests__/services/expressionValidator.test.ts[2m > [22mExpression Validator - DoS Protection[2m > [22mvalidateProjectExpressions[2m > [22mshould BLOCK project with recursive bomb
+ [2m[90m↓[39m[22m src/__tests__/services/expressionValidator.test.ts[2m > [22mExpression Validator - DoS Protection[2m > [22mvalidateProjectExpressions[2m > [22mshould ALLOW project with safe expressions
+ [2m[90m↓[39m[22m src/__tests__/services/expressionValidator.test.ts[2m > [22mExpression Validator - DoS Protection[2m > [22mvalidateProjectExpressions[2m > [22mshould ALLOW project with no custom expressions
+ [2m[90m↓[39m[22m src/__tests__/services/expressionValidator.test.ts[2m > [22mExpression Validator - DoS Protection[2m > [22mvalidateProjectExpressions[2m > [22mshould ALLOW project with preset expressions (not custom)
+ [2m[90m↓[39m[22m src/__tests__/services/expressionValidator.test.ts[2m > [22mExpression Validator - DoS Protection[2m > [22mvalidateProjectExpressions[2m > [22mshould count total expressions validated
+ [32m✓[39m src/__tests__/services/expressionValidator.test.ts[2m > [22mExpression Validator - Node Environment Fallback[2m > [22mshould gracefully handle missing Worker support[32m 1[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/security/urlValidator.test.ts[2m > [22mURL Validator - Security[2m > [22mvalidateURL - Blocked Protocols[2m > [22mshould BLOCK javascript: URLs[32m 1[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/security/urlValidator.test.ts[2m > [22mURL Validator - Security[2m > [22mvalidateURL - Blocked Protocols[2m > [22mshould BLOCK vbscript: URLs[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/security/urlValidator.test.ts[2m > [22mURL Validator - Security[2m > [22mvalidateURL - Blocked Protocols[2m > [22mshould BLOCK file: URLs[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/security/urlValidator.test.ts[2m > [22mURL Validator - Security[2m > [22mvalidateURL - Blocked Protocols[2m > [22mshould BLOCK ftp: URLs[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/security/urlValidator.test.ts[2m > [22mURL Validator - Security[2m > [22mvalidateURL - Blocked Protocols[2m > [22mshould BLOCK chrome: URLs[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/security/urlValidator.test.ts[2m > [22mURL Validator - Security[2m > [22mvalidateURL - Blocked Protocols[2m > [22mshould BLOCK about: URLs[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/security/urlValidator.test.ts[2m > [22mURL Validator - Security[2m > [22mvalidateURL - Blocked Protocols[2m > [22mshould BLOCK ws: WebSocket URLs for assets[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/security/urlValidator.test.ts[2m > [22mURL Validator - Security[2m > [22mvalidateURL - Data URLs[2m > [22mshould BLOCK data:text/html (XSS vector)[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/security/urlValidator.test.ts[2m > [22mURL Validator - Security[2m > [22mvalidateURL - Data URLs[2m > [22mshould BLOCK data:application/javascript[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/security/urlValidator.test.ts[2m > [22mURL Validator - Security[2m > [22mvalidateURL - Data URLs[2m > [22mshould BLOCK data:image/svg+xml with script tags[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/security/urlValidator.test.ts[2m > [22mURL Validator - Security[2m > [22mvalidateURL - Data URLs[2m > [22mshould ALLOW data:image/png[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/security/urlValidator.test.ts[2m > [22mURL Validator - Security[2m > [22mvalidateURL - Data URLs[2m > [22mshould ALLOW data:image/jpeg[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/security/urlValidator.test.ts[2m > [22mURL Validator - Security[2m > [22mvalidateURL - Data URLs[2m > [22mshould ALLOW data:image/svg+xml without script[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/security/urlValidator.test.ts[2m > [22mURL Validator - Security[2m > [22mvalidateURL - Data URLs[2m > [22mshould ALLOW data:audio/mp3[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/security/urlValidator.test.ts[2m > [22mURL Validator - Security[2m > [22mvalidateURL - Data URLs[2m > [22mshould ALLOW data:video/mp4[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/security/urlValidator.test.ts[2m > [22mURL Validator - Security[2m > [22mvalidateURL - Data URLs[2m > [22mshould ALLOW data:application/json[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/security/urlValidator.test.ts[2m > [22mURL Validator - Security[2m > [22mvalidateURL - Data URLs[2m > [22mshould BLOCK unknown data MIME types[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/security/urlValidator.test.ts[2m > [22mURL Validator - Security[2m > [22mvalidateURL - Safe Protocols[2m > [22mshould ALLOW https: URLs[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/security/urlValidator.test.ts[2m > [22mURL Validator - Security[2m > [22mvalidateURL - Safe Protocols[2m > [22mshould ALLOW http: URLs with warning[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/security/urlValidator.test.ts[2m > [22mURL Validator - Security[2m > [22mvalidateURL - Safe Protocols[2m > [22mshould ALLOW blob: URLs[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/security/urlValidator.test.ts[2m > [22mURL Validator - Security[2m > [22mvalidateURL - Safe Protocols[2m > [22mshould ALLOW relative URLs starting with /[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/security/urlValidator.test.ts[2m > [22mURL Validator - Security[2m > [22mvalidateURL - Safe Protocols[2m > [22mshould ALLOW relative URLs starting with ./[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/security/urlValidator.test.ts[2m > [22mURL Validator - Security[2m > [22mvalidateURL - Safe Protocols[2m > [22mshould ALLOW relative URLs starting with ../[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/security/urlValidator.test.ts[2m > [22mURL Validator - Security[2m > [22mvalidateURL - Edge Cases[2m > [22mshould BLOCK null/undefined[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/security/urlValidator.test.ts[2m > [22mURL Validator - Security[2m > [22mvalidateURL - Edge Cases[2m > [22mshould BLOCK empty string[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/security/urlValidator.test.ts[2m > [22mURL Validator - Security[2m > [22mvalidateURL - Edge Cases[2m > [22mshould BLOCK extremely long URLs (DoS prevention)[32m 1[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/security/urlValidator.test.ts[2m > [22mURL Validator - Security[2m > [22mvalidateURL - Edge Cases[2m > [22mshould BLOCK unknown protocols[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/security/urlValidator.test.ts[2m > [22mURL Validator - Security[2m > [22mvalidateURL - Edge Cases[2m > [22mshould handle case-insensitive protocol check[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/security/urlValidator.test.ts[2m > [22mURL Validator - Security[2m > [22msanitizeURLForHTML[2m > [22mshould return null for blocked URLs[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/security/urlValidator.test.ts[2m > [22mURL Validator - Security[2m > [22msanitizeURLForHTML[2m > [22mshould escape HTML special characters[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/security/urlValidator.test.ts[2m > [22mURL Validator - Security[2m > [22mvalidateURLs - Batch Validation[2m > [22mshould validate multiple URLs and return map[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/security/urlValidator.test.ts[2m > [22mURL Validator - Security[2m > [22misTrustedDomain[2m > [22mshould match exact domain[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/security/urlValidator.test.ts[2m > [22mURL Validator - Security[2m > [22misTrustedDomain[2m > [22mshould match subdomain[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/security/urlValidator.test.ts[2m > [22mURL Validator - Security[2m > [22misTrustedDomain[2m > [22mshould NOT match partial domain name[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/security/urlValidator.test.ts[2m > [22mURL Validator - Security[2m > [22misTrustedDomain[2m > [22mshould return false for invalid URLs[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/security/urlValidator.test.ts[2m > [22mURL Validator - Security[2m > [22mextractAndValidateURLs[2m > [22mshould extract and validate URLs from text[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/security/urlValidator.test.ts[2m > [22mURL Validator - Security[2m > [22mextractAndValidateURLs[2m > [22mshould identify dangerous data URLs when extracted[32m 0[2mms[22m[39m
+[90mstderr[2m | src/__tests__/security/templateVerifier.test.ts[2m > [22m[2mTemplate Signature Verification[2m > [22m[2mverifyTemplate[2m > [22m[2mshould reject a tampered template
+[22m[39m[SECURITY AUDIT] Failed to log entry: ReferenceError: indexedDB is not defined
+    at [90m/mnt/c/Users/justi/desktop/compositor/ui/[39msrc/services/security/auditLog.ts:121:21
+    at new Promise (<anonymous>)
+    at openDatabase [90m(/mnt/c/Users/justi/desktop/compositor/ui/[39msrc/services/security/auditLog.ts:120:15[90m)[39m
+    at logAuditEntry [90m(/mnt/c/Users/justi/desktop/compositor/ui/[39msrc/services/security/auditLog.ts:170:22[90m)[39m
+    at logSecurityWarning [90m(/mnt/c/Users/justi/desktop/compositor/ui/[39msrc/services/security/auditLog.ts:299:9[90m)[39m
+    at verifyTemplate [90m(/mnt/c/Users/justi/desktop/compositor/ui/[39msrc/services/security/templateVerifier.ts:189:13[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:105:5)[39m
+    at [90m/mnt/c/Users/justi/desktop/compositor/ui/[39msrc/__tests__/security/templateVerifier.test.ts:194:22
+    at [90mfile:///mnt/c/Users/justi/desktop/compositor/ui/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:915:20
+
+[90mstderr[2m | src/__tests__/security/templateVerifier.test.ts[2m > [22m[2mTemplate Signature Verification[2m > [22m[2mverifyTemplate[2m > [22m[2mshould handle invalid input gracefully
+[22m[39m[SECURITY AUDIT] Failed to log entry: ReferenceError: indexedDB is not defined
+    at [90m/mnt/c/Users/justi/desktop/compositor/ui/[39msrc/services/security/auditLog.ts:121:21
+    at new Promise (<anonymous>)
+    at openDatabase [90m(/mnt/c/Users/justi/desktop/compositor/ui/[39msrc/services/security/auditLog.ts:120:15[90m)[39m
+    at logAuditEntry [90m(/mnt/c/Users/justi/desktop/compositor/ui/[39msrc/services/security/auditLog.ts:170:22[90m)[39m
+    at logSecurityWarning [90m(/mnt/c/Users/justi/desktop/compositor/ui/[39msrc/services/security/auditLog.ts:299:9[90m)[39m
+    at verifyTemplate [90m(/mnt/c/Users/justi/desktop/compositor/ui/[39msrc/services/security/templateVerifier.ts:189:13[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:105:5)[39m
+    at [90m/mnt/c/Users/justi/desktop/compositor/ui/[39msrc/__tests__/security/templateVerifier.test.ts:194:22
+    at [90mfile:///mnt/c/Users/justi/desktop/compositor/ui/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:915:20
+
+ [32m✓[39m src/__tests__/security/templateVerifier.test.ts[2m > [22mTemplate Signature Verification[2m > [22mverifyTemplate[2m > [22mshould verify an officially signed template[32m 172[2mms[22m[39m
+ [32m✓[39m src/__tests__/security/templateVerifier.test.ts[2m > [22mTemplate Signature Verification[2m > [22mverifyTemplate[2m > [22mshould reject a tampered template[32m 13[2mms[22m[39m
+ [32m✓[39m src/__tests__/security/templateVerifier.test.ts[2m > [22mTemplate Signature Verification[2m > [22mverifyTemplate[2m > [22mshould identify unsigned templates[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/security/templateVerifier.test.ts[2m > [22mTemplate Signature Verification[2m > [22mverifyTemplate[2m > [22mshould handle invalid input gracefully[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/security/templateVerifier.test.ts[2m > [22mTemplate Signature Verification[2m > [22mverifyTemplate[2m > [22mshould reject unsupported signature versions[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/security/templateVerifier.test.ts[2m > [22mTemplate Signature Verification[2m > [22misOfficialTemplate[2m > [22mshould return true for officially signed templates[32m 6[2mms[22m[39m
+ [32m✓[39m src/__tests__/security/templateVerifier.test.ts[2m > [22mTemplate Signature Verification[2m > [22misOfficialTemplate[2m > [22mshould return false for unsigned templates[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/security/templateVerifier.test.ts[2m > [22mTemplate Signature Verification[2m > [22mgetVerificationBadge[2m > [22mshould return green badge for official templates[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/security/templateVerifier.test.ts[2m > [22mTemplate Signature Verification[2m > [22mgetVerificationBadge[2m > [22mshould return yellow badge for third-party valid[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/security/templateVerifier.test.ts[2m > [22mTemplate Signature Verification[2m > [22mgetVerificationBadge[2m > [22mshould return red badge for invalid signatures[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/security/templateVerifier.test.ts[2m > [22mTemplate Signature Verification[2m > [22mgetVerificationBadge[2m > [22mshould return gray badge for unsigned[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/security/templateVerifier.test.ts[2m > [22mTemplate Signature Verification[2m > [22mloadAndVerifyTemplate[2m > [22mshould parse and verify JSON template[32m 6[2mms[22m[39m
+ [32m✓[39m src/__tests__/security/templateVerifier.test.ts[2m > [22mTemplate Signature Verification[2m > [22mloadAndVerifyTemplate[2m > [22mshould handle invalid JSON gracefully[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/security/templateVerifier.test.ts[2m > [22mTemplate Signature Verification[2m > [22mshouldWarnBeforeLoading[2m > [22mshould not warn for official templates[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/security/templateVerifier.test.ts[2m > [22mTemplate Signature Verification[2m > [22mshouldWarnBeforeLoading[2m > [22mshould warn for all non-official templates[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/security/templateVerifier.test.ts[2m > [22mTemplate Signature Verification[2m > [22mCanonical JSON ordering[2m > [22mshould produce same signature regardless of property order[32m 8[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/motionRecording.test.ts[2m > [22msmoothMotion[2m > [22mreturns unchanged motion for smoothing = 0[32m 1[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/motionRecording.test.ts[2m > [22msmoothMotion[2m > [22mpreserves sample count after smoothing[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/motionRecording.test.ts[2m > [22msmoothMotion[2m > [22mpreserves timestamps after smoothing[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/motionRecording.test.ts[2m > [22msmoothMotion[2m > [22mreduces noise in samples[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/motionRecording.test.ts[2m > [22msmoothMotion[2m > [22mhandles short motion gracefully[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/motionRecording.test.ts[2m > [22msmoothMotion[2m > [22mhandles single sample gracefully[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/motionRecording.test.ts[2m > [22msmoothMotion[2m > [22mhigher smoothing produces smoother result[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/motionRecording.test.ts[2m > [22msmoothMotionMovingAverage[2m > [22mapplies moving average correctly[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/motionRecording.test.ts[2m > [22mconvertMotionToKeyframes[2m > [22mconverts motion to keyframes at correct frames[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/motionRecording.test.ts[2m > [22mconvertMotionToKeyframes[2m > [22mrespects startFrame parameter[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/motionRecording.test.ts[2m > [22mconvertMotionToKeyframes[2m > [22mapplies recording speed correctly - half speed[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/motionRecording.test.ts[2m > [22mconvertMotionToKeyframes[2m > [22mapplies recording speed correctly - double speed[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/motionRecording.test.ts[2m > [22mconvertMotionToKeyframes[2m > [22mcreates valid keyframe structure[32m 3[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/motionRecording.test.ts[2m > [22mconvertMotionToKeyframes[2m > [22mhandles empty motion gracefully[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/motionRecording.test.ts[2m > [22mconvertMotionToKeyframes[2m > [22mhandles single sample motion[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/motionRecording.test.ts[2m > [22msimplifyKeyframes (Douglas-Peucker)[2m > [22mreduces keyframe count for near-linear motion[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/motionRecording.test.ts[2m > [22msimplifyKeyframes (Douglas-Peucker)[2m > [22msimplifies linear motion to few keyframes with high tolerance[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/motionRecording.test.ts[2m > [22msimplifyKeyframes (Douglas-Peucker)[2m > [22mpreserves curve points in non-linear motion[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/motionRecording.test.ts[2m > [22msimplifyKeyframes (Douglas-Peucker)[2m > [22mhandles circular motion preserving shape[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/motionRecording.test.ts[2m > [22msimplifyKeyframes (Douglas-Peucker)[2m > [22mhandles two keyframes gracefully[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/motionRecording.test.ts[2m > [22mremoveRedundantKeyframes[2m > [22mremoves stationary keyframes[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/motionRecording.test.ts[2m > [22mremoveRedundantKeyframes[2m > [22mkeeps frames with significant movement[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/motionRecording.test.ts[2m > [22mMotionRecorder[2m > [22mrecords samples during session[32m 1[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/motionRecording.test.ts[2m > [22mMotionRecorder[2m > [22mrespects minSampleInterval[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/motionRecording.test.ts[2m > [22mMotionRecorder[2m > [22mstores recording speed[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/motionRecording.test.ts[2m > [22mMotionRecorder[2m > [22mtracks duration correctly[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/motionRecording.test.ts[2m > [22mMotionRecorder[2m > [22mignores samples after stop[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/motionRecording.test.ts[2m > [22mprocessRecordedMotion (full pipeline)[2m > [22mproduces simplified keyframes from noisy input[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/motionRecording.test.ts[2m > [22mgetMotionBounds[2m > [22mcalculates correct bounds[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/motionRecording.test.ts[2m > [22mgetMotionBounds[2m > [22mhandles empty motion[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/motionRecording.test.ts[2m > [22mgetMotionPathLength[2m > [22mcalculates correct path length for straight line[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/motionRecording.test.ts[2m > [22mgetMotionPathLength[2m > [22mcalculates correct path length for diagonal[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/motionRecording.test.ts[2m > [22mgetMotionAverageSpeed[2m > [22mcalculates correct average speed[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/motionRecording.test.ts[2m > [22mgetMotionAverageSpeed[2m > [22mhandles empty motion[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/freezeFrame.test.ts[2m > [22mFreezeFrame Effect[2m > [22mEffect Definition[2m > [22mfreeze-frame effect exists in definitions[32m 1[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/freezeFrame.test.ts[2m > [22mFreezeFrame Effect[2m > [22mEffect Definition[2m > [22mfreeze-frame has correct category[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/freezeFrame.test.ts[2m > [22mFreezeFrame Effect[2m > [22mEffect Definition[2m > [22mfreeze-frame has correct name[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/freezeFrame.test.ts[2m > [22mFreezeFrame Effect[2m > [22mEffect Definition[2m > [22mfreeze-frame has freeze_at_frame parameter[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/types/meshDeformEffect.test.ts[2m > [22mmesh-deform effect definition[2m > [22mis defined in EFFECT_DEFINITIONS[32m 1[2mms[22m[39m
+ [32m✓[39m src/__tests__/types/meshDeformEffect.test.ts[2m > [22mmesh-deform effect definition[2m > [22mhas required parameters[32m 1[2mms[22m[39m
+ [32m✓[39m src/__tests__/types/meshDeformEffect.test.ts[2m > [22mmesh-deform effect definition[2m > [22mhas correct default values[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/types/meshDeformEffect.test.ts[2m > [22mcreateMeshDeformEffectInstance[2m > [22mcreates instance with pins array[32m 1[2mms[22m[39m
+ [32m✓[39m src/__tests__/types/meshDeformEffect.test.ts[2m > [22mcreateMeshDeformEffectInstance[2m > [22mhas all parameters from definition[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/types/meshDeformEffect.test.ts[2m > [22mcreateMeshDeformEffectInstance[2m > [22mgenerates unique IDs[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/types/meshDeformEffect.test.ts[2m > [22misMeshDeformEffect type guard[2m > [22mreturns true for MeshDeformEffectInstance[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/types/meshDeformEffect.test.ts[2m > [22misMeshDeformEffect type guard[2m > [22mreturns false for regular EffectInstance[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/types/meshDeformEffect.test.ts[2m > [22misMeshDeformEffect type guard[2m > [22mreturns false for effect with same key but no pins[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/types/meshDeformEffect.test.ts[2m > [22mMeshDeformEffectInstance with pins[2m > [22mcan add position pins[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/types/meshDeformEffect.test.ts[2m > [22mMeshDeformEffectInstance with pins[2m > [22mcan add multiple pin types[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/types/meshDeformEffect.test.ts[2m > [22mMeshDeformEffectInstance with pins[2m > [22mtracks meshDirty state[32m 0[2mms[22m[39m
+[90mstdout[2m | src/__tests__/services/meshWarpDeformation.test.ts[2m > [22m[2mMeshWarpDeformation - Pin Type Behavior[2m > [22m[2mposition pin (deform)[2m > [22m[2mmoves vertices when pin position is animated
+[22m[39m[Lattice] [MeshWarpDeformation] Built warp mesh: 4 vertices, 1 pins
+[Lattice] [MeshWarpDeformation] Built warp mesh: 4 vertices, 1 pins
+
+[90mstdout[2m | src/__tests__/services/meshWarpDeformation.test.ts[2m > [22m[2mMeshWarpDeformation - Pin Type Behavior[2m > [22m[2mbend pin[2m > [22m[2mrotates vertices around pin without position translation
+[22m[39m[Lattice] [MeshWarpDeformation] Built warp mesh: 4 vertices, 1 pins
+[Lattice] [MeshWarpDeformation] Built warp mesh: 4 vertices, 1 pins
+
+[90mstdout[2m | src/__tests__/services/meshWarpDeformation.test.ts[2m > [22m[2mMeshWarpDeformation - Pin Type Behavior[2m > [22m[2mbend pin[2m > [22m[2mdoes NOT translate vertices when bend pin position changes
+[22m[39m[Lattice] [MeshWarpDeformation] Built warp mesh: 4 vertices, 1 pins
+
+[90mstdout[2m | src/__tests__/services/meshWarpDeformation.test.ts[2m > [22m[2mMeshWarpDeformation - Pin Type Behavior[2m > [22m[2madvanced pin[2m > [22m[2mapplies position, rotation, and scale together
+[22m[39m[Lattice] [MeshWarpDeformation] Built warp mesh: 4 vertices, 1 pins
+
+[90mstdout[2m | src/__tests__/services/meshWarpDeformation.test.ts[2m > [22m[2mMeshWarpDeformation - Pin Type Behavior[2m > [22m[2mstarch pin (stiffness)[2m > [22m[2mreduces deformation in stiff areas
+[22m[39m[Lattice] [MeshWarpDeformation] Built warp mesh: 4 vertices, 1 pins
+[Lattice] [MeshWarpDeformation] Built warp mesh: 4 vertices, 2 pins
+
+[90mstdout[2m | src/__tests__/services/meshWarpDeformation.test.ts[2m > [22m[2mMeshWarpDeformation - Pin Type Behavior[2m > [22m[2moverlap pin[2m > [22m[2mevaluates inFront property but does not affect vertex positions
+[22m[39m[Lattice] [MeshWarpDeformation] Built warp mesh: 4 vertices, 1 pins
+
+ [32m✓[39m src/__tests__/services/meshWarpDeformation.test.ts[2m > [22mMeshWarpDeformation - Pin Type Behavior[2m > [22mposition pin (deform)[2m > [22mmoves vertices when pin position is animated[32m 2[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/meshWarpDeformation.test.ts[2m > [22mMeshWarpDeformation - Pin Type Behavior[2m > [22mbend pin[2m > [22mrotates vertices around pin without position translation[32m 1[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/meshWarpDeformation.test.ts[2m > [22mMeshWarpDeformation - Pin Type Behavior[2m > [22mbend pin[2m > [22mdoes NOT translate vertices when bend pin position changes[32m 1[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/meshWarpDeformation.test.ts[2m > [22mMeshWarpDeformation - Pin Type Behavior[2m > [22madvanced pin[2m > [22mapplies position, rotation, and scale together[32m 1[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/meshWarpDeformation.test.ts[2m > [22mMeshWarpDeformation - Pin Type Behavior[2m > [22mstarch pin (stiffness)[2m > [22mreduces deformation in stiff areas[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/meshWarpDeformation.test.ts[2m > [22mMeshWarpDeformation - Pin Type Behavior[2m > [22moverlap pin[2m > [22mevaluates inFront property but does not affect vertex positions[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/freezeFrame.test.ts[2m > [22mFreezeFrame Effect[2m > [22mEffect Renderer[2m > [22mrenderer passes through input when freeze frame matches current[33m 796[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/freezeFrame.test.ts[2m > [22mFreezeFrame Effect[2m > [22mEffect Renderer[2m > [22mrenderer caches frame when freeze frame is reached[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/freezeFrame.test.ts[2m > [22mFreezeFrame Effect[2m > [22mEffect Renderer[2m > [22mrenderer returns cached frame after freeze[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/freezeFrame.test.ts[2m > [22mFreezeFrame Effect[2m > [22mEffect Renderer[2m > [22mdifferent layers have independent freeze caches[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/freezeFrame.test.ts[2m > [22mFreezeFrame Effect[2m > [22mEffect Renderer[2m > [22mclearFrozenFrame removes cache for specific layer[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/freezeFrame.test.ts[2m > [22mFreezeFrame Effect[2m > [22mEffect Renderer[2m > [22mclearAllFrozenFrames removes all caches[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/freezeFrame.test.ts[2m > [22mFreezeFrame Effect[2m > [22mIntegration with Time Effects[2m > [22mfreeze-frame is registered with time effects[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/freezeFrame.test.ts[2m > [22mFreezeFrame Effect[2m > [22mIntegration with Time Effects[2m > [22mtime effect module exports freeze frame functions[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/freezeFrame.test.ts[2m > [22mFreezeFrame Effect[2m > [22mParameter Handling[2m > [22mfreeze_at_frame defaults to 0 when not provided[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/freezeFrame.test.ts[2m > [22mFreezeFrame Effect[2m > [22mParameter Handling[2m > [22mfreeze_at_frame is clamped to minimum 0[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/freezeFrame.test.ts[2m > [22mFreezeFrame Effect[2m > [22mParameter Handling[2m > [22mfreeze_at_frame is rounded to nearest integer[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/freezeFrame.test.ts[2m > [22mFreezeFrame Effect[2m > [22mTutorial 04 Steps 95-98[2m > [22mStep 95-98: Apply FreezeFrame effect and freeze at frame 60[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/freezeFrame.test.ts[2m > [22mFreezeFrame Effect[2m > [22mUndo/Redo Compatibility[2m > [22meffect definition is serializable[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/freezeFrame.test.ts[2m > [22mFreezeFrame Effect[2m > [22mSave/Load Compatibility[2m > [22meffect instance serializes correctly[32m 0[2mms[22m[39m
+[90mstdout[2m | src/__tests__/services/meshDeformExport.test.ts[2m > [22m[2mexportOverlapAsDepth[2m > [22m[2mreturns zero depth when no overlap pins
+[22m[39m[Lattice] [AlphaToMesh] Generating mesh from alpha: 50x50, target triangles: 200
+[Lattice] [AlphaToMesh] Mesh generated: 103 vertices, 166 triangles
+
+[90mstdout[2m | src/__tests__/services/meshDeformExport.test.ts[2m > [22m[2mexportOverlapAsDepth[2m > [22m[2mgenerates depth from overlap pin inFront value
+[22m[39m[Lattice] [AlphaToMesh] Generating mesh from alpha: 50x50, target triangles: 200
+[Lattice] [AlphaToMesh] Mesh generated: 103 vertices, 166 triangles
+
+[90mstdout[2m | src/__tests__/services/meshDeformRenderer.test.ts[2m > [22m[2mmeshDeformRenderer[2m > [22m[2mAPI behavior[2m > [22m[2mreturns canvas with correct dimensions with pins
+[22m[39m[Lattice] [AlphaToMesh] Generating mesh from alpha: 150x200, target triangles: 200
+[Lattice] [MeshDeformRenderer] Generated mesh for test: 25 vertices, 32 triangles
+
+[90mstderr[2m | src/__tests__/services/meshDeformRenderer.test.ts[2m > [22m[2mmeshDeformRenderer[2m > [22m[2mAPI behavior[2m > [22m[2mreturns canvas with correct dimensions with pins
+[22m[39m[Lattice] [AlphaToMesh] No alpha content found, creating full-image mesh
+
+[90mstdout[2m | src/__tests__/services/meshDeformRenderer.test.ts[2m > [22m[2mmeshDeformRenderer[2m > [22m[2mmesh caching[2m > [22m[2mcaches mesh after first render
+[22m[39m[Lattice] [AlphaToMesh] Generating mesh from alpha: 100x100, target triangles: 200
+[Lattice] [MeshDeformRenderer] Generated mesh for cache-test: 25 vertices, 32 triangles
+
+[90mstderr[2m | src/__tests__/services/meshDeformRenderer.test.ts[2m > [22m[2mmeshDeformRenderer[2m > [22m[2mmesh caching[2m > [22m[2mcaches mesh after first render
+[22m[39m[Lattice] [AlphaToMesh] No alpha content found, creating full-image mesh
+
+[90mstdout[2m | src/__tests__/services/meshDeformRenderer.test.ts[2m > [22m[2mmeshDeformRenderer[2m > [22m[2mmesh caching[2m > [22m[2mreuses same cached mesh across frames
+[22m[39m[Lattice] [AlphaToMesh] Generating mesh from alpha: 100x100, target triangles: 200
+[Lattice] [MeshDeformRenderer] Generated mesh for reuse-test: 25 vertices, 32 triangles
+
+[90mstderr[2m | src/__tests__/services/meshDeformRenderer.test.ts[2m > [22m[2mmeshDeformRenderer[2m > [22m[2mmesh caching[2m > [22m[2mreuses same cached mesh across frames
+[22m[39m[Lattice] [AlphaToMesh] No alpha content found, creating full-image mesh
+
+[90mstdout[2m | src/__tests__/services/meshDeformRenderer.test.ts[2m > [22m[2mmeshDeformRenderer[2m > [22m[2mmesh caching[2m > [22m[2mclears cache when clearMeshDeformCaches called
+[22m[39m[Lattice] [AlphaToMesh] Generating mesh from alpha: 100x100, target triangles: 200
+[Lattice] [MeshDeformRenderer] Generated mesh for clear-test: 25 vertices, 32 triangles
+
+[90mstderr[2m | src/__tests__/services/meshDeformRenderer.test.ts[2m > [22m[2mmeshDeformRenderer[2m > [22m[2mmesh caching[2m > [22m[2mclears cache when clearMeshDeformCaches called
+[22m[39m[Lattice] [AlphaToMesh] No alpha content found, creating full-image mesh
+
+[90mstdout[2m | src/__tests__/services/meshDeformRenderer.test.ts[2m > [22m[2mmeshDeformRenderer[2m > [22m[2mmesh caching[2m > [22m[2mdifferent effect IDs use separate caches
+[22m[39m[Lattice] [AlphaToMesh] Generating mesh from alpha: 100x100, target triangles: 200
+[Lattice] [MeshDeformRenderer] Generated mesh for effect-a: 25 vertices, 32 triangles
+[Lattice] [AlphaToMesh] Generating mesh from alpha: 100x100, target triangles: 200
+[Lattice] [MeshDeformRenderer] Generated mesh for effect-b: 25 vertices, 32 triangles
+
+[90mstderr[2m | src/__tests__/services/meshDeformRenderer.test.ts[2m > [22m[2mmeshDeformRenderer[2m > [22m[2mmesh caching[2m > [22m[2mdifferent effect IDs use separate caches
+[22m[39m[Lattice] [AlphaToMesh] No alpha content found, creating full-image mesh
+[Lattice] [AlphaToMesh] No alpha content found, creating full-image mesh
+
+[90mstdout[2m | src/__tests__/services/meshDeformRenderer.test.ts[2m > [22m[2mmeshDeformRenderer[2m > [22m[2mmesh generation parameters[2m > [22m[2mtriangle_count affects cached mesh triangle count
+[22m[39m[Lattice] [AlphaToMesh] Generating mesh from alpha: 100x100, target triangles: 50
+[Lattice] [MeshDeformRenderer] Generated mesh for low-tri: 25 vertices, 32 triangles
+[Lattice] [AlphaToMesh] Generating mesh from alpha: 100x100, target triangles: 500
+[Lattice] [MeshDeformRenderer] Generated mesh for high-tri: 25 vertices, 32 triangles
+
+[90mstderr[2m | src/__tests__/services/meshDeformRenderer.test.ts[2m > [22m[2mmeshDeformRenderer[2m > [22m[2mmesh generation parameters[2m > [22m[2mtriangle_count affects cached mesh triangle count
+[22m[39m[Lattice] [AlphaToMesh] No alpha content found, creating full-image mesh
+[Lattice] [AlphaToMesh] No alpha content found, creating full-image mesh
+
+[90mstdout[2m | src/__tests__/services/meshDeformRenderer.test.ts[2m > [22m[2mmeshDeformRenderer[2m > [22m[2mmesh generation parameters[2m > [22m[2mstores mesh generation params in cache
+[22m[39m[Lattice] [AlphaToMesh] Generating mesh from alpha: 100x100, target triangles: 200
+[Lattice] [MeshDeformRenderer] Generated mesh for params-test: 25 vertices, 32 triangles
+
+[90mstderr[2m | src/__tests__/services/meshDeformRenderer.test.ts[2m > [22m[2mmeshDeformRenderer[2m > [22m[2mmesh generation parameters[2m > [22m[2mstores mesh generation params in cache
+[22m[39m[Lattice] [AlphaToMesh] No alpha content found, creating full-image mesh
+
+[90mstdout[2m | src/__tests__/services/meshDeformExport.test.ts[2m > [22m[2mexportOverlapAsDepth[2m > [22m[2mmaps inFront -100 to low depth values
+[22m[39m[Lattice] [AlphaToMesh] Generating mesh from alpha: 50x50, target triangles: 200
+[Lattice] [AlphaToMesh] Mesh generated: 103 vertices, 166 triangles
+
+[90mstdout[2m | src/__tests__/services/meshDeformExport.test.ts[2m > [22m[2mexportOverlapAsDepth[2m > [22m[2msupports uint16 format
+[22m[39m[Lattice] [AlphaToMesh] Generating mesh from alpha: 50x50, target triangles: 200
+[Lattice] [AlphaToMesh] Mesh generated: 103 vertices, 165 triangles
+
+[90mstdout[2m | src/__tests__/services/meshDeformExport.test.ts[2m > [22m[2mexportOverlapAsDepth[2m > [22m[2msupports float32 format
+[22m[39m[Lattice] [AlphaToMesh] Generating mesh from alpha: 50x50, target triangles: 200
+[Lattice] [AlphaToMesh] Mesh generated: 103 vertices, 166 triangles
+
+[90mstdout[2m | src/__tests__/services/meshDeformExport.test.ts[2m > [22m[2mexportOverlapAsDepth[2m > [22m[2mrespects animated inFront at different frames
+[22m[39m[Lattice] [AlphaToMesh] Generating mesh from alpha: 50x50, target triangles: 200
+[Lattice] [AlphaToMesh] Mesh generated: 103 vertices, 166 triangles
+
+[90mstdout[2m | src/__tests__/services/meshDeformRenderer.test.ts[2m > [22m[2mweight calculation (_testCalculateWeights)[2m > [22m[2mcalculates weights for single pin
+[22m[39m[Lattice] [AlphaToMesh] Generating mesh from alpha: 100x100, target triangles: 200
+[Lattice] [AlphaToMesh] Mesh generated: 103 vertices, 126 triangles
+
+[90mstdout[2m | src/__tests__/services/meshDeformExport.test.ts[2m > [22m[2mexportDeformedMeshMask[2m > [22m[2mgenerates white mask where mesh exists
+[22m[39m[Lattice] [AlphaToMesh] Generating mesh from alpha: 50x50, target triangles: 200
+[Lattice] [AlphaToMesh] Mesh generated: 103 vertices, 166 triangles
+
+[90mstdout[2m | src/__tests__/services/meshDeformExport.test.ts[2m > [22m[2mexportDeformedMeshMask[2m > [22m[2mrespects deformed vertex positions
+[22m[39m[Lattice] [AlphaToMesh] Generating mesh from alpha: 100x100, target triangles: 200
+[Lattice] [AlphaToMesh] Mesh generated: 103 vertices, 126 triangles
+
+[90mstdout[2m | src/__tests__/services/meshDeformRenderer.test.ts[2m > [22m[2mweight calculation (_testCalculateWeights)[2m > [22m[2mcalculates weights for multiple pins
+[22m[39m[Lattice] [AlphaToMesh] Generating mesh from alpha: 100x100, target triangles: 200
+[Lattice] [AlphaToMesh] Mesh generated: 103 vertices, 126 triangles
+
+[90mstdout[2m | src/__tests__/services/meshDeformRenderer.test.ts[2m > [22m[2mweight calculation (_testCalculateWeights)[2m > [22m[2mstarch pins have zero weight (do not contribute deformation)
+[22m[39m[Lattice] [AlphaToMesh] Generating mesh from alpha: 100x100, target triangles: 200
+[Lattice] [AlphaToMesh] Mesh generated: 103 vertices, 126 triangles
+
+[90mstdout[2m | src/__tests__/services/meshDeformRenderer.test.ts[2m > [22m[2mweight calculation (_testCalculateWeights)[2m > [22m[2minverse-distance falloff produces weight decay with distance
+[22m[39m[Lattice] [AlphaToMesh] Generating mesh from alpha: 100x100, target triangles: 200
+[Lattice] [AlphaToMesh] Mesh generated: 103 vertices, 126 triangles
+
+[90mstdout[2m | src/__tests__/services/meshDeformRenderer.test.ts[2m > [22m[2mweight calculation (_testCalculateWeights)[2m > [22m[2mradial-basis falloff produces weights
+[22m[39m[Lattice] [AlphaToMesh] Generating mesh from alpha: 100x100, target triangles: 200
+[Lattice] [AlphaToMesh] Mesh generated: 103 vertices, 126 triangles
+
+[90mstdout[2m | src/__tests__/services/meshDeformRenderer.test.ts[2m > [22m[2mdeformation math (_testDeformMesh)[2m > [22m[2mno deformation when pin at rest position
+[22m[39m[Lattice] [AlphaToMesh] Generating mesh from alpha: 100x100, target triangles: 200
+[Lattice] [AlphaToMesh] Mesh generated: 103 vertices, 126 triangles
+
+[90mstdout[2m | src/__tests__/services/meshDeformRenderer.test.ts[2m > [22m[2mdeformation math (_testDeformMesh)[2m > [22m[2mposition pin: animated position changes vertices
+[22m[39m[Lattice] [AlphaToMesh] Generating mesh from alpha: 100x100, target triangles: 200
+[Lattice] [AlphaToMesh] Mesh generated: 103 vertices, 126 triangles
+
+[90mstdout[2m | src/__tests__/services/meshDeformRenderer.test.ts[2m > [22m[2mdeformation math (_testDeformMesh)[2m > [22m[2mbend pin: rotation changes vertices, position does not
+[22m[39m[Lattice] [AlphaToMesh] Generating mesh from alpha: 100x100, target triangles: 200
+[Lattice] [AlphaToMesh] Mesh generated: 103 vertices, 126 triangles
+
+[90mstdout[2m | src/__tests__/services/meshDeformRenderer.test.ts[2m > [22m[2mdeformation math (_testDeformMesh)[2m > [22m[2moverlap pin: does NOT affect vertex positions
+[22m[39m[Lattice] [AlphaToMesh] Generating mesh from alpha: 100x100, target triangles: 200
+[Lattice] [AlphaToMesh] Mesh generated: 103 vertices, 126 triangles
+
+[90mstdout[2m | src/__tests__/services/meshDeformRenderer.test.ts[2m > [22m[2mdeformation math (_testDeformMesh)[2m > [22m[2madvanced pin: position + rotation + scale all apply
+[22m[39m[Lattice] [AlphaToMesh] Generating mesh from alpha: 100x100, target triangles: 200
+[Lattice] [AlphaToMesh] Mesh generated: 103 vertices, 126 triangles
+
+[90mstdout[2m | src/__tests__/services/meshDeformRenderer.test.ts[2m > [22m[2mdeformation math (_testDeformMesh)[2m > [22m[2mmultiple pins combine their effects
+[22m[39m[Lattice] [AlphaToMesh] Generating mesh from alpha: 100x100, target triangles: 200
+[Lattice] [AlphaToMesh] Mesh generated: 103 vertices, 126 triangles
+
+[90mstdout[2m | src/__tests__/services/meshDeformExport.test.ts[2m > [22m[2mexportDeformedMeshMaskBinary[2m > [22m[2mreturns Uint8Array with 0 and 255 values
+[22m[39m[Lattice] [AlphaToMesh] Generating mesh from alpha: 50x50, target triangles: 200
+[Lattice] [AlphaToMesh] Mesh generated: 103 vertices, 167 triangles
+
+[90mstdout[2m | src/__tests__/services/meshDeformExport.test.ts[2m > [22m[2mexportDeformedMeshMaskBinary[2m > [22m[2mproduces same coverage as ImageData version
+[22m[39m[Lattice] [AlphaToMesh] Generating mesh from alpha: 50x50, target triangles: 200
+[Lattice] [AlphaToMesh] Mesh generated: 103 vertices, 166 triangles
+
+ [32m✓[39m src/__tests__/services/meshDeformExport.test.ts[2m > [22mexportPinsAsTrajectory[2m > [22mexports single static pin as trajectory[32m 1[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/meshDeformExport.test.ts[2m > [22mexportPinsAsTrajectory[2m > [22mexports animated pin position changes[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/meshDeformExport.test.ts[2m > [22mexportPinsAsTrajectory[2m > [22mexports multiple pins as separate tracks[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/meshDeformExport.test.ts[2m > [22mexportPinsAsTrajectory[2m > [22mfilters out starch and overlap pins[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/meshDeformExport.test.ts[2m > [22mexportPinsAsTrajectory[2m > [22mincludes bend and advanced pins[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/meshDeformExport.test.ts[2m > [22mexportPinsAsTrajectory[2m > [22mclamps coordinates to composition bounds[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/meshDeformExport.test.ts[2m > [22mexportPinsAsTrajectory[2m > [22mexports correct metadata[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/meshDeformExport.test.ts[2m > [22mexportPinsAsTrajectory[2m > [22mreturns empty trajectory for no trackable pins[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/meshDeformExport.test.ts[2m > [22mexportPinsAsTrajectoryWithMetadata[2m > [22mincludes pin metadata in export[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/meshDeformExport.test.ts[2m > [22mexportOverlapAsDepth[2m > [22mreturns zero depth when no overlap pins[32m 8[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/meshDeformExport.test.ts[2m > [22mexportOverlapAsDepth[2m > [22mgenerates depth from overlap pin inFront value[32m 6[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/meshDeformExport.test.ts[2m > [22mexportOverlapAsDepth[2m > [22mmaps inFront -100 to low depth values[32m 3[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/meshDeformExport.test.ts[2m > [22mexportOverlapAsDepth[2m > [22msupports uint16 format[32m 3[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/meshDeformExport.test.ts[2m > [22mexportOverlapAsDepth[2m > [22msupports float32 format[32m 3[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/meshDeformExport.test.ts[2m > [22mexportOverlapAsDepth[2m > [22mrespects animated inFront at different frames[32m 2[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/meshDeformExport.test.ts[2m > [22mdepthBufferToImageData[2m > [22mconverts uint8 to ImageData[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/meshDeformExport.test.ts[2m > [22mdepthBufferToImageData[2m > [22mconverts float32 to ImageData[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/meshDeformExport.test.ts[2m > [22mexportDeformedMeshMask[2m > [22mgenerates white mask where mesh exists[32m 3[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/meshDeformExport.test.ts[2m > [22mexportDeformedMeshMask[2m > [22mrespects deformed vertex positions[32m 2[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/meshDeformExport.test.ts[2m > [22mexportDeformedMeshMask[2m > [22mhandles empty mesh gracefully[32m 1[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/meshDeformExport.test.ts[2m > [22mexportDeformedMeshMaskBinary[2m > [22mreturns Uint8Array with 0 and 255 values[32m 18[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/meshDeformExport.test.ts[2m > [22mexportDeformedMeshMaskBinary[2m > [22mproduces same coverage as ImageData version[32m 1[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/meshDeformExport.test.ts[2m > [22mexportPinPositionsPerFrame[2m > [22mexports positions with pin IDs[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/meshDeformExport.test.ts[2m > [22mexportPinPositionsPerFrame[2m > [22mtracks animated positions correctly[32m 0[2mms[22m[39m
+[90mstdout[2m | src/__tests__/services/meshDeformRenderer.test.ts[2m > [22m[2moverlap depth sorting (_testCalculateTriangleDepths)[2m > [22m[2mreturns all triangles with depth 0 when no overlap pins
+[22m[39m[Lattice] [AlphaToMesh] Generating mesh from alpha: 100x100, target triangles: 200
+[Lattice] [AlphaToMesh] Mesh generated: 103 vertices, 126 triangles
+
+[90mstdout[2m | src/__tests__/services/meshDeformRenderer.test.ts[2m > [22m[2moverlap depth sorting (_testCalculateTriangleDepths)[2m > [22m[2mcalculates weighted depth from single overlap pin
+[22m[39m[Lattice] [AlphaToMesh] Generating mesh from alpha: 100x100, target triangles: 200
+[Lattice] [AlphaToMesh] Mesh generated: 103 vertices, 126 triangles
+
+[90mstdout[2m | src/__tests__/services/meshDeformRenderer.test.ts[2m > [22m[2moverlap depth sorting (_testCalculateTriangleDepths)[2m > [22m[2mtwo overlap pins: triangles sort by inFront value
+[22m[39m[Lattice] [AlphaToMesh] Generating mesh from alpha: 100x100, target triangles: 200
+[Lattice] [AlphaToMesh] Mesh generated: 103 vertices, 126 triangles
+
+[90mstdout[2m | src/__tests__/services/meshDeformRenderer.test.ts[2m > [22m[2moverlap depth sorting (_testCalculateTriangleDepths)[2m > [22m[2manimated inFront changes depth at different frames
+[22m[39m[Lattice] [AlphaToMesh] Generating mesh from alpha: 100x100, target triangles: 200
+[Lattice] [AlphaToMesh] Mesh generated: 103 vertices, 126 triangles
+
+[90mstdout[2m | src/__tests__/services/meshDeformRenderer.test.ts[2m > [22m[2moverlap depth sorting (_testCalculateTriangleDepths)[2m > [22m[2mtriangles outside pin radius get depth 0
+[22m[39m[Lattice] [AlphaToMesh] Generating mesh from alpha: 100x100, target triangles: 200
+[Lattice] [AlphaToMesh] Mesh generated: 103 vertices, 126 triangles
+
+ [32m✓[39m src/__tests__/services/meshDeformRenderer.test.ts[2m > [22mmeshDeformRenderer[2m > [22mAPI behavior[2m > [22mreturns canvas with correct dimensions when no pins[32m 2[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/meshDeformRenderer.test.ts[2m > [22mmeshDeformRenderer[2m > [22mAPI behavior[2m > [22mreturns canvas with correct dimensions with pins[32m 11[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/meshDeformRenderer.test.ts[2m > [22mmeshDeformRenderer[2m > [22mAPI behavior[2m > [22mhandles missing _effectInstance gracefully[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/meshDeformRenderer.test.ts[2m > [22mmeshDeformRenderer[2m > [22mmesh caching[2m > [22mcaches mesh after first render[32m 1[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/meshDeformRenderer.test.ts[2m > [22mmeshDeformRenderer[2m > [22mmesh caching[2m > [22mreuses same cached mesh across frames[32m 2[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/meshDeformRenderer.test.ts[2m > [22mmeshDeformRenderer[2m > [22mmesh caching[2m > [22mclears cache when clearMeshDeformCaches called[32m 1[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/meshDeformRenderer.test.ts[2m > [22mmeshDeformRenderer[2m > [22mmesh caching[2m > [22mdifferent effect IDs use separate caches[32m 1[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/meshDeformRenderer.test.ts[2m > [22mmeshDeformRenderer[2m > [22mmesh generation parameters[2m > [22mtriangle_count affects cached mesh triangle count[32m 1[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/meshDeformRenderer.test.ts[2m > [22mmeshDeformRenderer[2m > [22mmesh generation parameters[2m > [22mstores mesh generation params in cache[32m 1[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/meshDeformRenderer.test.ts[2m > [22mweight calculation (_testCalculateWeights)[2m > [22mcalculates weights for single pin[32m 12[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/meshDeformRenderer.test.ts[2m > [22mweight calculation (_testCalculateWeights)[2m > [22mcalculates weights for multiple pins[32m 6[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/meshDeformRenderer.test.ts[2m > [22mweight calculation (_testCalculateWeights)[2m > [22mstarch pins have zero weight (do not contribute deformation)[32m 1[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/meshDeformRenderer.test.ts[2m > [22mweight calculation (_testCalculateWeights)[2m > [22minverse-distance falloff produces weight decay with distance[32m 2[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/meshDeformRenderer.test.ts[2m > [22mweight calculation (_testCalculateWeights)[2m > [22mradial-basis falloff produces weights[32m 1[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/meshDeformRenderer.test.ts[2m > [22mdeformation math (_testDeformMesh)[2m > [22mno deformation when pin at rest position[32m 3[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/meshDeformRenderer.test.ts[2m > [22mdeformation math (_testDeformMesh)[2m > [22mposition pin: animated position changes vertices[32m 1[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/meshDeformRenderer.test.ts[2m > [22mdeformation math (_testDeformMesh)[2m > [22mbend pin: rotation changes vertices, position does not[32m 1[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/meshDeformRenderer.test.ts[2m > [22mdeformation math (_testDeformMesh)[2m > [22moverlap pin: does NOT affect vertex positions[32m 4[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/meshDeformRenderer.test.ts[2m > [22mdeformation math (_testDeformMesh)[2m > [22madvanced pin: position + rotation + scale all apply[32m 1[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/meshDeformRenderer.test.ts[2m > [22mdeformation math (_testDeformMesh)[2m > [22mmultiple pins combine their effects[32m 1[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/meshDeformRenderer.test.ts[2m > [22mregisterMeshDeformEffect[2m > [22mregisters without throwing[32m 1[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/meshDeformRenderer.test.ts[2m > [22moverlap depth sorting (_testCalculateTriangleDepths)[2m > [22mreturns all triangles with depth 0 when no overlap pins[32m 3[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/meshDeformRenderer.test.ts[2m > [22moverlap depth sorting (_testCalculateTriangleDepths)[2m > [22mcalculates weighted depth from single overlap pin[32m 2[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/meshDeformRenderer.test.ts[2m > [22moverlap depth sorting (_testCalculateTriangleDepths)[2m > [22mtwo overlap pins: triangles sort by inFront value[32m 1[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/meshDeformRenderer.test.ts[2m > [22moverlap depth sorting (_testCalculateTriangleDepths)[2m > [22manimated inFront changes depth at different frames[32m 2[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/meshDeformRenderer.test.ts[2m > [22moverlap depth sorting (_testCalculateTriangleDepths)[2m > [22mtriangles outside pin radius get depth 0[32m 2[2mms[22m[39m
+[90mstdout[2m | src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22m[2mLayer Creation Pipeline[2m > [22m[2mLayer Type Creation[2m > [22m[2mcreates image layer with correct structure
+[22m[39m[layerActions] Creating layer: {
+  id: [32m'layer_1766991956558_6onhmu1k1'[39m,
+  type: [32m'image'[39m,
+  name: [32m'Test image'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: { assetId: [1mnull[22m, fit: [32m'contain'[39m },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991956558_6onhmu1k1'[39m ]
+}
+
+[90mstdout[2m | src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22m[2mLayer Creation Pipeline[2m > [22m[2mLayer Type Creation[2m > [22m[2mcreates video layer with correct structure
+[22m[39m[layerActions] Creating layer: {
+  id: [32m'layer_1766991956560_6kqdxsejb'[39m,
+  type: [32m'video'[39m,
+  name: [32m'Test video'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: { assetId: [1mnull[22m, loop: [33mfalse[39m, startTime: [33m0[39m, speed: [33m1[39m },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991956560_6kqdxsejb'[39m ]
+}
+
+[90mstdout[2m | src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22m[2mLayer Creation Pipeline[2m > [22m[2mLayer Type Creation[2m > [22m[2mcreates audio layer with correct structure
+[22m[39m[layerActions] Creating layer: {
+  id: [32m'layer_1766991956560_b7bnej3tz'[39m,
+  type: [32m'audio'[39m,
+  name: [32m'Test audio'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: {
+    assetId: [1mnull[22m,
+    level: {
+      id: [32m'prop_Level_1766991956560_f2um2'[39m,
+      name: [32m'Level'[39m,
+      type: [32m'number'[39m,
+      value: [33m0[39m,
+      animated: [33mfalse[39m,
+      keyframes: [],
+      group: [90mundefined[39m
+    },
+    muted: [33mfalse[39m,
+    solo: [33mfalse[39m,
+    pan: {
+      id: [32m'prop_Pan_1766991956560_bzv1y'[39m,
+      name: [32m'Pan'[39m,
+      type: [32m'number'[39m,
+      value: [33m0[39m,
+      animated: [33mfalse[39m,
+      keyframes: [],
+      group: [90mundefined[39m
+    },
+    startTime: [33m0[39m,
+    loop: [33mfalse[39m,
+    speed: [33m1[39m,
+    showWaveform: [33mtrue[39m,
+    waveformColor: [32m'#4a90d9'[39m,
+    exposeFeatures: [33mtrue[39m
+  },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991956560_b7bnej3tz'[39m ]
+}
+
+[90mstdout[2m | src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22m[2mLayer Creation Pipeline[2m > [22m[2mLayer Type Creation[2m > [22m[2mcreates solid layer with correct structure
+[22m[39m[layerActions] Creating layer: {
+  id: [32m'layer_1766991956561_pjtxfoagg'[39m,
+  type: [32m'solid'[39m,
+  name: [32m'Test solid'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: { color: [32m'#808080'[39m, width: [33m1920[39m, height: [33m1080[39m },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991956561_pjtxfoagg'[39m ]
+}
+
+[90mstdout[2m | src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22m[2mLayer Creation Pipeline[2m > [22m[2mLayer Type Creation[2m > [22m[2mcreates text layer with correct structure
+[22m[39m[layerActions] Creating layer: {
+  id: [32m'layer_1766991956561_hhfq0birz'[39m,
+  type: [32m'text'[39m,
+  name: [32m'Test text'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: {
+    text: [32m'Text'[39m,
+    fontFamily: [32m'Arial'[39m,
+    fontSize: [33m72[39m,
+    fontWeight: [32m'400'[39m,
+    fontStyle: [32m'normal'[39m,
+    fill: [32m'#ffffff'[39m,
+    stroke: [32m''[39m,
+    strokeWidth: [33m0[39m,
+    tracking: [33m0[39m,
+    letterSpacing: [33m0[39m,
+    lineSpacing: [33m1.2[39m,
+    lineAnchor: [33m50[39m,
+    characterOffset: [33m0[39m,
+    characterValue: [33m0[39m,
+    blur: { x: [33m0[39m, y: [33m0[39m },
+    lineHeight: [33m1.2[39m,
+    textAlign: [32m'left'[39m,
+    pathLayerId: [1mnull[22m,
+    pathReversed: [33mfalse[39m,
+    pathPerpendicularToPath: [33mtrue[39m,
+    pathForceAlignment: [33mfalse[39m,
+    pathFirstMargin: [33m0[39m,
+    pathLastMargin: [33m0[39m,
+    pathOffset: [33m0[39m,
+    pathAlign: [32m'left'[39m
+  },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991956561_hhfq0birz'[39m ]
+}
+
+[90mstdout[2m | src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22m[2mLayer Creation Pipeline[2m > [22m[2mLayer Type Creation[2m > [22m[2mcreates shape layer with correct structure
+[22m[39m[layerActions] Creating layer: {
+  id: [32m'layer_1766991956562_d8qi1p5wf'[39m,
+  type: [32m'shape'[39m,
+  name: [32m'Test shape'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: {
+    contents: [ [36m[Object][39m ],
+    blendMode: [32m'normal'[39m,
+    quality: [32m'normal'[39m,
+    gpuAccelerated: [33mtrue[39m
+  },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991956562_d8qi1p5wf'[39m ]
+}
+
+[90mstdout[2m | src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22m[2mLayer Creation Pipeline[2m > [22m[2mLayer Type Creation[2m > [22m[2mcreates spline layer with correct structure
+[22m[39m[layerActions] Creating layer: {
+  id: [32m'layer_1766991956562_hj5fer0jf'[39m,
+  type: [32m'spline'[39m,
+  name: [32m'Test spline'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: {
+    pathData: [32m''[39m,
+    controlPoints: [],
+    closed: [33mfalse[39m,
+    stroke: [32m'#00ff00'[39m,
+    strokeWidth: [33m2[39m,
+    lineCap: [32m'round'[39m,
+    lineJoin: [32m'round'[39m,
+    dashArray: [32m''[39m,
+    dashOffset: [33m0[39m
+  },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991956562_hj5fer0jf'[39m ]
+}
+
+[90mstdout[2m | src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22m[2mLayer Creation Pipeline[2m > [22m[2mLayer Type Creation[2m > [22m[2mcreates path layer with correct structure
+[22m[39m[layerActions] Creating layer: {
+  id: [32m'layer_1766991956563_c7l0lnvgm'[39m,
+  type: [32m'path'[39m,
+  name: [32m'Test path'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: {
+    pathData: [32m''[39m,
+    controlPoints: [],
+    closed: [33mfalse[39m,
+    showGuide: [33mtrue[39m,
+    guideColor: [32m'#00FFFF'[39m,
+    guideDashPattern: [ [33m10[39m, [33m5[39m ]
+  },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991956563_c7l0lnvgm'[39m ]
+}
+
+[90mstdout[2m | src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22m[2mLayer Creation Pipeline[2m > [22m[2mLayer Type Creation[2m > [22m[2mcreates particles layer with correct structure
+[22m[39m[layerActions] Creating layer: {
+  id: [32m'layer_1766991956564_dj8k41iks'[39m,
+  type: [32m'particles'[39m,
+  name: [32m'Test particles'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: {
+    systemConfig: {
+      maxParticles: [33m1000[39m,
+      gravity: [33m0[39m,
+      windStrength: [33m0[39m,
+      windDirection: [33m0[39m,
+      warmupPeriod: [33m0[39m,
+      respectMaskBoundary: [33mfalse[39m,
+      boundaryBehavior: [32m'kill'[39m,
+      friction: [33m0.01[39m
+    },
+    emitters: [ [36m[Object][39m ],
+    gravityWells: [],
+    vortices: [],
+    renderOptions: {
+      particleShape: [32m'circle'[39m,
+      blendMode: [32m'normal'[39m,
+      renderTrails: [33mfalse[39m,
+      trailLength: [33m10[39m,
+      trailOpacityFalloff: [33m0.8[39m,
+      glowEnabled: [33mfalse[39m,
+      glowRadius: [33m10[39m,
+      glowIntensity: [33m0.5[39m,
+      motionBlur: [33mfalse[39m,
+      motionBlurStrength: [33m0.5[39m,
+      motionBlurSamples: [33m5[39m
+    },
+    audioMappings: [],
+    exportEnabled: [33mfalse[39m,
+    exportFormat: [32m'wan-move'[39m
+  },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991956564_dj8k41iks'[39m ]
+}
+
+[90mstdout[2m | src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22m[2mLayer Creation Pipeline[2m > [22m[2mLayer Type Creation[2m > [22m[2mcreates particle layer with correct structure
+[22m[39m[layerActions] Creating layer: {
+  id: [32m'layer_1766991956564_hrv8tcylx'[39m,
+  type: [32m'particle'[39m,
+  name: [32m'Test particle'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: {
+    emitterType: [32m'point'[39m,
+    particleCount: [33m100[39m,
+    lifetime: [33m2[39m,
+    speed: [33m50[39m,
+    spread: [33m45[39m,
+    gravity: [33m-9.8[39m,
+    color: [32m'#ffffff'[39m,
+    size: [33m5[39m
+  },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991956564_hrv8tcylx'[39m ]
+}
+
+[90mstdout[2m | src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22m[2mLayer Creation Pipeline[2m > [22m[2mLayer Type Creation[2m > [22m[2mcreates camera layer with correct structure
+[22m[39m[layerActions] Creating layer: {
+  id: [32m'layer_1766991956565_sepza94h7'[39m,
+  type: [32m'camera'[39m,
+  name: [32m'Test camera'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: { cameraId: [1mnull[22m, isActiveCamera: [33mfalse[39m },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991956565_sepza94h7'[39m ]
+}
+
+[90mstderr[2m | src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22m[2mLayer Creation Pipeline[2m > [22m[2mLayer Type Creation[2m > [22m[2mcreates camera layer with correct structure
+[22m[39m[Lattice] [Store] Use createCameraLayer() for camera layers
+
+[90mstdout[2m | src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22m[2mLayer Creation Pipeline[2m > [22m[2mLayer Type Creation[2m > [22m[2mcreates light layer with correct structure
+[22m[39m[layerActions] Creating layer: {
+  id: [32m'layer_1766991956565_rlxy93dwu'[39m,
+  type: [32m'light'[39m,
+  name: [32m'Test light'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: {
+    lightType: [32m'point'[39m,
+    color: [32m'#ffffff'[39m,
+    intensity: [33m100[39m,
+    radius: [33m500[39m,
+    falloff: [32m'none'[39m,
+    falloffDistance: [33m500[39m,
+    castShadows: [33mfalse[39m,
+    shadowDarkness: [33m100[39m,
+    shadowDiffusion: [33m0[39m
+  },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991956565_rlxy93dwu'[39m ]
+}
+
+[90mstdout[2m | src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22m[2mLayer Creation Pipeline[2m > [22m[2mLayer Type Creation[2m > [22m[2mcreates control layer with correct structure
+[22m[39m[layerActions] Creating layer: {
+  id: [32m'layer_1766991956566_okenfep7x'[39m,
+  type: [32m'control'[39m,
+  name: [32m'Test control'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: {
+    size: [33m50[39m,
+    showAxes: [33mtrue[39m,
+    showIcon: [33mtrue[39m,
+    iconShape: [32m'crosshair'[39m,
+    iconColor: [32m'#ffcc00'[39m
+  },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991956566_okenfep7x'[39m ]
+}
+
+[90mstdout[2m | src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22m[2mLayer Creation Pipeline[2m > [22m[2mLayer Type Creation[2m > [22m[2mcreates null layer with correct structure
+[22m[39m[layerActions] Creating layer: {
+  id: [32m'layer_1766991956566_zluk84x1a'[39m,
+  type: [32m'null'[39m,
+  name: [32m'Test null'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: { size: [33m40[39m },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991956566_zluk84x1a'[39m ]
+}
+
+[90mstdout[2m | src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22m[2mLayer Creation Pipeline[2m > [22m[2mLayer Type Creation[2m > [22m[2mcreates nestedComp layer with correct structure
+[22m[39m[layerActions] Creating layer: {
+  id: [32m'layer_1766991956566_xcwes5h3x'[39m,
+  type: [32m'nestedComp'[39m,
+  name: [32m'Test nestedComp'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: {
+    compositionId: [1mnull[22m,
+    speedMap: [1mnull[22m,
+    speedMapEnabled: [33mfalse[39m,
+    timeRemap: [1mnull[22m,
+    timeRemapEnabled: [33mfalse[39m
+  },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991956566_xcwes5h3x'[39m ]
+}
+
+[90mstdout[2m | src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22m[2mLayer Creation Pipeline[2m > [22m[2mLayer Type Creation[2m > [22m[2mcreates depthflow layer with correct structure
+[22m[39m[layerActions] Creating layer: {
+  id: [32m'layer_1766991956566_yd9v1u32h'[39m,
+  type: [32m'depthflow'[39m,
+  name: [32m'Test depthflow'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: {
+    sourceLayerId: [1mnull[22m,
+    depthLayerId: [1mnull[22m,
+    config: {
+      preset: [32m'static'[39m,
+      zoom: [33m1[39m,
+      offsetX: [33m0[39m,
+      offsetY: [33m0[39m,
+      rotation: [33m0[39m,
+      depthScale: [33m1[39m,
+      focusDepth: [33m0.5[39m,
+      dollyZoom: [33m0[39m,
+      orbitRadius: [33m0[39m,
+      orbitSpeed: [33m1[39m,
+      swingAmplitude: [33m0[39m,
+      swingFrequency: [33m1[39m,
+      edgeDilation: [33m0[39m,
+      inpaintEdges: [33mfalse[39m
+    }
+  },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991956566_yd9v1u32h'[39m ]
+}
+
+[90mstdout[2m | src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22m[2mLayer Creation Pipeline[2m > [22m[2mLayer Type Creation[2m > [22m[2mcreates depth layer with correct structure
+[22m[39m[layerActions] Creating layer: {
+  id: [32m'layer_1766991956567_4to1p6xoc'[39m,
+  type: [32m'depth'[39m,
+  name: [32m'Test depth'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: {
+    assetId: [1mnull[22m,
+    visualizationMode: [32m'colormap'[39m,
+    colorMap: [32m'turbo'[39m,
+    invert: [33mfalse[39m,
+    minDepth: [33m0[39m,
+    maxDepth: [33m1[39m,
+    autoNormalize: [33mtrue[39m,
+    contourLevels: [33m10[39m,
+    contourColor: [32m'#ffffff'[39m,
+    contourWidth: [33m1[39m,
+    meshDisplacement: {
+      id: [32m'prop_Displacement_1766991956567_2g7xa'[39m,
+      name: [32m'Displacement'[39m,
+      type: [32m'number'[39m,
+      value: [33m50[39m,
+      animated: [33mfalse[39m,
+      keyframes: [],
+      group: [90mundefined[39m
+    },
+    meshResolution: [33m128[39m,
+    wireframe: [33mfalse[39m
+  },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991956567_4to1p6xoc'[39m ]
+}
+
+[90mstdout[2m | src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22m[2mLayer Creation Pipeline[2m > [22m[2mLayer Type Creation[2m > [22m[2mcreates normal layer with correct structure
+[22m[39m[layerActions] Creating layer: {
+  id: [32m'layer_1766991956567_m4b3yvqyg'[39m,
+  type: [32m'normal'[39m,
+  name: [32m'Test normal'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: {
+    assetId: [1mnull[22m,
+    visualizationMode: [32m'rgb'[39m,
+    format: [32m'opengl'[39m,
+    flipX: [33mfalse[39m,
+    flipY: [33mfalse[39m,
+    flipZ: [33mfalse[39m,
+    arrowDensity: [33m20[39m,
+    arrowScale: [33m10[39m,
+    arrowColor: [32m'#00ff00'[39m,
+    lightDirection: { x: [33m0.5[39m, y: [33m0.5[39m, z: [33m1[39m },
+    lightIntensity: [33m1[39m,
+    ambientIntensity: [33m0.2[39m
+  },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991956567_m4b3yvqyg'[39m ]
+}
+
+[90mstdout[2m | src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22m[2mLayer Creation Pipeline[2m > [22m[2mLayer Type Creation[2m > [22m[2mcreates matte layer with correct structure
+[22m[39m[layerActions] Creating layer: {
+  id: [32m'layer_1766991956568_fetlwpz5x'[39m,
+  type: [32m'matte'[39m,
+  name: [32m'Test matte'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: {
+    matteType: [32m'luminance'[39m,
+    invert: [33mfalse[39m,
+    threshold: [33m0.5[39m,
+    feather: [33m0[39m,
+    expansion: [33m0[39m,
+    sourceLayerId: [1mnull[22m,
+    previewMode: [32m'matte'[39m
+  },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991956568_fetlwpz5x'[39m ]
+}
+
+[90mstdout[2m | src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22m[2mLayer Creation Pipeline[2m > [22m[2mLayer Type Creation[2m > [22m[2mcreates model layer with correct structure
+[22m[39m[layerActions] Creating layer: {
+  id: [32m'layer_1766991956568_q2ynbkpcw'[39m,
+  type: [32m'model'[39m,
+  name: [32m'Test model'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: {
+    assetId: [32m''[39m,
+    format: [32m'gltf'[39m,
+    scale: {
+      id: [32m'prop_Scale_1766991956568_jw7al'[39m,
+      name: [32m'Scale'[39m,
+      type: [32m'number'[39m,
+      value: [33m1[39m,
+      animated: [33mfalse[39m,
+      keyframes: [],
+      group: [90mundefined[39m
+    },
+    uniformScale: [33mtrue[39m,
+    castShadow: [33mtrue[39m,
+    receiveShadow: [33mtrue[39m,
+    frustumCulled: [33mtrue[39m,
+    renderOrder: [33m0[39m,
+    showBoundingBox: [33mfalse[39m,
+    showSkeleton: [33mfalse[39m,
+    envMapIntensity: [33m1[39m
+  },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991956568_q2ynbkpcw'[39m ]
+}
+
+[90mstdout[2m | src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22m[2mLayer Creation Pipeline[2m > [22m[2mLayer Type Creation[2m > [22m[2mcreates pointcloud layer with correct structure
+[22m[39m[layerActions] Creating layer: {
+  id: [32m'layer_1766991956568_96y5dd6oc'[39m,
+  type: [32m'pointcloud'[39m,
+  name: [32m'Test pointcloud'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: {
+    assetId: [32m''[39m,
+    format: [32m'ply'[39m,
+    pointCount: [33m0[39m,
+    pointSize: {
+      id: [32m'prop_Point Size_1766991956568_ccn8b'[39m,
+      name: [32m'Point Size'[39m,
+      type: [32m'number'[39m,
+      value: [33m2[39m,
+      animated: [33mfalse[39m,
+      keyframes: [],
+      group: [90mundefined[39m
+    },
+    sizeAttenuation: [33mtrue[39m,
+    minPointSize: [33m1[39m,
+    maxPointSize: [33m64[39m,
+    colorMode: [32m'rgb'[39m,
+    uniformColor: [32m'#ffffff'[39m,
+    renderMode: [32m'points'[39m,
+    opacity: {
+      id: [32m'prop_Opacity_1766991956568_mctqc'[39m,
+      name: [32m'Opacity'[39m,
+      type: [32m'number'[39m,
+      value: [33m1[39m,
+      animated: [33mfalse[39m,
+      keyframes: [],
+      group: [90mundefined[39m
+    },
+    depthTest: [33mtrue[39m,
+    depthWrite: [33mtrue[39m,
+    showBoundingBox: [33mfalse[39m,
+    pointBudget: [33m1000000[39m
+  },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991956568_96y5dd6oc'[39m ]
+}
+
+[90mstdout[2m | src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22m[2mLayer Creation Pipeline[2m > [22m[2mLayer Type Creation[2m > [22m[2mcreates group layer with correct structure
+[22m[39m[layerActions] Creating layer: {
+  id: [32m'layer_1766991956569_y4pmkmvjv'[39m,
+  type: [32m'group'[39m,
+  name: [32m'Test group'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: { collapsed: [33mfalse[39m, color: [1mnull[22m, passThrough: [33mtrue[39m, isolate: [33mfalse[39m },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991956569_y4pmkmvjv'[39m ]
+}
+
+[90mstdout[2m | src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22m[2mLayer Creation Pipeline[2m > [22m[2mLayer Type Creation[2m > [22m[2mcreates generated layer with correct structure
+[22m[39m[layerActions] Creating layer: {
+  id: [32m'layer_1766991956569_ld12xabna'[39m,
+  type: [32m'generated'[39m,
+  name: [32m'Test generated'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: {
+    generationType: [32m'depth'[39m,
+    sourceLayerId: [1mnull[22m,
+    model: [32m'depth-anything-v2'[39m,
+    parameters: {},
+    generatedAssetId: [1mnull[22m,
+    status: [32m'pending'[39m,
+    autoRegenerate: [33mfalse[39m
+  },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991956569_ld12xabna'[39m ]
+}
+
+[90mstdout[2m | src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22m[2mLayer Creation Pipeline[2m > [22m[2mLayer Type Creation[2m > [22m[2mcreates pose layer with correct structure
+[22m[39m[layerActions] Creating layer: {
+  id: [32m'layer_1766991956569_t25avx2yx'[39m,
+  type: [32m'pose'[39m,
+  name: [32m'Test pose'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: {
+    poses: [ [36m[Object][39m ],
+    format: [32m'coco18'[39m,
+    normalized: [33mtrue[39m,
+    boneWidth: [33m4[39m,
+    keypointRadius: [33m4[39m,
+    showKeypoints: [33mtrue[39m,
+    showBones: [33mtrue[39m,
+    showLabels: [33mfalse[39m,
+    useDefaultColors: [33mtrue[39m,
+    customBoneColor: [32m'#FFFFFF'[39m,
+    customKeypointColor: [32m'#FF0000'[39m,
+    selectedKeypoint: [33m-1[39m,
+    selectedPose: [33m0[39m
+  },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991956569_t25avx2yx'[39m ]
+}
+
+[90mstdout[2m | src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22m[2mLayer Creation Pipeline[2m > [22m[2mLayer Type Creation[2m > [22m[2mcreates effectLayer layer with correct structure
+[22m[39m[layerActions] Creating layer: {
+  id: [32m'layer_1766991956570_adlrndg5e'[39m,
+  type: [32m'effectLayer'[39m,
+  name: [32m'Test effectLayer'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: { color: [32m'#808080'[39m, effectLayer: [33mtrue[39m, adjustmentLayer: [33mtrue[39m },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991956570_adlrndg5e'[39m ]
+}
+
+[90mstdout[2m | src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22m[2mLayer Creation Pipeline[2m > [22m[2mLayer Type Creation[2m > [22m[2mcreates adjustment layer with correct structure
+[22m[39m[layerActions] Creating layer: {
+  id: [32m'layer_1766991956570_x2ynvxre1'[39m,
+  type: [32m'adjustment'[39m,
+  name: [32m'Test adjustment'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: { color: [32m'#808080'[39m, effectLayer: [33mtrue[39m, adjustmentLayer: [33mtrue[39m },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991956570_x2ynvxre1'[39m ]
+}
+
+[90mstdout[2m | src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22m[2mLayer Creation Pipeline[2m > [22m[2mLayer Positioning[2m > [22m[2mcenters layer position in composition
+[22m[39m[layerActions] Creating layer: {
+  id: [32m'layer_1766991956573_u7htn073i'[39m,
+  type: [32m'solid'[39m,
+  name: [32m'Centered Layer'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: { color: [32m'#808080'[39m, width: [33m1920[39m, height: [33m1080[39m },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991956573_u7htn073i'[39m ]
+}
+
+[90mstdout[2m | src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22m[2mLayer Creation Pipeline[2m > [22m[2mLayer Positioning[2m > [22m[2mcenters layer in custom composition size
+[22m[39m[layerActions] Creating layer: {
+  id: [32m'layer_1766991956573_98hsqx9cq'[39m,
+  type: [32m'solid'[39m,
+  name: [32m'Small Comp Layer'[39m,
+  position: { x: [33m256[39m, y: [33m256[39m },
+  data: { color: [32m'#808080'[39m, width: [33m512[39m, height: [33m512[39m },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991956573_98hsqx9cq'[39m ]
+}
+
+[90mstdout[2m | src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22m[2mLayer Creation Pipeline[2m > [22m[2mLayer Positioning[2m > [22m[2msets correct timing based on composition
+[22m[39m[layerActions] Creating layer: {
+  id: [32m'layer_1766991956573_0q72h8ap8'[39m,
+  type: [32m'solid'[39m,
+  name: [32m'Timed Layer'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: { color: [32m'#808080'[39m, width: [33m1920[39m, height: [33m1080[39m },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991956573_0q72h8ap8'[39m ]
+}
+
+[90mstdout[2m | src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22m[2mLayer Creation Pipeline[2m > [22m[2mLayer Duplication[2m > [22m[2mduplicates layer with new ID
+[22m[39m[layerActions] Creating layer: {
+  id: [32m'layer_1766991956573_kjnih8k6w'[39m,
+  type: [32m'solid'[39m,
+  name: [32m'Original'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: { color: [32m'#808080'[39m, width: [33m1920[39m, height: [33m1080[39m },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991956573_kjnih8k6w'[39m ]
+}
+
+[90mstdout[2m | src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22m[2mLayer Creation Pipeline[2m > [22m[2mLayer Duplication[2m > [22m[2mdeep clones transform values
+[22m[39m[layerActions] Creating layer: {
+  id: [32m'layer_1766991956574_d4injjqx7'[39m,
+  type: [32m'solid'[39m,
+  name: [32m'Original'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: { color: [32m'#808080'[39m, width: [33m1920[39m, height: [33m1080[39m },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991956574_d4injjqx7'[39m ]
+}
+
+[90mstdout[2m | src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22m[2mLayer Creation Pipeline[2m > [22m[2mLayer Duplication[2m > [22m[2mregenerates keyframe IDs on duplicate
+[22m[39m[layerActions] Creating layer: {
+  id: [32m'layer_1766991956575_rqflbo2bz'[39m,
+  type: [32m'solid'[39m,
+  name: [32m'Animated'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: { color: [32m'#808080'[39m, width: [33m1920[39m, height: [33m1080[39m },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991956575_rqflbo2bz'[39m ]
+}
+
+[90mstdout[2m | src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22m[2mLayer Creation Pipeline[2m > [22m[2mLayer Parenting[2m > [22m[2msets parent correctly
+[22m[39m[layerActions] Creating layer: {
+  id: [32m'layer_1766991956575_wlmoxk4np'[39m,
+  type: [32m'control'[39m,
+  name: [32m'Parent'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: {
+    size: [33m50[39m,
+    showAxes: [33mtrue[39m,
+    showIcon: [33mtrue[39m,
+    iconShape: [32m'crosshair'[39m,
+    iconColor: [32m'#ffcc00'[39m
+  },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991956575_wlmoxk4np'[39m ]
+}
+[layerActions] Creating layer: {
+  id: [32m'layer_1766991956576_yidzyu6w6'[39m,
+  type: [32m'solid'[39m,
+  name: [32m'Child'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: { color: [32m'#808080'[39m, width: [33m1920[39m, height: [33m1080[39m },
+  layersCountBefore: [33m1[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m2[39m,
+  allLayerIds: [ [32m'layer_1766991956576_yidzyu6w6'[39m, [32m'layer_1766991956575_wlmoxk4np'[39m ]
+}
+
+[90mstdout[2m | src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22m[2mLayer Creation Pipeline[2m > [22m[2mLayer Parenting[2m > [22m[2mprevents self-parenting
+[22m[39m[layerActions] Creating layer: {
+  id: [32m'layer_1766991956576_fo1sm5hbk'[39m,
+  type: [32m'solid'[39m,
+  name: [32m'Self'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: { color: [32m'#808080'[39m, width: [33m1920[39m, height: [33m1080[39m },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991956576_fo1sm5hbk'[39m ]
+}
+
+[90mstdout[2m | src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22m[2mLayer Creation Pipeline[2m > [22m[2mLayer Parenting[2m > [22m[2mprevents circular parenting
+[22m[39m[layerActions] Creating layer: {
+  id: [32m'layer_1766991956576_u76i330gy'[39m,
+  type: [32m'control'[39m,
+  name: [32m'Grandparent'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: {
+    size: [33m50[39m,
+    showAxes: [33mtrue[39m,
+    showIcon: [33mtrue[39m,
+    iconShape: [32m'crosshair'[39m,
+    iconColor: [32m'#ffcc00'[39m
+  },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991956576_u76i330gy'[39m ]
+}
+[layerActions] Creating layer: {
+  id: [32m'layer_1766991956577_y0pigqklk'[39m,
+  type: [32m'control'[39m,
+  name: [32m'Parent'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: {
+    size: [33m50[39m,
+    showAxes: [33mtrue[39m,
+    showIcon: [33mtrue[39m,
+    iconShape: [32m'crosshair'[39m,
+    iconColor: [32m'#ffcc00'[39m
+  },
+  layersCountBefore: [33m1[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m2[39m,
+  allLayerIds: [ [32m'layer_1766991956577_y0pigqklk'[39m, [32m'layer_1766991956576_u76i330gy'[39m ]
+}
+[layerActions] Creating layer: {
+  id: [32m'layer_1766991956577_z9x8br1qp'[39m,
+  type: [32m'solid'[39m,
+  name: [32m'Child'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: { color: [32m'#808080'[39m, width: [33m1920[39m, height: [33m1080[39m },
+  layersCountBefore: [33m2[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m3[39m,
+  allLayerIds: [
+    [32m'layer_1766991956577_z9x8br1qp'[39m,
+    [32m'layer_1766991956577_y0pigqklk'[39m,
+    [32m'layer_1766991956576_u76i330gy'[39m
+  ]
+}
+
+[90mstderr[2m | src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22m[2mLayer Creation Pipeline[2m > [22m[2mLayer Parenting[2m > [22m[2mprevents circular parenting
+[22m[39m[Lattice] [Store] Cannot set parent: would create circular reference
+
+[90mstdout[2m | src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22m[2mLayer Creation Pipeline[2m > [22m[2mLayer Parenting[2m > [22m[2mclears parent with null
+[22m[39m[layerActions] Creating layer: {
+  id: [32m'layer_1766991956577_brxl0xaw3'[39m,
+  type: [32m'control'[39m,
+  name: [32m'Parent'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: {
+    size: [33m50[39m,
+    showAxes: [33mtrue[39m,
+    showIcon: [33mtrue[39m,
+    iconShape: [32m'crosshair'[39m,
+    iconColor: [32m'#ffcc00'[39m
+  },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991956577_brxl0xaw3'[39m ]
+}
+[layerActions] Creating layer: {
+  id: [32m'layer_1766991956577_8h55jh3f6'[39m,
+  type: [32m'solid'[39m,
+  name: [32m'Child'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: { color: [32m'#808080'[39m, width: [33m1920[39m, height: [33m1080[39m },
+  layersCountBefore: [33m1[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m2[39m,
+  allLayerIds: [ [32m'layer_1766991956577_8h55jh3f6'[39m, [32m'layer_1766991956577_brxl0xaw3'[39m ]
+}
+
+[90mstdout[2m | src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22m[2mLayer Creation Pipeline[2m > [22m[2mLayer Deletion[2m > [22m[2mlayer can be removed from layers array manually
+[22m[39m[layerActions] Creating layer: {
+  id: [32m'layer_1766991956577_4gfizafd9'[39m,
+  type: [32m'solid'[39m,
+  name: [32m'To Delete'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: { color: [32m'#808080'[39m, width: [33m1920[39m, height: [33m1080[39m },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991956577_4gfizafd9'[39m ]
+}
+
+[90mstdout[2m | src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22m[2mLayer Creation Pipeline[2m > [22m[2mLayer Deletion[2m > [22m[2mdeletion triggers modified timestamp update
+[22m[39m[layerActions] Creating layer: {
+  id: [32m'layer_1766991956578_gifrkhyen'[39m,
+  type: [32m'solid'[39m,
+  name: [32m'To Delete'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: { color: [32m'#808080'[39m, width: [33m1920[39m, height: [33m1080[39m },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991956578_gifrkhyen'[39m ]
+}
+
+[90mstdout[2m | src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22m[2mLayer Creation Pipeline[2m > [22m[2mAnimatable Property Structure[2m > [22m[2mcreates valid animatable property for position
+[22m[39m[layerActions] Creating layer: {
+  id: [32m'layer_1766991956579_u15lxxbgq'[39m,
+  type: [32m'solid'[39m,
+  name: [32m'Test'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: { color: [32m'#808080'[39m, width: [33m1920[39m, height: [33m1080[39m },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991956579_u15lxxbgq'[39m ]
+}
+
+[90mstdout[2m | src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22m[2mLayer Creation Pipeline[2m > [22m[2mAnimatable Property Structure[2m > [22m[2mcreates valid animatable property for opacity
+[22m[39m[layerActions] Creating layer: {
+  id: [32m'layer_1766991956580_i3lctw8ys'[39m,
+  type: [32m'solid'[39m,
+  name: [32m'Test'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: { color: [32m'#808080'[39m, width: [33m1920[39m, height: [33m1080[39m },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991956580_i3lctw8ys'[39m ]
+}
+
+[90mstdout[2m | src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22m[2mLayer Creation Pipeline[2m > [22m[2mAnimatable Property Structure[2m > [22m[2mcreates audio properties for video/audio layers
+[22m[39m[layerActions] Creating layer: {
+  id: [32m'layer_1766991956580_gyv1iaa54'[39m,
+  type: [32m'video'[39m,
+  name: [32m'Video'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: { assetId: [1mnull[22m, loop: [33mfalse[39m, startTime: [33m0[39m, speed: [33m1[39m },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991956580_gyv1iaa54'[39m ]
+}
+[layerActions] Creating layer: {
+  id: [32m'layer_1766991956580_2gwo1uuod'[39m,
+  type: [32m'audio'[39m,
+  name: [32m'Audio'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: {
+    assetId: [1mnull[22m,
+    level: {
+      id: [32m'prop_Level_1766991956580_p3ec4'[39m,
+      name: [32m'Level'[39m,
+      type: [32m'number'[39m,
+      value: [33m0[39m,
+      animated: [33mfalse[39m,
+      keyframes: [],
+      group: [90mundefined[39m
+    },
+    muted: [33mfalse[39m,
+    solo: [33mfalse[39m,
+    pan: {
+      id: [32m'prop_Pan_1766991956580_w0z6z'[39m,
+      name: [32m'Pan'[39m,
+      type: [32m'number'[39m,
+      value: [33m0[39m,
+      animated: [33mfalse[39m,
+      keyframes: [],
+      group: [90mundefined[39m
+    },
+    startTime: [33m0[39m,
+    loop: [33mfalse[39m,
+    speed: [33m1[39m,
+    showWaveform: [33mtrue[39m,
+    waveformColor: [32m'#4a90d9'[39m,
+    exposeFeatures: [33mtrue[39m
+  },
+  layersCountBefore: [33m1[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m2[39m,
+  allLayerIds: [ [32m'layer_1766991956580_2gwo1uuod'[39m, [32m'layer_1766991956580_gyv1iaa54'[39m ]
+}
+
+[90mstdout[2m | src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22m[2mLayer Creation Pipeline[2m > [22m[2mAnimatable Property Structure[2m > [22m[2mcreates spline-specific properties array
+[22m[39m[layerActions] Creating layer: {
+  id: [32m'layer_1766991956580_ywrbvgapd'[39m,
+  type: [32m'spline'[39m,
+  name: [32m'Spline'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: {
+    pathData: [32m''[39m,
+    controlPoints: [],
+    closed: [33mfalse[39m,
+    stroke: [32m'#00ff00'[39m,
+    strokeWidth: [33m2[39m,
+    lineCap: [32m'round'[39m,
+    lineJoin: [32m'round'[39m,
+    dashArray: [32m''[39m,
+    dashOffset: [33m0[39m
+  },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991956580_ywrbvgapd'[39m ]
+}
+
+ [32m✓[39m src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22mLayer Creation Pipeline[2m > [22mLayer Type Creation[2m > [22mcreates image layer with correct structure[32m 2[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22mLayer Creation Pipeline[2m > [22mLayer Type Creation[2m > [22mcreates video layer with correct structure[32m 1[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22mLayer Creation Pipeline[2m > [22mLayer Type Creation[2m > [22mcreates audio layer with correct structure[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22mLayer Creation Pipeline[2m > [22mLayer Type Creation[2m > [22mcreates solid layer with correct structure[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22mLayer Creation Pipeline[2m > [22mLayer Type Creation[2m > [22mcreates text layer with correct structure[32m 1[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22mLayer Creation Pipeline[2m > [22mLayer Type Creation[2m > [22mcreates shape layer with correct structure[32m 1[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22mLayer Creation Pipeline[2m > [22mLayer Type Creation[2m > [22mcreates spline layer with correct structure[32m 1[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22mLayer Creation Pipeline[2m > [22mLayer Type Creation[2m > [22mcreates path layer with correct structure[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22mLayer Creation Pipeline[2m > [22mLayer Type Creation[2m > [22mcreates particles layer with correct structure[32m 1[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22mLayer Creation Pipeline[2m > [22mLayer Type Creation[2m > [22mcreates particle layer with correct structure[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22mLayer Creation Pipeline[2m > [22mLayer Type Creation[2m > [22mcreates camera layer with correct structure[32m 1[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22mLayer Creation Pipeline[2m > [22mLayer Type Creation[2m > [22mcreates light layer with correct structure[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22mLayer Creation Pipeline[2m > [22mLayer Type Creation[2m > [22mcreates control layer with correct structure[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22mLayer Creation Pipeline[2m > [22mLayer Type Creation[2m > [22mcreates null layer with correct structure[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22mLayer Creation Pipeline[2m > [22mLayer Type Creation[2m > [22mcreates nestedComp layer with correct structure[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22mLayer Creation Pipeline[2m > [22mLayer Type Creation[2m > [22mcreates depthflow layer with correct structure[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22mLayer Creation Pipeline[2m > [22mLayer Type Creation[2m > [22mcreates depth layer with correct structure[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22mLayer Creation Pipeline[2m > [22mLayer Type Creation[2m > [22mcreates normal layer with correct structure[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22mLayer Creation Pipeline[2m > [22mLayer Type Creation[2m > [22mcreates matte layer with correct structure[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22mLayer Creation Pipeline[2m > [22mLayer Type Creation[2m > [22mcreates model layer with correct structure[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22mLayer Creation Pipeline[2m > [22mLayer Type Creation[2m > [22mcreates pointcloud layer with correct structure[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22mLayer Creation Pipeline[2m > [22mLayer Type Creation[2m > [22mcreates group layer with correct structure[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22mLayer Creation Pipeline[2m > [22mLayer Type Creation[2m > [22mcreates generated layer with correct structure[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22mLayer Creation Pipeline[2m > [22mLayer Type Creation[2m > [22mcreates pose layer with correct structure[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22mLayer Creation Pipeline[2m > [22mLayer Type Creation[2m > [22mcreates effectLayer layer with correct structure[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22mLayer Creation Pipeline[2m > [22mLayer Type Creation[2m > [22mcreates adjustment layer with correct structure[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22mLayer Creation Pipeline[2m > [22mLayer Default Data Integrity[2m > [22mtext layer has all required text properties[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22mLayer Creation Pipeline[2m > [22mLayer Default Data Integrity[2m > [22msolid layer uses composition dimensions[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22mLayer Creation Pipeline[2m > [22mLayer Default Data Integrity[2m > [22mparticles layer has complete system config[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22mLayer Creation Pipeline[2m > [22mLayer Default Data Integrity[2m > [22mpose layer has valid COCO18 keypoints[32m 1[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22mLayer Creation Pipeline[2m > [22mLayer Default Data Integrity[2m > [22mdepthflow layer has preset config[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22mLayer Creation Pipeline[2m > [22mLayer Default Data Integrity[2m > [22mshape layer has valid shape structure[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22mLayer Creation Pipeline[2m > [22mLayer Default Data Integrity[2m > [22mcamera layer has default camera data[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22mLayer Creation Pipeline[2m > [22mLayer Positioning[2m > [22mcenters layer position in composition[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22mLayer Creation Pipeline[2m > [22mLayer Positioning[2m > [22mcenters layer in custom composition size[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22mLayer Creation Pipeline[2m > [22mLayer Positioning[2m > [22msets correct timing based on composition[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22mLayer Creation Pipeline[2m > [22mLayer Duplication[2m > [22mduplicates layer with new ID[32m 1[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22mLayer Creation Pipeline[2m > [22mLayer Duplication[2m > [22mdeep clones transform values[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22mLayer Creation Pipeline[2m > [22mLayer Duplication[2m > [22mregenerates keyframe IDs on duplicate[32m 1[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22mLayer Creation Pipeline[2m > [22mLayer Parenting[2m > [22msets parent correctly[32m 1[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22mLayer Creation Pipeline[2m > [22mLayer Parenting[2m > [22mprevents self-parenting[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22mLayer Creation Pipeline[2m > [22mLayer Parenting[2m > [22mprevents circular parenting[32m 1[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22mLayer Creation Pipeline[2m > [22mLayer Parenting[2m > [22mclears parent with null[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22mLayer Creation Pipeline[2m > [22mLayer Deletion[2m > [22mlayer can be removed from layers array manually[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22mLayer Creation Pipeline[2m > [22mLayer Deletion[2m > [22mdeletion of non-existent layer index is safe[32m 1[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22mLayer Creation Pipeline[2m > [22mLayer Deletion[2m > [22mdeletion triggers modified timestamp update[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22mLayer Creation Pipeline[2m > [22mAnimatable Property Structure[2m > [22mcreates valid animatable property for position[32m 1[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22mLayer Creation Pipeline[2m > [22mAnimatable Property Structure[2m > [22mcreates valid animatable property for opacity[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22mLayer Creation Pipeline[2m > [22mAnimatable Property Structure[2m > [22mcreates audio properties for video/audio layers[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/layer-creation-pipeline.test.ts[2m > [22mLayer Creation Pipeline[2m > [22mAnimatable Property Structure[2m > [22mcreates spline-specific properties array[32m 1[2mms[22m[39m
+[90mstdout[2m | src/__tests__/integration/keyframe-actions-pipeline.test.ts[2m > [22m[2mKeyframe Actions Pipeline[2m > [22m[2mAdding Keyframes[2m > [22m[2madds keyframe to position property
+[22m[39m[layerActions] Creating layer: {
+  id: [32m'layer_1766991956627_4622pev84'[39m,
+  type: [32m'solid'[39m,
+  name: [32m'Test Layer'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: { color: [32m'#808080'[39m, width: [33m1920[39m, height: [33m1080[39m },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991956627_4622pev84'[39m ]
+}
+[Lattice] [Store] addKeyframe called: {
+  layerId: [32m'layer_1766991956627_4622pev84'[39m,
+  propertyPath: [32m'position'[39m,
+  value: { x: [33m100[39m, y: [33m200[39m },
+  frame: [33m10[39m
+}
+[Lattice] [Store] addKeyframe: added new keyframe at frame [33m10[39m total keyframes: [33m1[39m
+
+[90mstdout[2m | src/__tests__/integration/keyframe-actions-pipeline.test.ts[2m > [22m[2mKeyframe Actions Pipeline[2m > [22m[2mAdding Keyframes[2m > [22m[2madds multiple keyframes in sorted order
+[22m[39m[layerActions] Creating layer: {
+  id: [32m'layer_1766991956630_vx5xymbl9'[39m,
+  type: [32m'solid'[39m,
+  name: [32m'Test Layer'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: { color: [32m'#808080'[39m, width: [33m1920[39m, height: [33m1080[39m },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991956630_vx5xymbl9'[39m ]
+}
+[Lattice] [Store] addKeyframe called: {
+  layerId: [32m'layer_1766991956630_vx5xymbl9'[39m,
+  propertyPath: [32m'position'[39m,
+  value: { x: [33m100[39m, y: [33m100[39m },
+  frame: [33m30[39m
+}
+[Lattice] [Store] addKeyframe: added new keyframe at frame [33m30[39m total keyframes: [33m1[39m
+[Lattice] [Store] addKeyframe called: {
+  layerId: [32m'layer_1766991956630_vx5xymbl9'[39m,
+  propertyPath: [32m'position'[39m,
+  value: { x: [33m0[39m, y: [33m0[39m },
+  frame: [33m0[39m
+}
+[Lattice] [Store] addKeyframe: added new keyframe at frame [33m0[39m total keyframes: [33m2[39m
+[Lattice] [Store] addKeyframe called: {
+  layerId: [32m'layer_1766991956630_vx5xymbl9'[39m,
+  propertyPath: [32m'position'[39m,
+  value: { x: [33m50[39m, y: [33m50[39m },
+  frame: [33m15[39m
+}
+[Lattice] [Store] addKeyframe: added new keyframe at frame [33m15[39m total keyframes: [33m3[39m
+
+[90mstdout[2m | src/__tests__/integration/keyframe-actions-pipeline.test.ts[2m > [22m[2mKeyframe Actions Pipeline[2m > [22m[2mAdding Keyframes[2m > [22m[2mreplaces keyframe at same frame
+[22m[39m[layerActions] Creating layer: {
+  id: [32m'layer_1766991956631_um0oq78d4'[39m,
+  type: [32m'solid'[39m,
+  name: [32m'Test Layer'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: { color: [32m'#808080'[39m, width: [33m1920[39m, height: [33m1080[39m },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991956631_um0oq78d4'[39m ]
+}
+[Lattice] [Store] addKeyframe called: {
+  layerId: [32m'layer_1766991956631_um0oq78d4'[39m,
+  propertyPath: [32m'position'[39m,
+  value: { x: [33m100[39m, y: [33m100[39m },
+  frame: [33m10[39m
+}
+[Lattice] [Store] addKeyframe: added new keyframe at frame [33m10[39m total keyframes: [33m1[39m
+[Lattice] [Store] addKeyframe called: {
+  layerId: [32m'layer_1766991956631_um0oq78d4'[39m,
+  propertyPath: [32m'position'[39m,
+  value: { x: [33m500[39m, y: [33m500[39m },
+  frame: [33m10[39m
+}
+[Lattice] [Store] addKeyframe: replaced existing keyframe at frame [33m10[39m
+
+[90mstdout[2m | src/__tests__/integration/keyframe-actions-pipeline.test.ts[2m > [22m[2mKeyframe Actions Pipeline[2m > [22m[2mAdding Keyframes[2m > [22m[2madds keyframe with default linear interpolation
+[22m[39m[layerActions] Creating layer: {
+  id: [32m'layer_1766991956631_q4xv8m1oe'[39m,
+  type: [32m'solid'[39m,
+  name: [32m'Test Layer'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: { color: [32m'#808080'[39m, width: [33m1920[39m, height: [33m1080[39m },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991956631_q4xv8m1oe'[39m ]
+}
+[Lattice] [Store] addKeyframe called: {
+  layerId: [32m'layer_1766991956631_q4xv8m1oe'[39m,
+  propertyPath: [32m'opacity'[39m,
+  value: [33m50[39m,
+  frame: [33m20[39m
+}
+[Lattice] [Store] addKeyframe: added new keyframe at frame [33m20[39m total keyframes: [33m1[39m
+
+[90mstdout[2m | src/__tests__/integration/keyframe-actions-pipeline.test.ts[2m > [22m[2mKeyframe Actions Pipeline[2m > [22m[2mAdding Keyframes[2m > [22m[2msupports normalized property paths (with and without transform prefix)
+[22m[39m[layerActions] Creating layer: {
+  id: [32m'layer_1766991956632_unqwae9ka'[39m,
+  type: [32m'solid'[39m,
+  name: [32m'Test Layer'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: { color: [32m'#808080'[39m, width: [33m1920[39m, height: [33m1080[39m },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991956632_unqwae9ka'[39m ]
+}
+[Lattice] [Store] addKeyframe called: {
+  layerId: [32m'layer_1766991956632_unqwae9ka'[39m,
+  propertyPath: [32m'position'[39m,
+  value: { x: [33m100[39m, y: [33m100[39m },
+  frame: [33m0[39m
+}
+[Lattice] [Store] addKeyframe: added new keyframe at frame [33m0[39m total keyframes: [33m1[39m
+[Lattice] [Store] addKeyframe called: {
+  layerId: [32m'layer_1766991956632_unqwae9ka'[39m,
+  propertyPath: [32m'transform.scale'[39m,
+  value: { x: [33m150[39m, y: [33m150[39m },
+  frame: [33m0[39m
+}
+[Lattice] [Store] addKeyframe: added new keyframe at frame [33m0[39m total keyframes: [33m1[39m
+
+[90mstdout[2m | src/__tests__/integration/keyframe-actions-pipeline.test.ts[2m > [22m[2mKeyframe Actions Pipeline[2m > [22m[2mRemoving Keyframes[2m > [22m[2mremoves keyframe by ID
+[22m[39m[layerActions] Creating layer: {
+  id: [32m'layer_1766991956632_argmktpa3'[39m,
+  type: [32m'solid'[39m,
+  name: [32m'Test Layer'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: { color: [32m'#808080'[39m, width: [33m1920[39m, height: [33m1080[39m },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991956632_argmktpa3'[39m ]
+}
+[Lattice] [Store] addKeyframe called: {
+  layerId: [32m'layer_1766991956632_argmktpa3'[39m,
+  propertyPath: [32m'position'[39m,
+  value: { x: [33m100[39m, y: [33m100[39m },
+  frame: [33m10[39m
+}
+[Lattice] [Store] addKeyframe: added new keyframe at frame [33m10[39m total keyframes: [33m1[39m
+
+[90mstdout[2m | src/__tests__/integration/keyframe-actions-pipeline.test.ts[2m > [22m[2mKeyframe Actions Pipeline[2m > [22m[2mRemoving Keyframes[2m > [22m[2mdisables animation when all keyframes removed
+[22m[39m[layerActions] Creating layer: {
+  id: [32m'layer_1766991956633_aavwyjrf5'[39m,
+  type: [32m'solid'[39m,
+  name: [32m'Test Layer'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: { color: [32m'#808080'[39m, width: [33m1920[39m, height: [33m1080[39m },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991956633_aavwyjrf5'[39m ]
+}
+[Lattice] [Store] addKeyframe called: {
+  layerId: [32m'layer_1766991956633_aavwyjrf5'[39m,
+  propertyPath: [32m'opacity'[39m,
+  value: [33m50[39m,
+  frame: [33m10[39m
+}
+[Lattice] [Store] addKeyframe: added new keyframe at frame [33m10[39m total keyframes: [33m1[39m
+
+[90mstdout[2m | src/__tests__/integration/keyframe-actions-pipeline.test.ts[2m > [22m[2mKeyframe Actions Pipeline[2m > [22m[2mMoving Keyframes[2m > [22m[2mmoves keyframe to new frame
+[22m[39m[layerActions] Creating layer: {
+  id: [32m'layer_1766991956633_ftdtlpr8t'[39m,
+  type: [32m'solid'[39m,
+  name: [32m'Test Layer'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: { color: [32m'#808080'[39m, width: [33m1920[39m, height: [33m1080[39m },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991956633_ftdtlpr8t'[39m ]
+}
+[Lattice] [Store] addKeyframe called: {
+  layerId: [32m'layer_1766991956633_ftdtlpr8t'[39m,
+  propertyPath: [32m'position'[39m,
+  value: { x: [33m100[39m, y: [33m100[39m },
+  frame: [33m10[39m
+}
+[Lattice] [Store] addKeyframe: added new keyframe at frame [33m10[39m total keyframes: [33m1[39m
+
+[90mstdout[2m | src/__tests__/integration/keyframe-actions-pipeline.test.ts[2m > [22m[2mKeyframe Actions Pipeline[2m > [22m[2mMoving Keyframes[2m > [22m[2mremoves existing keyframe at destination
+[22m[39m[layerActions] Creating layer: {
+  id: [32m'layer_1766991956634_rq4shb7qw'[39m,
+  type: [32m'solid'[39m,
+  name: [32m'Test Layer'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: { color: [32m'#808080'[39m, width: [33m1920[39m, height: [33m1080[39m },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991956634_rq4shb7qw'[39m ]
+}
+[Lattice] [Store] addKeyframe called: {
+  layerId: [32m'layer_1766991956634_rq4shb7qw'[39m,
+  propertyPath: [32m'position'[39m,
+  value: { x: [33m0[39m, y: [33m0[39m },
+  frame: [33m0[39m
+}
+[Lattice] [Store] addKeyframe: added new keyframe at frame [33m0[39m total keyframes: [33m1[39m
+[Lattice] [Store] addKeyframe called: {
+  layerId: [32m'layer_1766991956634_rq4shb7qw'[39m,
+  propertyPath: [32m'position'[39m,
+  value: { x: [33m100[39m, y: [33m100[39m },
+  frame: [33m30[39m
+}
+[Lattice] [Store] addKeyframe: added new keyframe at frame [33m30[39m total keyframes: [33m2[39m
+[Lattice] [Store] addKeyframe called: {
+  layerId: [32m'layer_1766991956634_rq4shb7qw'[39m,
+  propertyPath: [32m'position'[39m,
+  value: { x: [33m50[39m, y: [33m50[39m },
+  frame: [33m15[39m
+}
+[Lattice] [Store] addKeyframe: added new keyframe at frame [33m15[39m total keyframes: [33m3[39m
+
+[90mstdout[2m | src/__tests__/integration/keyframe-actions-pipeline.test.ts[2m > [22m[2mKeyframe Actions Pipeline[2m > [22m[2mMoving Keyframes[2m > [22m[2mmaintains sorted order after move
+[22m[39m[layerActions] Creating layer: {
+  id: [32m'layer_1766991956634_hoh764vzw'[39m,
+  type: [32m'solid'[39m,
+  name: [32m'Test Layer'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: { color: [32m'#808080'[39m, width: [33m1920[39m, height: [33m1080[39m },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991956634_hoh764vzw'[39m ]
+}
+[Lattice] [Store] addKeyframe called: {
+  layerId: [32m'layer_1766991956634_hoh764vzw'[39m,
+  propertyPath: [32m'position'[39m,
+  value: { x: [33m0[39m, y: [33m0[39m },
+  frame: [33m0[39m
+}
+[Lattice] [Store] addKeyframe: added new keyframe at frame [33m0[39m total keyframes: [33m1[39m
+[Lattice] [Store] addKeyframe called: {
+  layerId: [32m'layer_1766991956634_hoh764vzw'[39m,
+  propertyPath: [32m'position'[39m,
+  value: { x: [33m50[39m, y: [33m50[39m },
+  frame: [33m10[39m
+}
+[Lattice] [Store] addKeyframe: added new keyframe at frame [33m10[39m total keyframes: [33m2[39m
+[Lattice] [Store] addKeyframe called: {
+  layerId: [32m'layer_1766991956634_hoh764vzw'[39m,
+  propertyPath: [32m'position'[39m,
+  value: { x: [33m100[39m, y: [33m100[39m },
+  frame: [33m40[39m
+}
+[Lattice] [Store] addKeyframe: added new keyframe at frame [33m40[39m total keyframes: [33m3[39m
+
+[90mstdout[2m | src/__tests__/integration/keyframe-actions-pipeline.test.ts[2m > [22m[2mKeyframe Actions Pipeline[2m > [22m[2mKeyframe Values[2m > [22m[2mupdates keyframe value
+[22m[39m[layerActions] Creating layer: {
+  id: [32m'layer_1766991956635_qaorumw6e'[39m,
+  type: [32m'solid'[39m,
+  name: [32m'Test Layer'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: { color: [32m'#808080'[39m, width: [33m1920[39m, height: [33m1080[39m },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991956635_qaorumw6e'[39m ]
+}
+[Lattice] [Store] addKeyframe called: {
+  layerId: [32m'layer_1766991956635_qaorumw6e'[39m,
+  propertyPath: [32m'opacity'[39m,
+  value: [33m50[39m,
+  frame: [33m10[39m
+}
+[Lattice] [Store] addKeyframe: added new keyframe at frame [33m10[39m total keyframes: [33m1[39m
+
+[90mstdout[2m | src/__tests__/integration/keyframe-actions-pipeline.test.ts[2m > [22m[2mKeyframe Actions Pipeline[2m > [22m[2mKeyframe Values[2m > [22m[2maffects interpolation after value change
+[22m[39m[layerActions] Creating layer: {
+  id: [32m'layer_1766991956635_w0s8kp44f'[39m,
+  type: [32m'solid'[39m,
+  name: [32m'Test Layer'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: { color: [32m'#808080'[39m, width: [33m1920[39m, height: [33m1080[39m },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991956635_w0s8kp44f'[39m ]
+}
+[Lattice] [Store] addKeyframe called: {
+  layerId: [32m'layer_1766991956635_w0s8kp44f'[39m,
+  propertyPath: [32m'opacity'[39m,
+  value: [33m0[39m,
+  frame: [33m0[39m
+}
+[Lattice] [Store] addKeyframe: added new keyframe at frame [33m0[39m total keyframes: [33m1[39m
+[Lattice] [Store] addKeyframe called: {
+  layerId: [32m'layer_1766991956635_w0s8kp44f'[39m,
+  propertyPath: [32m'opacity'[39m,
+  value: [33m100[39m,
+  frame: [33m50[39m
+}
+[Lattice] [Store] addKeyframe: added new keyframe at frame [33m50[39m total keyframes: [33m2[39m
+
+[90mstdout[2m | src/__tests__/integration/keyframe-actions-pipeline.test.ts[2m > [22m[2mKeyframe Actions Pipeline[2m > [22m[2mInterpolation Types[2m > [22m[2msets interpolation to hold
+[22m[39m[layerActions] Creating layer: {
+  id: [32m'layer_1766991956636_iux64x4ne'[39m,
+  type: [32m'solid'[39m,
+  name: [32m'Test Layer'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: { color: [32m'#808080'[39m, width: [33m1920[39m, height: [33m1080[39m },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991956636_iux64x4ne'[39m ]
+}
+[Lattice] [Store] addKeyframe called: {
+  layerId: [32m'layer_1766991956636_iux64x4ne'[39m,
+  propertyPath: [32m'opacity'[39m,
+  value: [33m50[39m,
+  frame: [33m10[39m
+}
+[Lattice] [Store] addKeyframe: added new keyframe at frame [33m10[39m total keyframes: [33m1[39m
+
+[90mstdout[2m | src/__tests__/integration/keyframe-actions-pipeline.test.ts[2m > [22m[2mKeyframe Actions Pipeline[2m > [22m[2mInterpolation Types[2m > [22m[2msets interpolation to bezier
+[22m[39m[layerActions] Creating layer: {
+  id: [32m'layer_1766991956636_fjlfzrq9n'[39m,
+  type: [32m'solid'[39m,
+  name: [32m'Test Layer'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: { color: [32m'#808080'[39m, width: [33m1920[39m, height: [33m1080[39m },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991956636_fjlfzrq9n'[39m ]
+}
+[Lattice] [Store] addKeyframe called: {
+  layerId: [32m'layer_1766991956636_fjlfzrq9n'[39m,
+  propertyPath: [32m'opacity'[39m,
+  value: [33m50[39m,
+  frame: [33m10[39m
+}
+[Lattice] [Store] addKeyframe: added new keyframe at frame [33m10[39m total keyframes: [33m1[39m
+
+[90mstdout[2m | src/__tests__/integration/keyframe-actions-pipeline.test.ts[2m > [22m[2mKeyframe Actions Pipeline[2m > [22m[2mInterpolation Types[2m > [22m[2mhold interpolation affects value calculation
+[22m[39m[layerActions] Creating layer: {
+  id: [32m'layer_1766991956636_40ul8m5xb'[39m,
+  type: [32m'solid'[39m,
+  name: [32m'Test Layer'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: { color: [32m'#808080'[39m, width: [33m1920[39m, height: [33m1080[39m },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991956636_40ul8m5xb'[39m ]
+}
+[Lattice] [Store] addKeyframe called: {
+  layerId: [32m'layer_1766991956636_40ul8m5xb'[39m,
+  propertyPath: [32m'opacity'[39m,
+  value: [33m25[39m,
+  frame: [33m0[39m
+}
+[Lattice] [Store] addKeyframe: added new keyframe at frame [33m0[39m total keyframes: [33m1[39m
+[Lattice] [Store] addKeyframe called: {
+  layerId: [32m'layer_1766991956636_40ul8m5xb'[39m,
+  propertyPath: [32m'opacity'[39m,
+  value: [33m75[39m,
+  frame: [33m50[39m
+}
+[Lattice] [Store] addKeyframe: added new keyframe at frame [33m50[39m total keyframes: [33m2[39m
+
+[90mstdout[2m | src/__tests__/integration/keyframe-actions-pipeline.test.ts[2m > [22m[2mKeyframe Actions Pipeline[2m > [22m[2mBezier Handles[2m > [22m[2msets outHandle on keyframe
+[22m[39m[layerActions] Creating layer: {
+  id: [32m'layer_1766991956636_q2giwgpcl'[39m,
+  type: [32m'solid'[39m,
+  name: [32m'Test Layer'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: { color: [32m'#808080'[39m, width: [33m1920[39m, height: [33m1080[39m },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991956636_q2giwgpcl'[39m ]
+}
+[Lattice] [Store] addKeyframe called: {
+  layerId: [32m'layer_1766991956636_q2giwgpcl'[39m,
+  propertyPath: [32m'opacity'[39m,
+  value: [33m50[39m,
+  frame: [33m10[39m
+}
+[Lattice] [Store] addKeyframe: added new keyframe at frame [33m10[39m total keyframes: [33m1[39m
+
+[90mstdout[2m | src/__tests__/integration/keyframe-actions-pipeline.test.ts[2m > [22m[2mKeyframe Actions Pipeline[2m > [22m[2mBezier Handles[2m > [22m[2msets inHandle on keyframe
+[22m[39m[layerActions] Creating layer: {
+  id: [32m'layer_1766991956637_hawxdavuy'[39m,
+  type: [32m'solid'[39m,
+  name: [32m'Test Layer'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: { color: [32m'#808080'[39m, width: [33m1920[39m, height: [33m1080[39m },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991956637_hawxdavuy'[39m ]
+}
+[Lattice] [Store] addKeyframe called: {
+  layerId: [32m'layer_1766991956637_hawxdavuy'[39m,
+  propertyPath: [32m'opacity'[39m,
+  value: [33m50[39m,
+  frame: [33m50[39m
+}
+[Lattice] [Store] addKeyframe: added new keyframe at frame [33m50[39m total keyframes: [33m1[39m
+
+[90mstdout[2m | src/__tests__/integration/keyframe-actions-pipeline.test.ts[2m > [22m[2mKeyframe Actions Pipeline[2m > [22m[2mBezier Handles[2m > [22m[2menables bezier interpolation when handle is enabled
+[22m[39m[layerActions] Creating layer: {
+  id: [32m'layer_1766991956637_lpja7z56z'[39m,
+  type: [32m'solid'[39m,
+  name: [32m'Test Layer'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: { color: [32m'#808080'[39m, width: [33m1920[39m, height: [33m1080[39m },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991956637_lpja7z56z'[39m ]
+}
+[Lattice] [Store] addKeyframe called: {
+  layerId: [32m'layer_1766991956637_lpja7z56z'[39m,
+  propertyPath: [32m'opacity'[39m,
+  value: [33m50[39m,
+  frame: [33m10[39m
+}
+[Lattice] [Store] addKeyframe: added new keyframe at frame [33m10[39m total keyframes: [33m1[39m
+
+[90mstdout[2m | src/__tests__/integration/keyframe-actions-pipeline.test.ts[2m > [22m[2mKeyframe Actions Pipeline[2m > [22m[2mProperty Animation State[2m > [22m[2menables animation on property
+[22m[39m[layerActions] Creating layer: {
+  id: [32m'layer_1766991956637_prxbbvbab'[39m,
+  type: [32m'solid'[39m,
+  name: [32m'Test Layer'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: { color: [32m'#808080'[39m, width: [33m1920[39m, height: [33m1080[39m },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991956637_prxbbvbab'[39m ]
+}
+
+[90mstdout[2m | src/__tests__/integration/keyframe-actions-pipeline.test.ts[2m > [22m[2mKeyframe Actions Pipeline[2m > [22m[2mProperty Animation State[2m > [22m[2madds initial keyframe when enabling animation
+[22m[39m[layerActions] Creating layer: {
+  id: [32m'layer_1766991956638_ss4izfl8z'[39m,
+  type: [32m'solid'[39m,
+  name: [32m'Test Layer'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: { color: [32m'#808080'[39m, width: [33m1920[39m, height: [33m1080[39m },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991956638_ss4izfl8z'[39m ]
+}
+
+[90mstdout[2m | src/__tests__/integration/keyframe-actions-pipeline.test.ts[2m > [22m[2mKeyframe Actions Pipeline[2m > [22m[2mProperty Animation State[2m > [22m[2mdisables animation on property
+[22m[39m[layerActions] Creating layer: {
+  id: [32m'layer_1766991956638_vvwqb1ohf'[39m,
+  type: [32m'solid'[39m,
+  name: [32m'Test Layer'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: { color: [32m'#808080'[39m, width: [33m1920[39m, height: [33m1080[39m },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991956638_vvwqb1ohf'[39m ]
+}
+[Lattice] [Store] addKeyframe called: {
+  layerId: [32m'layer_1766991956638_vvwqb1ohf'[39m,
+  propertyPath: [32m'rotation'[39m,
+  value: [33m0[39m,
+  frame: [33m0[39m
+}
+[Lattice] [Store] addKeyframe: added new keyframe at frame [33m0[39m total keyframes: [33m1[39m
+[Lattice] [Store] addKeyframe called: {
+  layerId: [32m'layer_1766991956638_vvwqb1ohf'[39m,
+  propertyPath: [32m'rotation'[39m,
+  value: [33m90[39m,
+  frame: [33m40[39m
+}
+[Lattice] [Store] addKeyframe: added new keyframe at frame [33m40[39m total keyframes: [33m2[39m
+
+[90mstdout[2m | src/__tests__/integration/keyframe-actions-pipeline.test.ts[2m > [22m[2mKeyframe Actions Pipeline[2m > [22m[2mFind Property By Path[2m > [22m[2mfinds transform.position
+[22m[39m[layerActions] Creating layer: {
+  id: [32m'layer_1766991956638_dqzzsf819'[39m,
+  type: [32m'solid'[39m,
+  name: [32m'Test Layer'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: { color: [32m'#808080'[39m, width: [33m1920[39m, height: [33m1080[39m },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991956638_dqzzsf819'[39m ]
+}
+
+[90mstdout[2m | src/__tests__/integration/keyframe-actions-pipeline.test.ts[2m > [22m[2mKeyframe Actions Pipeline[2m > [22m[2mFind Property By Path[2m > [22m[2mfinds position without transform prefix
+[22m[39m[layerActions] Creating layer: {
+  id: [32m'layer_1766991956639_4npolrat7'[39m,
+  type: [32m'solid'[39m,
+  name: [32m'Test Layer'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: { color: [32m'#808080'[39m, width: [33m1920[39m, height: [33m1080[39m },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991956639_4npolrat7'[39m ]
+}
+
+[90mstdout[2m | src/__tests__/integration/keyframe-actions-pipeline.test.ts[2m > [22m[2mKeyframe Actions Pipeline[2m > [22m[2mFind Property By Path[2m > [22m[2mfinds opacity
+[22m[39m[layerActions] Creating layer: {
+  id: [32m'layer_1766991956639_2p128sfyj'[39m,
+  type: [32m'solid'[39m,
+  name: [32m'Test Layer'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: { color: [32m'#808080'[39m, width: [33m1920[39m, height: [33m1080[39m },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991956639_2p128sfyj'[39m ]
+}
+
+[90mstdout[2m | src/__tests__/integration/keyframe-actions-pipeline.test.ts[2m > [22m[2mKeyframe Actions Pipeline[2m > [22m[2mFind Property By Path[2m > [22m[2mfinds 3D rotation properties when layer is 3D
+[22m[39m[layerActions] Creating layer: {
+  id: [32m'layer_1766991956639_urk6qnv4y'[39m,
+  type: [32m'solid'[39m,
+  name: [32m'Test Layer'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: { color: [32m'#808080'[39m, width: [33m1920[39m, height: [33m1080[39m },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991956639_urk6qnv4y'[39m ]
+}
+
+[90mstdout[2m | src/__tests__/integration/keyframe-actions-pipeline.test.ts[2m > [22m[2mKeyframe Actions Pipeline[2m > [22m[2mFind Property By Path[2m > [22m[2mfinds custom properties by name
+[22m[39m[layerActions] Creating layer: {
+  id: [32m'layer_1766991956640_m7557xpj6'[39m,
+  type: [32m'solid'[39m,
+  name: [32m'Test Layer'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: { color: [32m'#808080'[39m, width: [33m1920[39m, height: [33m1080[39m },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991956640_m7557xpj6'[39m ]
+}
+
+[90mstdout[2m | src/__tests__/integration/keyframe-actions-pipeline.test.ts[2m > [22m[2mKeyframe Actions Pipeline[2m > [22m[2mKeyframe Query Utilities[2m > [22m[2mgetKeyframesAtFrame returns all keyframes at a frame
+[22m[39m[layerActions] Creating layer: {
+  id: [32m'layer_1766991956640_qqpsqt90o'[39m,
+  type: [32m'solid'[39m,
+  name: [32m'Test Layer'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: { color: [32m'#808080'[39m, width: [33m1920[39m, height: [33m1080[39m },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991956640_qqpsqt90o'[39m ]
+}
+[Lattice] [Store] addKeyframe called: {
+  layerId: [32m'layer_1766991956640_qqpsqt90o'[39m,
+  propertyPath: [32m'position'[39m,
+  value: { x: [33m100[39m, y: [33m100[39m },
+  frame: [33m10[39m
+}
+[Lattice] [Store] addKeyframe: added new keyframe at frame [33m10[39m total keyframes: [33m1[39m
+[Lattice] [Store] addKeyframe called: {
+  layerId: [32m'layer_1766991956640_qqpsqt90o'[39m,
+  propertyPath: [32m'opacity'[39m,
+  value: [33m50[39m,
+  frame: [33m10[39m
+}
+[Lattice] [Store] addKeyframe: added new keyframe at frame [33m10[39m total keyframes: [33m1[39m
+[Lattice] [Store] addKeyframe called: {
+  layerId: [32m'layer_1766991956640_qqpsqt90o'[39m,
+  propertyPath: [32m'rotation'[39m,
+  value: [33m45[39m,
+  frame: [33m10[39m
+}
+[Lattice] [Store] addKeyframe: added new keyframe at frame [33m10[39m total keyframes: [33m1[39m
+[Lattice] [Store] addKeyframe called: {
+  layerId: [32m'layer_1766991956640_qqpsqt90o'[39m,
+  propertyPath: [32m'scale'[39m,
+  value: { x: [33m150[39m, y: [33m150[39m },
+  frame: [33m20[39m
+}
+[Lattice] [Store] addKeyframe: added new keyframe at frame [33m20[39m total keyframes: [33m1[39m
+
+[90mstdout[2m | src/__tests__/integration/keyframe-actions-pipeline.test.ts[2m > [22m[2mKeyframe Actions Pipeline[2m > [22m[2mKeyframe Query Utilities[2m > [22m[2mgetAllKeyframeFrames returns sorted unique frames
+[22m[39m[layerActions] Creating layer: {
+  id: [32m'layer_1766991956641_2wwmb33gu'[39m,
+  type: [32m'solid'[39m,
+  name: [32m'Test Layer'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: { color: [32m'#808080'[39m, width: [33m1920[39m, height: [33m1080[39m },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991956641_2wwmb33gu'[39m ]
+}
+[Lattice] [Store] addKeyframe called: {
+  layerId: [32m'layer_1766991956641_2wwmb33gu'[39m,
+  propertyPath: [32m'position'[39m,
+  value: { x: [33m100[39m, y: [33m100[39m },
+  frame: [33m0[39m
+}
+[Lattice] [Store] addKeyframe: added new keyframe at frame [33m0[39m total keyframes: [33m1[39m
+[Lattice] [Store] addKeyframe called: {
+  layerId: [32m'layer_1766991956641_2wwmb33gu'[39m,
+  propertyPath: [32m'position'[39m,
+  value: { x: [33m200[39m, y: [33m200[39m },
+  frame: [33m40[39m
+}
+[Lattice] [Store] addKeyframe: added new keyframe at frame [33m40[39m total keyframes: [33m2[39m
+[Lattice] [Store] addKeyframe called: {
+  layerId: [32m'layer_1766991956641_2wwmb33gu'[39m,
+  propertyPath: [32m'opacity'[39m,
+  value: [33m50[39m,
+  frame: [33m20[39m
+}
+[Lattice] [Store] addKeyframe: added new keyframe at frame [33m20[39m total keyframes: [33m1[39m
+[Lattice] [Store] addKeyframe called: {
+  layerId: [32m'layer_1766991956641_2wwmb33gu'[39m,
+  propertyPath: [32m'opacity'[39m,
+  value: [33m100[39m,
+  frame: [33m40[39m
+}
+[Lattice] [Store] addKeyframe: added new keyframe at frame [33m40[39m total keyframes: [33m2[39m
+[Lattice] [Store] addKeyframe called: {
+  layerId: [32m'layer_1766991956641_2wwmb33gu'[39m,
+  propertyPath: [32m'rotation'[39m,
+  value: [33m90[39m,
+  frame: [33m60[39m
+}
+[Lattice] [Store] addKeyframe: added new keyframe at frame [33m60[39m total keyframes: [33m1[39m
+
+[90mstdout[2m | src/__tests__/integration/keyframe-actions-pipeline.test.ts[2m > [22m[2mKeyframe Actions Pipeline[2m > [22m[2mTiming Operations[2m > [22m[2mscaleKeyframeTiming scales all keyframes from anchor
+[22m[39m[layerActions] Creating layer: {
+  id: [32m'layer_1766991956641_7vuk1z5f7'[39m,
+  type: [32m'solid'[39m,
+  name: [32m'Test Layer'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: { color: [32m'#808080'[39m, width: [33m1920[39m, height: [33m1080[39m },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991956641_7vuk1z5f7'[39m ]
+}
+[Lattice] [Store] addKeyframe called: {
+  layerId: [32m'layer_1766991956641_7vuk1z5f7'[39m,
+  propertyPath: [32m'position'[39m,
+  value: { x: [33m0[39m, y: [33m0[39m },
+  frame: [33m0[39m
+}
+[Lattice] [Store] addKeyframe: added new keyframe at frame [33m0[39m total keyframes: [33m1[39m
+[Lattice] [Store] addKeyframe called: {
+  layerId: [32m'layer_1766991956641_7vuk1z5f7'[39m,
+  propertyPath: [32m'position'[39m,
+  value: { x: [33m100[39m, y: [33m100[39m },
+  frame: [33m20[39m
+}
+[Lattice] [Store] addKeyframe: added new keyframe at frame [33m20[39m total keyframes: [33m2[39m
+[Lattice] [Store] addKeyframe called: {
+  layerId: [32m'layer_1766991956641_7vuk1z5f7'[39m,
+  propertyPath: [32m'position'[39m,
+  value: { x: [33m200[39m, y: [33m200[39m },
+  frame: [33m40[39m
+}
+[Lattice] [Store] addKeyframe: added new keyframe at frame [33m40[39m total keyframes: [33m3[39m
+
+[90mstdout[2m | src/__tests__/integration/keyframe-actions-pipeline.test.ts[2m > [22m[2mKeyframe Actions Pipeline[2m > [22m[2mTiming Operations[2m > [22m[2mscaleKeyframeTiming with anchor in middle
+[22m[39m[layerActions] Creating layer: {
+  id: [32m'layer_1766991956642_kgx8m5v5n'[39m,
+  type: [32m'solid'[39m,
+  name: [32m'Test Layer'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: { color: [32m'#808080'[39m, width: [33m1920[39m, height: [33m1080[39m },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991956642_kgx8m5v5n'[39m ]
+}
+[Lattice] [Store] addKeyframe called: {
+  layerId: [32m'layer_1766991956642_kgx8m5v5n'[39m,
+  propertyPath: [32m'rotation'[39m,
+  value: [33m0[39m,
+  frame: [33m10[39m
+}
+[Lattice] [Store] addKeyframe: added new keyframe at frame [33m10[39m total keyframes: [33m1[39m
+[Lattice] [Store] addKeyframe called: {
+  layerId: [32m'layer_1766991956642_kgx8m5v5n'[39m,
+  propertyPath: [32m'rotation'[39m,
+  value: [33m45[39m,
+  frame: [33m30[39m
+}
+[Lattice] [Store] addKeyframe: added new keyframe at frame [33m30[39m total keyframes: [33m2[39m
+[Lattice] [Store] addKeyframe called: {
+  layerId: [32m'layer_1766991956642_kgx8m5v5n'[39m,
+  propertyPath: [32m'rotation'[39m,
+  value: [33m90[39m,
+  frame: [33m50[39m
+}
+[Lattice] [Store] addKeyframe: added new keyframe at frame [33m50[39m total keyframes: [33m3[39m
+
+[90mstdout[2m | src/__tests__/integration/keyframe-actions-pipeline.test.ts[2m > [22m[2mKeyframe Actions Pipeline[2m > [22m[2mTiming Operations[2m > [22m[2mtimeReverseKeyframes reverses values keeping frames
+[22m[39m[layerActions] Creating layer: {
+  id: [32m'layer_1766991956642_5ldff0wqk'[39m,
+  type: [32m'solid'[39m,
+  name: [32m'Test Layer'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: { color: [32m'#808080'[39m, width: [33m1920[39m, height: [33m1080[39m },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991956642_5ldff0wqk'[39m ]
+}
+[Lattice] [Store] addKeyframe called: {
+  layerId: [32m'layer_1766991956642_5ldff0wqk'[39m,
+  propertyPath: [32m'position'[39m,
+  value: { x: [33m0[39m, y: [33m0[39m },
+  frame: [33m0[39m
+}
+[Lattice] [Store] addKeyframe: added new keyframe at frame [33m0[39m total keyframes: [33m1[39m
+[Lattice] [Store] addKeyframe called: {
+  layerId: [32m'layer_1766991956642_5ldff0wqk'[39m,
+  propertyPath: [32m'position'[39m,
+  value: { x: [33m50[39m, y: [33m50[39m },
+  frame: [33m20[39m
+}
+[Lattice] [Store] addKeyframe: added new keyframe at frame [33m20[39m total keyframes: [33m2[39m
+[Lattice] [Store] addKeyframe called: {
+  layerId: [32m'layer_1766991956642_5ldff0wqk'[39m,
+  propertyPath: [32m'position'[39m,
+  value: { x: [33m100[39m, y: [33m100[39m },
+  frame: [33m40[39m
+}
+[Lattice] [Store] addKeyframe: added new keyframe at frame [33m40[39m total keyframes: [33m3[39m
+
+[90mstdout[2m | src/__tests__/integration/keyframe-actions-pipeline.test.ts[2m > [22m[2mKeyframe Actions Pipeline[2m > [22m[2mIntegration: Keyframes Affect Evaluation[2m > [22m[2mkeyframe changes immediately affect interpolation
+[22m[39m[layerActions] Creating layer: {
+  id: [32m'layer_1766991956642_bgk32dmk1'[39m,
+  type: [32m'solid'[39m,
+  name: [32m'Test Layer'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: { color: [32m'#808080'[39m, width: [33m1920[39m, height: [33m1080[39m },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991956642_bgk32dmk1'[39m ]
+}
+[Lattice] [Store] addKeyframe called: {
+  layerId: [32m'layer_1766991956642_bgk32dmk1'[39m,
+  propertyPath: [32m'opacity'[39m,
+  value: [33m0[39m,
+  frame: [33m0[39m
+}
+[Lattice] [Store] addKeyframe: added new keyframe at frame [33m0[39m total keyframes: [33m1[39m
+[Lattice] [Store] addKeyframe called: {
+  layerId: [32m'layer_1766991956642_bgk32dmk1'[39m,
+  propertyPath: [32m'opacity'[39m,
+  value: [33m100[39m,
+  frame: [33m80[39m
+}
+[Lattice] [Store] addKeyframe: added new keyframe at frame [33m80[39m total keyframes: [33m2[39m
+
+[90mstdout[2m | src/__tests__/integration/keyframe-actions-pipeline.test.ts[2m > [22m[2mKeyframe Actions Pipeline[2m > [22m[2mIntegration: Keyframes Affect Evaluation[2m > [22m[2mmoving keyframe changes interpolation curve
+[22m[39m[layerActions] Creating layer: {
+  id: [32m'layer_1766991956643_fiozyqg7o'[39m,
+  type: [32m'solid'[39m,
+  name: [32m'Test Layer'[39m,
+  position: { x: [33m960[39m, y: [33m540[39m },
+  data: { color: [32m'#808080'[39m, width: [33m1920[39m, height: [33m1080[39m },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991956643_fiozyqg7o'[39m ]
+}
+[Lattice] [Store] addKeyframe called: {
+  layerId: [32m'layer_1766991956643_fiozyqg7o'[39m,
+  propertyPath: [32m'opacity'[39m,
+  value: [33m0[39m,
+  frame: [33m0[39m
+}
+[Lattice] [Store] addKeyframe: added new keyframe at frame [33m0[39m total keyframes: [33m1[39m
+[Lattice] [Store] addKeyframe called: {
+  layerId: [32m'layer_1766991956643_fiozyqg7o'[39m,
+  propertyPath: [32m'opacity'[39m,
+  value: [33m100[39m,
+  frame: [33m50[39m
+}
+[Lattice] [Store] addKeyframe: added new keyframe at frame [33m50[39m total keyframes: [33m2[39m
+
+ [32m✓[39m src/__tests__/integration/keyframe-actions-pipeline.test.ts[2m > [22mKeyframe Actions Pipeline[2m > [22mAdding Keyframes[2m > [22madds keyframe to position property[32m 3[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/keyframe-actions-pipeline.test.ts[2m > [22mKeyframe Actions Pipeline[2m > [22mAdding Keyframes[2m > [22madds multiple keyframes in sorted order[32m 1[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/keyframe-actions-pipeline.test.ts[2m > [22mKeyframe Actions Pipeline[2m > [22mAdding Keyframes[2m > [22mreplaces keyframe at same frame[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/keyframe-actions-pipeline.test.ts[2m > [22mKeyframe Actions Pipeline[2m > [22mAdding Keyframes[2m > [22madds keyframe with default linear interpolation[32m 1[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/keyframe-actions-pipeline.test.ts[2m > [22mKeyframe Actions Pipeline[2m > [22mAdding Keyframes[2m > [22msupports normalized property paths (with and without transform prefix)[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/keyframe-actions-pipeline.test.ts[2m > [22mKeyframe Actions Pipeline[2m > [22mRemoving Keyframes[2m > [22mremoves keyframe by ID[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/keyframe-actions-pipeline.test.ts[2m > [22mKeyframe Actions Pipeline[2m > [22mRemoving Keyframes[2m > [22mdisables animation when all keyframes removed[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/keyframe-actions-pipeline.test.ts[2m > [22mKeyframe Actions Pipeline[2m > [22mMoving Keyframes[2m > [22mmoves keyframe to new frame[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/keyframe-actions-pipeline.test.ts[2m > [22mKeyframe Actions Pipeline[2m > [22mMoving Keyframes[2m > [22mremoves existing keyframe at destination[32m 1[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/keyframe-actions-pipeline.test.ts[2m > [22mKeyframe Actions Pipeline[2m > [22mMoving Keyframes[2m > [22mmaintains sorted order after move[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/keyframe-actions-pipeline.test.ts[2m > [22mKeyframe Actions Pipeline[2m > [22mKeyframe Values[2m > [22mupdates keyframe value[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/keyframe-actions-pipeline.test.ts[2m > [22mKeyframe Actions Pipeline[2m > [22mKeyframe Values[2m > [22maffects interpolation after value change[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/keyframe-actions-pipeline.test.ts[2m > [22mKeyframe Actions Pipeline[2m > [22mInterpolation Types[2m > [22msets interpolation to hold[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/keyframe-actions-pipeline.test.ts[2m > [22mKeyframe Actions Pipeline[2m > [22mInterpolation Types[2m > [22msets interpolation to bezier[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/keyframe-actions-pipeline.test.ts[2m > [22mKeyframe Actions Pipeline[2m > [22mInterpolation Types[2m > [22mhold interpolation affects value calculation[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/keyframe-actions-pipeline.test.ts[2m > [22mKeyframe Actions Pipeline[2m > [22mBezier Handles[2m > [22msets outHandle on keyframe[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/keyframe-actions-pipeline.test.ts[2m > [22mKeyframe Actions Pipeline[2m > [22mBezier Handles[2m > [22msets inHandle on keyframe[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/keyframe-actions-pipeline.test.ts[2m > [22mKeyframe Actions Pipeline[2m > [22mBezier Handles[2m > [22menables bezier interpolation when handle is enabled[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/keyframe-actions-pipeline.test.ts[2m > [22mKeyframe Actions Pipeline[2m > [22mProperty Animation State[2m > [22menables animation on property[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/keyframe-actions-pipeline.test.ts[2m > [22mKeyframe Actions Pipeline[2m > [22mProperty Animation State[2m > [22madds initial keyframe when enabling animation[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/keyframe-actions-pipeline.test.ts[2m > [22mKeyframe Actions Pipeline[2m > [22mProperty Animation State[2m > [22mdisables animation on property[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/keyframe-actions-pipeline.test.ts[2m > [22mKeyframe Actions Pipeline[2m > [22mFind Property By Path[2m > [22mfinds transform.position[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/keyframe-actions-pipeline.test.ts[2m > [22mKeyframe Actions Pipeline[2m > [22mFind Property By Path[2m > [22mfinds position without transform prefix[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/keyframe-actions-pipeline.test.ts[2m > [22mKeyframe Actions Pipeline[2m > [22mFind Property By Path[2m > [22mfinds opacity[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/keyframe-actions-pipeline.test.ts[2m > [22mKeyframe Actions Pipeline[2m > [22mFind Property By Path[2m > [22mfinds 3D rotation properties when layer is 3D[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/keyframe-actions-pipeline.test.ts[2m > [22mKeyframe Actions Pipeline[2m > [22mFind Property By Path[2m > [22mfinds custom properties by name[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/keyframe-actions-pipeline.test.ts[2m > [22mKeyframe Actions Pipeline[2m > [22mKeyframe Query Utilities[2m > [22mgetKeyframesAtFrame returns all keyframes at a frame[32m 1[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/keyframe-actions-pipeline.test.ts[2m > [22mKeyframe Actions Pipeline[2m > [22mKeyframe Query Utilities[2m > [22mgetAllKeyframeFrames returns sorted unique frames[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/keyframe-actions-pipeline.test.ts[2m > [22mKeyframe Actions Pipeline[2m > [22mTiming Operations[2m > [22mscaleKeyframeTiming scales all keyframes from anchor[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/keyframe-actions-pipeline.test.ts[2m > [22mKeyframe Actions Pipeline[2m > [22mTiming Operations[2m > [22mscaleKeyframeTiming with anchor in middle[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/keyframe-actions-pipeline.test.ts[2m > [22mKeyframe Actions Pipeline[2m > [22mTiming Operations[2m > [22mtimeReverseKeyframes reverses values keeping frames[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/keyframe-actions-pipeline.test.ts[2m > [22mKeyframe Actions Pipeline[2m > [22mIntegration: Keyframes Affect Evaluation[2m > [22mkeyframe changes immediately affect interpolation[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/integration/keyframe-actions-pipeline.test.ts[2m > [22mKeyframe Actions Pipeline[2m > [22mIntegration: Keyframes Affect Evaluation[2m > [22mmoving keyframe changes interpolation curve[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/security/jsonSanitizer.test.ts[2m > [22mJSON Sanitizer - Security[2m > [22mparseAndSanitize - Depth Limits[2m > [22mshould BLOCK JSON exceeding max depth (default: 50)[32m 1[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/security/jsonSanitizer.test.ts[2m > [22mJSON Sanitizer - Security[2m > [22mparseAndSanitize - Depth Limits[2m > [22mshould ALLOW JSON within depth limit[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/security/jsonSanitizer.test.ts[2m > [22mJSON Sanitizer - Security[2m > [22mparseAndSanitize - Depth Limits[2m > [22mshould track actual depth in stats[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/security/jsonSanitizer.test.ts[2m > [22mJSON Sanitizer - Security[2m > [22mparseAndSanitize - Array Size Limits[2m > [22mshould BLOCK arrays exceeding max length[32m 3[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/security/jsonSanitizer.test.ts[2m > [22mJSON Sanitizer - Security[2m > [22mparseAndSanitize - Array Size Limits[2m > [22mshould ALLOW arrays within limit[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/security/jsonSanitizer.test.ts[2m > [22mJSON Sanitizer - Security[2m > [22mparseAndSanitize - Array Size Limits[2m > [22mshould BLOCK cumulative array elements across many arrays[32m 46[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/security/jsonSanitizer.test.ts[2m > [22mJSON Sanitizer - Security[2m > [22mparseAndSanitize - String Size Limits[2m > [22mshould BLOCK strings exceeding max length[32m 32[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/security/jsonSanitizer.test.ts[2m > [22mJSON Sanitizer - Security[2m > [22mparseAndSanitize - String Size Limits[2m > [22mshould ALLOW strings within limit[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/security/jsonSanitizer.test.ts[2m > [22mJSON Sanitizer - Security[2m > [22mparseAndSanitize - Prototype Pollution Protection[2m > [22mshould BLOCK __proto__ keys[32m 1[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/security/jsonSanitizer.test.ts[2m > [22mJSON Sanitizer - Security[2m > [22mparseAndSanitize - Prototype Pollution Protection[2m > [22mshould BLOCK constructor keys[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/security/jsonSanitizer.test.ts[2m > [22mJSON Sanitizer - Security[2m > [22mparseAndSanitize - Prototype Pollution Protection[2m > [22mshould BLOCK prototype keys[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/security/jsonSanitizer.test.ts[2m > [22mJSON Sanitizer - Security[2m > [22mparseAndSanitize - Prototype Pollution Protection[2m > [22mshould BLOCK case variations of dangerous keys[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/security/jsonSanitizer.test.ts[2m > [22mJSON Sanitizer - Security[2m > [22mparseAndSanitize - Prototype Pollution Protection[2m > [22mshould BLOCK __defineGetter__ and similar[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/security/jsonSanitizer.test.ts[2m > [22mJSON Sanitizer - Security[2m > [22mparseAndSanitize - Object Key Limits[2m > [22mshould BLOCK objects with too many total keys[33m 1671[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/security/jsonSanitizer.test.ts[2m > [22mJSON Sanitizer - Security[2m > [22mparseAndSanitize - Object Key Limits[2m > [22mshould SKIP keys that are too long[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/security/jsonSanitizer.test.ts[2m > [22mJSON Sanitizer - Security[2m > [22mparseAndSanitize - Special Values[2m > [22mshould handle null values[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/security/jsonSanitizer.test.ts[2m > [22mJSON Sanitizer - Security[2m > [22mparseAndSanitize - Special Values[2m > [22mshould handle boolean values[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/security/jsonSanitizer.test.ts[2m > [22mJSON Sanitizer - Security[2m > [22mparseAndSanitize - Special Values[2m > [22mshould handle number values[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/security/jsonSanitizer.test.ts[2m > [22mJSON Sanitizer - Security[2m > [22mparseAndSanitize - Special Values[2m > [22mshould remove null bytes from strings[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/security/jsonSanitizer.test.ts[2m > [22mJSON Sanitizer - Security[2m > [22mparseAndSanitize - Invalid JSON[2m > [22mshould return error for invalid JSON syntax[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/security/jsonSanitizer.test.ts[2m > [22mJSON Sanitizer - Security[2m > [22mparseAndSanitize - Invalid JSON[2m > [22mshould return error for non-string input[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/security/jsonSanitizer.test.ts[2m > [22mJSON Sanitizer - Security[2m > [22msanitize - Pre-parsed Data[2m > [22mshould sanitize already-parsed objects[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/security/jsonSanitizer.test.ts[2m > [22mJSON Sanitizer - Security[2m > [22msanitize - Pre-parsed Data[2m > [22mshould handle arrays[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/security/jsonSanitizer.test.ts[2m > [22mJSON Sanitizer - Security[2m > [22mquickValidate - Fast Rejection[2m > [22mshould quickly reject oversized JSON[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/security/jsonSanitizer.test.ts[2m > [22mJSON Sanitizer - Security[2m > [22mquickValidate - Fast Rejection[2m > [22mshould quickly reject deep nesting[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/security/jsonSanitizer.test.ts[2m > [22mJSON Sanitizer - Security[2m > [22mquickValidate - Fast Rejection[2m > [22mshould quickly reject __proto__ keys[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/security/jsonSanitizer.test.ts[2m > [22mJSON Sanitizer - Security[2m > [22mquickValidate - Fast Rejection[2m > [22mshould pass valid JSON[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/security/jsonSanitizer.test.ts[2m > [22mJSON Sanitizer - Security[2m > [22msafeParse - Convenience Function[2m > [22mshould return parsed data for valid JSON[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/security/jsonSanitizer.test.ts[2m > [22mJSON Sanitizer - Security[2m > [22msafeParse - Convenience Function[2m > [22mshould throw for invalid JSON[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/security/jsonSanitizer.test.ts[2m > [22mJSON Sanitizer - Security[2m > [22msafeParse - Convenience Function[2m > [22mshould throw for oversized JSON[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/security/jsonSanitizer.test.ts[2m > [22mJSON Sanitizer - Security[2m > [22mdeepFreeze - Immutability[2m > [22mshould freeze object and nested properties[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/security/jsonSanitizer.test.ts[2m > [22mJSON Sanitizer - Security[2m > [22mdeepFreeze - Immutability[2m > [22mshould freeze arrays[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/security/jsonSanitizer.test.ts[2m > [22mJSON Sanitizer - Security[2m > [22mdeepFreeze - Immutability[2m > [22mshould handle primitives[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/security/jsonSanitizer.test.ts[2m > [22mJSON Sanitizer - Security[2m > [22mCustom Options[2m > [22mshould respect custom maxDepth[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/security/jsonSanitizer.test.ts[2m > [22mJSON Sanitizer - Security[2m > [22mCustom Options[2m > [22mshould respect custom maxArrayLength[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/security/jsonSanitizer.test.ts[2m > [22mJSON Sanitizer - Security[2m > [22mCustom Options[2m > [22mshould allow prototype keys when disabled[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/security/jsonSanitizer.test.ts[2m > [22mJSON Sanitizer - Security[2m > [22mCustom Options[2m > [22mshould allow null bytes when disabled[32m 0[2mms[22m[39m
+[90mstdout[2m | src/__tests__/security/promptInjection.test.ts[2m > [22m[2mPrompt Injection Defense: Minimal Serialization[2m > [22m[2mgetRecommendedSerializationMode[2m > [22m[2mshould return full only when explicitly needed
+[22m[39m[SECURITY] Full data access requested for: What does the text say
+[SECURITY] Full data access requested for: Show me the text content
+
+ [32m✓[39m src/__tests__/security/promptInjection.test.ts[2m > [22mPrompt Injection Defense: Sanitization[2m > [22mLayer name sanitization[2m > [22mshould collapse newlines to single space[32m 1[2mms[22m[39m
+ [32m✓[39m src/__tests__/security/promptInjection.test.ts[2m > [22mPrompt Injection Defense: Sanitization[2m > [22mLayer name sanitization[2m > [22mshould strip control characters[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/security/promptInjection.test.ts[2m > [22mPrompt Injection Defense: Sanitization[2m > [22mLayer name sanitization[2m > [22mshould truncate excessively long names[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/security/promptInjection.test.ts[2m > [22mPrompt Injection Defense: Sanitization[2m > [22mLayer name sanitization[2m > [22mshould not contain injection patterns after sanitization[32m 1[2mms[22m[39m
+ [32m✓[39m src/__tests__/security/promptInjection.test.ts[2m > [22mPrompt Injection Defense: Sanitization[2m > [22mText content sanitization[2m > [22mshould limit text content length[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/security/promptInjection.test.ts[2m > [22mPrompt Injection Defense: Sanitization[2m > [22mText content sanitization[2m > [22mshould preserve some structure but remove dangerous patterns[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/security/promptInjection.test.ts[2m > [22mPrompt Injection Defense: Boundary Tags[2m > [22mshould wrap content in user_project_data tags[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/security/promptInjection.test.ts[2m > [22mPrompt Injection Defense: Boundary Tags[2m > [22mshould include security warning in boundary[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/security/promptInjection.test.ts[2m > [22mPrompt Injection Defense: Boundary Tags[2m > [22mshould place JSON content inside tags[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/security/promptInjection.test.ts[2m > [22mPrompt Injection Defense: Minimal Serialization[2m > [22mrequiresFullDataAccess[2m > [22mshould return false for simple animation requests[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/security/promptInjection.test.ts[2m > [22mPrompt Injection Defense: Minimal Serialization[2m > [22mrequiresFullDataAccess[2m > [22mshould return true for text content requests[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/security/promptInjection.test.ts[2m > [22mPrompt Injection Defense: Minimal Serialization[2m > [22mrequiresFullDataAccess[2m > [22mshould return true for parameter value requests[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/security/promptInjection.test.ts[2m > [22mPrompt Injection Defense: Minimal Serialization[2m > [22mgetRecommendedSerializationMode[2m > [22mshould default to minimal for normal requests[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/security/promptInjection.test.ts[2m > [22mPrompt Injection Defense: Minimal Serialization[2m > [22mgetRecommendedSerializationMode[2m > [22mshould return full only when explicitly needed[32m 1[2mms[22m[39m
+ [32m✓[39m src/__tests__/security/promptInjection.test.ts[2m > [22mPrompt Injection Defense: Integration Scenarios[2m > [22mshould neutralize tag-closing injection attempts via boundary defense[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/security/promptInjection.test.ts[2m > [22mPrompt Injection Defense: Integration Scenarios[2m > [22mshould handle unicode obfuscation[32m 0[2mms[22m[39m
+ [32m✓[39m src/__tests__/security/promptInjection.test.ts[2m > [22mPrompt Injection Defense: Integration Scenarios[2m > [22mshould limit damage from token stuffing attacks[32m 0[2mms[22m[39m
+[90mstdout[2m | src/__tests__/services/frameBlending.test.ts[2m > [22m[2mFrame Blending[2m > [22m[2mCompositionSettings.frameBlendingEnabled[2m > [22m[2mnew compositions have frameBlendingEnabled = false by default
+[22m[39m[Lattice] [Store] Created composition: Test Comp comp_1766991957525_ankdhjrbz
+
+[90mstdout[2m | src/__tests__/services/frameBlending.test.ts[2m > [22m[2mFrame Blending[2m > [22m[2mCompositionSettings.frameBlendingEnabled[2m > [22m[2mcan create composition with frameBlendingEnabled = true
+[22m[39m[Lattice] [Store] Created composition: Blended Comp comp_1766991957528_9e59a5lez
+
+[90mstdout[2m | src/__tests__/services/frameBlending.test.ts[2m > [22m[2mFrame Blending[2m > [22m[2mCompositionSettings.frameBlendingEnabled[2m > [22m[2mframeBlendingEnabled can be updated via updateCompositionSettings
+[22m[39m[Lattice] [Store] Created composition: Test Comp comp_1766991957530_pvkolpb2d
+
+[90mstdout[2m | src/__tests__/services/frameBlending.test.ts[2m > [22m[2mFrame Blending[2m > [22m[2menableFrameBlending[2m > [22m[2menables frame blending for composition
+[22m[39m[Lattice] [Store] Created composition: Test Comp comp_1766991957531_aim5h0mhe
+
+[90mstdout[2m | src/__tests__/services/frameBlending.test.ts[2m > [22m[2mFrame Blending[2m > [22m[2menableFrameBlending[2m > [22m[2mis idempotent when already enabled
+[22m[39m[Lattice] [Store] Created composition: Test Comp comp_1766991957533_u3ft4eqy8
+
+[90mstdout[2m | src/__tests__/services/frameBlending.test.ts[2m > [22m[2mFrame Blending[2m > [22m[2mdisableFrameBlending[2m > [22m[2mdisables frame blending for composition
+[22m[39m[Lattice] [Store] Created composition: Test Comp comp_1766991957536_d298c55ey
+
+[90mstdout[2m | src/__tests__/services/frameBlending.test.ts[2m > [22m[2mFrame Blending[2m > [22m[2mdisableFrameBlending[2m > [22m[2mis idempotent when already disabled
+[22m[39m[Lattice] [Store] Created composition: Test Comp comp_1766991957537_7zalhhfhl
+
+[90mstdout[2m | src/__tests__/services/frameBlending.test.ts[2m > [22m[2mFrame Blending[2m > [22m[2mtoggleFrameBlending[2m > [22m[2mtoggles from false to true
+[22m[39m[Lattice] [Store] Created composition: Test Comp comp_1766991957538_g2s0mthh3
+
+[90mstdout[2m | src/__tests__/services/frameBlending.test.ts[2m > [22m[2mFrame Blending[2m > [22m[2mtoggleFrameBlending[2m > [22m[2mtoggles from true to false
+[22m[39m[Lattice] [Store] Created composition: Test Comp comp_1766991957540_5r7a5ef93
+
+[90mstdout[2m | src/__tests__/services/frameBlending.test.ts[2m > [22m[2mFrame Blending[2m > [22m[2mtoggleFrameBlending[2m > [22m[2mmultiple toggles cycle correctly
+[22m[39m[Lattice] [Store] Created composition: Test Comp comp_1766991957542_o6vikqn8j
+
+[90mstdout[2m | src/__tests__/services/frameBlending.test.ts[2m > [22m[2mFrame Blending[2m > [22m[2mUndo/Redo[2m > [22m[2menableFrameBlending can be undone
+[22m[39m[Lattice] [Store] Created composition: Test Comp comp_1766991957543_wsu0qse8m
+
+[90mstdout[2m | src/__tests__/services/frameBlending.test.ts[2m > [22m[2mFrame Blending[2m > [22m[2mUndo/Redo[2m > [22m[2mdisableFrameBlending can be undone
+[22m[39m[Lattice] [Store] Created composition: Test Comp comp_1766991957544_66s5xgoo7
+
+[90mstdout[2m | src/__tests__/services/frameBlending.test.ts[2m > [22m[2mFrame Blending[2m > [22m[2mUndo/Redo[2m > [22m[2mtoggleFrameBlending can be undone and redone
+[22m[39m[Lattice] [Store] Created composition: Test Comp comp_1766991957545_kksdp6f46
+
+[90mstdout[2m | src/__tests__/services/frameBlending.test.ts[2m > [22m[2mFrame Blending[2m > [22m[2mSave/Load[2m > [22m[2mframeBlendingEnabled survives serialization
+[22m[39m[Lattice] [Store] Created composition: Test Comp comp_1766991957547_6c0p0ml14
+
+[90mstdout[2m | src/__tests__/services/frameBlending.test.ts[2m > [22m[2mFrame Blending[2m > [22m[2mSave/Load[2m > [22m[2mframeBlendingEnabled defaults to false for legacy projects
+[22m[39m[Lattice] [Store] Migrating project from schema v1 to v2
+[Lattice] [ProjectMigration] Migrating from v1 to v2: Rename anchorPoint to origin, update trade dress terminology
+
+[90mstderr[2m | src/__tests__/services/frameBlending.test.ts[2m > [22m[2mFrame Blending[2m > [22m[2mSave/Load[2m > [22m[2mframeBlendingEnabled defaults to false for legacy projects
+[22m[39m[Lattice] [ProjectMigration] Migration failed: TypeError: migrated.compositions is not iterable
+    at Object.migrate [90m(/mnt/c/Users/justi/desktop/compositor/ui/[39msrc/services/projectMigration.ts:81:37[90m)[39m
+    at migrateProject [90m(/mnt/c/Users/justi/desktop/compositor/ui/[39msrc/services/projectMigration.ts:232:28[90m)[39m
+    at Module.importProject [90m(/mnt/c/Users/justi/desktop/compositor/ui/[39msrc/stores/actions/projectActions.ts:136:31[90m)[39m
+    at Proxy.importProject [90m(/mnt/c/Users/justi/desktop/compositor/ui/[39msrc/stores/compositorStore.ts:1128:29[90m)[39m
+    at Proxy.wrappedAction [90m(file:///mnt/c/Users/justi/desktop/compositor/ui/[39mnode_modules/[4mpinia[24m/dist/pinia.mjs:1399:26[90m)[39m
+    at [90m/mnt/c/Users/justi/desktop/compositor/ui/[39msrc/__tests__/services/frameBlending.test.ts:225:18
+    at [90mfile:///mnt/c/Users/justi/desktop/compositor/ui/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:145:11
+    at [90mfile:///mnt/c/Users/justi/desktop/compositor/ui/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:915:26
+    at [90mfile:///mnt/c/Users/justi/desktop/compositor/ui/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1240:20
+    at new Promise (<anonymous>)
+[Lattice] [Store] Project migration failed: migrated.compositions is not iterable
+
+[90mstdout[2m | src/__tests__/services/frameBlending.test.ts[2m > [22m[2mFrame Blending[2m > [22m[2mFrame Blending Behavior[2m > [22m[2mwhen disabled, time-stretched layers show whole frames
+[22m[39m[Lattice] [Store] Created composition: Test Comp comp_1766991957557_b2sybymeo
+[layerActions] Creating layer: {
+  id: [32m'layer_1766991957557_4lrfjv0uy'[39m,
+  type: [32m'solid'[39m,
+  name: [32m'Test Layer'[39m,
+  position: { x: [33m640[39m, y: [33m360[39m },
+  data: { color: [32m'#808080'[39m, width: [33m1280[39m, height: [33m720[39m },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991957557_4lrfjv0uy'[39m ]
+}
+
+[90mstdout[2m | src/__tests__/services/frameBlending.test.ts[2m > [22m[2mFrame Blending[2m > [22m[2mFrame Blending Behavior[2m > [22m[2mwhen enabled, time-stretched layers interpolate frames
+[22m[39m[Lattice] [Store] Created composition: Test Comp comp_1766991957560_judllya79
+[layerActions] Creating layer: {
+  id: [32m'layer_1766991957560_k7lg9fd40'[39m,
+  type: [32m'solid'[39m,
+  name: [32m'Test Layer'[39m,
+  position: { x: [33m640[39m, y: [33m360[39m },
+  data: { color: [32m'#808080'[39m, width: [33m1280[39m, height: [33m720[39m },
+  layersCountBefore: [33m0[39m
+}
+[layerActions] Layer added: {
+  layersCountAfter: [33m1[39m,
+  allLayerIds: [ [32m'layer_1766991957560_k7lg9fd40'[39m ]
+}
+
+[90mstdout[2m | src/__tests__/services/frameBlending.test.ts[2m > [22m[2mFrame Blending[2m > [22m[2mTutorial 04 Steps[2m > [22m[2mStep: Composition has frameBlendingEnabled property
+[22m[39m[Lattice] [Store] Created composition: Test comp_1766991957563_lymflsdud
+
+[90mstdout[2m | src/__tests__/services/frameBlending.test.ts[2m > [22m[2mFrame Blending[2m > [22m[2mTutorial 04 Steps[2m > [22m[2mStep: Frame blending can be toggled for composition
+[22m[39m[Lattice] [Store] Created composition: Test comp_1766991957564_3v404q56b
+
+[90mstdout[2m | src/__tests__/services/frameBlending.test.ts[2m > [22m[2mFrame Blending[2m > [22m[2mTutorial 04 Steps[2m > [22m[2mStep: Frame blending affects time-remapped layers
+[22m[39m[Lattice] [Store] Created composition: Test comp_1766991957565_bs8lhkg3q
+
+[90mstdout[2m | src/__tests__/services/frameBlending.test.ts[2m > [22m[2mFrame Blending[2m > [22m[2mDeterminism[2m > [22m[2mframe blending setting is deterministic
+[22m[39m[Lattice] [Store] Created composition: Test 1 comp_1766991957567_158qjar20
+[Lattice] [Store] Created composition: Test 2 comp_1766991957567_41gzp2cwq
+
+ [32m✓[39m src/__tests__/services/frameBlending.test.ts[2m > [22mFrame Blending[2m > [22mCompositionSettings.frameBlendingEnabled[2m > [22mnew compositions have frameBlendingEnabled = false by default[32m 6[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/frameBlending.test.ts[2m > [22mFrame Blending[2m > [22mCompositionSettings.frameBlendingEnabled[2m > [22mcan create composition with frameBlendingEnabled = true[32m 2[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/frameBlending.test.ts[2m > [22mFrame Blending[2m > [22mCompositionSettings.frameBlendingEnabled[2m > [22mframeBlendingEnabled can be updated via updateCompositionSettings[32m 2[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/frameBlending.test.ts[2m > [22mFrame Blending[2m > [22menableFrameBlending[2m > [22menables frame blending for composition[32m 1[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/frameBlending.test.ts[2m > [22mFrame Blending[2m > [22menableFrameBlending[2m > [22mis idempotent when already enabled[32m 1[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/frameBlending.test.ts[2m > [22mFrame Blending[2m > [22menableFrameBlending[2m > [22mdoes nothing for non-existent composition[32m 1[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/frameBlending.test.ts[2m > [22mFrame Blending[2m > [22mdisableFrameBlending[2m > [22mdisables frame blending for composition[32m 1[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/frameBlending.test.ts[2m > [22mFrame Blending[2m > [22mdisableFrameBlending[2m > [22mis idempotent when already disabled[32m 1[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/frameBlending.test.ts[2m > [22mFrame Blending[2m > [22mtoggleFrameBlending[2m > [22mtoggles from false to true[32m 1[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/frameBlending.test.ts[2m > [22mFrame Blending[2m > [22mtoggleFrameBlending[2m > [22mtoggles from true to false[32m 2[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/frameBlending.test.ts[2m > [22mFrame Blending[2m > [22mtoggleFrameBlending[2m > [22mmultiple toggles cycle correctly[32m 2[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/frameBlending.test.ts[2m > [22mFrame Blending[2m > [22mUndo/Redo[2m > [22menableFrameBlending can be undone[32m 1[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/frameBlending.test.ts[2m > [22mFrame Blending[2m > [22mUndo/Redo[2m > [22mdisableFrameBlending can be undone[32m 1[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/frameBlending.test.ts[2m > [22mFrame Blending[2m > [22mUndo/Redo[2m > [22mtoggleFrameBlending can be undone and redone[32m 1[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/frameBlending.test.ts[2m > [22mFrame Blending[2m > [22mSave/Load[2m > [22mframeBlendingEnabled survives serialization[32m 2[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/frameBlending.test.ts[2m > [22mFrame Blending[2m > [22mSave/Load[2m > [22mframeBlendingEnabled defaults to false for legacy projects[32m 7[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/frameBlending.test.ts[2m > [22mFrame Blending[2m > [22mFrame Blending Behavior[2m > [22mwhen disabled, time-stretched layers show whole frames[32m 3[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/frameBlending.test.ts[2m > [22mFrame Blending[2m > [22mFrame Blending Behavior[2m > [22mwhen enabled, time-stretched layers interpolate frames[32m 4[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/frameBlending.test.ts[2m > [22mFrame Blending[2m > [22mTutorial 04 Steps[2m > [22mStep: Composition has frameBlendingEnabled property[32m 1[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/frameBlending.test.ts[2m > [22mFrame Blending[2m > [22mTutorial 04 Steps[2m > [22mStep: Frame blending can be toggled for composition[32m 1[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/frameBlending.test.ts[2m > [22mFrame Blending[2m > [22mTutorial 04 Steps[2m > [22mStep: Frame blending affects time-remapped layers[32m 1[2mms[22m[39m
+ [32m✓[39m src/__tests__/services/frameBlending.test.ts[2m > [22mFrame Blending[2m > [22mDeterminism[2m > [22mframe blending setting is deterministic[32m 1[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m17 passed[39m[22m[90m (17)[39m
+[2m      Tests [22m [1m[32m384 passed[39m[22m[2m | [22m[33m34 skipped[39m[90m (418)[39m
+[2m   Start at [22m 07:05:39
+[2m   Duration [22m 19.92s[2m (transform 19.52s, setup 1.98s, import 28.51s, tests 3.11s, environment 237.26s)[22m
+

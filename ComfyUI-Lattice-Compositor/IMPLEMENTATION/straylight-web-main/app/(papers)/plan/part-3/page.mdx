@@ -1,0 +1,93 @@
+
+
+
+
+## Part III: Built Him up From Nothing in France
+
+### Complementation, the FTTC, and the Holes in Your Iteration Space
+
+
+
+*"They'd walked into the Chiba construct, the scrambled and semiruined substrates of digital memory, and made him walk again. But he was still a puppet, his strings in the hands of Wintermute, the Villa Straylight's AI."*
+
+
+
+Complementation answers: **"Given layout A in region [0,M), what layout B completes it without overlap?"**
+
+This is the operation that lets you:
+- Tile a tensor between thread blocks
+- Split work between warps
+- Ensure tensor core loads don't stomp on each other
+
+
+### The fundamental formula (rank-1 case)
+
+For a layout `A = (N) : (d)` within a memory region `[0, M)`:
+
+**Complement:** `B = (d, M/(N·d)) : (1, N·d)`
+
+Together they form:
+
+**Tiled layout:** `C = (N, d, M/(N·d)) : (d, 1, N·d)`
+
+This works because:
+- A's coordinates `[0,N)` with stride `d` hit `{0, d, 2d, ..., (N-1)d}`
+- B's first coordinate fills the gaps: `{0, 1, ..., d-1}`
+- B's second coordinate tiles across the full region
+
+
+
+**Critical:** This only works if `N * d ∣ M`.
+
+If `M` is not divisible by `N * d`, you **cannot** complement without leaving holes or causing overlap.
+
+
+
+
+### Connection to the FTTC
+
+The Fundamental Theorem of TMA Correctness requires:
+
+> When scheduling tensor core operations with TMA loads, the box size must divide the tensor size, and the element stride must divide the box size.
+
+This is exactly the divisibility constraint for complementation!
+
+NVIDIA's theorem tells you when you can safely split your iteration space. The complementation formula tells you **how** to construct that split.
+
+
+### Lean 4: complementation with proof obligations
+
+```lean4
+def complement1 (N d M : Nat) (h : N * d ∣ M) : Layout :=
+  [ { extent := d, stride := 1 },
+    { extent := M / (N * d), stride := N * d } ]
+
+theorem complement1_tiles (A : Layout) (N d M : Nat) (h : N * d ∣ M)
+    (hA : A = [(N, d)]) :
+  let B := complement1 N d M h
+  let C := A.append B
+  C.cosize = M ∧
+  (∀ c₁ c₂, A.eval c₁ = B.eval c₂ → c₁ = c₂) := -- disjoint
+  sorry -- proof that tiling is complete and non-overlapping
+```
+
+**The key:** The divisibility proof `h : N * d ∣ M` is part of the **type signature**.
+
+You cannot call `complement1` without providing a proof that the constraint holds.
+
+
+### Error messages from failed complementation
+
+When you try to complement with invalid parameters:
+
+```lean4
+def badTile : Layout := complement1 128 16 2040 ?proof
+
+-- Error: failed to synthesize proof that 128 * 16 ∣ 2040
+-- Note: 2048 ∣ 2040 is false
+-- Suggestion: use M = 2048 or M = 2032 with N = 127
+```
+
+The type system **rejects** invalid tilings at compile time.
+
+

@@ -1,0 +1,184 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080">
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap');
+      .mono { font-family: 'Berkeley Mono', 'JetBrains Mono', 'SF Mono', Consolas, monospace; }
+    </style>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0a0a0f"/>
+      <stop offset="100%" style="stop-color:#111417"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+      <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="softGlow">
+      <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+      <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1920" height="1080" fill="url(#bgGrad)"/>
+  
+  <!-- Subtle grid -->
+  <g opacity="0.06">
+    <pattern id="grid" width="64" height="64" patternUnits="userSpaceOnUse">
+      <path d="M 64 0 L 0 0 0 64" fill="none" stroke="#54aeff" stroke-width="0.5"/>
+    </pattern>
+    <rect width="1920" height="1080" fill="url(#grid)"/>
+  </g>
+
+  <!-- Header -->
+  <text x="960" y="80" text-anchor="middle" class="mono" fill="#b6e3ff" font-size="48" font-weight="700" filter="url(#glow)">
+    THE MOAT
+  </text>
+  <text x="960" y="120" text-anchor="middle" class="mono" fill="#596775" font-size="18">
+    2 of 3 · Why They Can't Stop You · straylight.software · 2026
+  </text>
+
+  <!-- Principal-Agent Theorem -->
+  <g transform="translate(100, 180)">
+    <rect x="0" y="0" width="800" height="100" fill="#d4a72c" fill-opacity="0.1" stroke="#d4a72c" stroke-width="2" rx="4"/>
+    <text x="400" y="40" text-anchor="middle" class="mono" fill="#d4a72c" font-size="22" font-weight="700">
+      theorem principal_agent_moat
+    </text>
+    <text x="400" y="75" text-anchor="middle" class="mono" fill="#d4a72c" font-size="16">
+      ∀ layer, coordination_cost layer > individual_benefit layer
+    </text>
+  </g>
+
+  <!-- Bar chart visualization -->
+  <g transform="translate(100, 320)">
+    <text x="0" y="0" class="mono" fill="#80ccff" font-size="18" font-weight="600">COORDINATION COST vs INDIVIDUAL BENEFIT</text>
+    
+    <!-- Executive -->
+    <g transform="translate(0, 40)">
+      <text x="0" y="20" class="mono" fill="#596775" font-size="14">Executive</text>
+      <rect x="120" y="5" width="500" height="25" fill="#ff6b8a" fill-opacity="0.3" stroke="#ff6b8a" stroke-width="1" rx="2"/>
+      <text x="630" y="22" class="mono" fill="#ff6b8a" font-size="12">cost: 1000</text>
+      <rect x="120" y="35" width="5" height="25" fill="#7ee787" fill-opacity="0.3" stroke="#7ee787" stroke-width="1" rx="2"/>
+      <text x="630" y="52" class="mono" fill="#7ee787" font-size="12">benefit: 10</text>
+    </g>
+    
+    <!-- SVP -->
+    <g transform="translate(0, 120)">
+      <text x="0" y="20" class="mono" fill="#596775" font-size="14">SVP</text>
+      <rect x="120" y="5" width="50" height="25" fill="#ff6b8a" fill-opacity="0.3" stroke="#ff6b8a" stroke-width="1" rx="2"/>
+      <text x="630" y="22" class="mono" fill="#ff6b8a" font-size="12">cost: 100</text>
+      <rect x="120" y="35" width="3" height="25" fill="#7ee787" fill-opacity="0.3" stroke="#7ee787" stroke-width="1" rx="2"/>
+      <text x="630" y="52" class="mono" fill="#7ee787" font-size="12">benefit: -5</text>
+    </g>
+    
+    <!-- Director -->
+    <g transform="translate(0, 200)">
+      <text x="0" y="20" class="mono" fill="#596775" font-size="14">Director</text>
+      <rect x="120" y="5" width="5" height="25" fill="#ff6b8a" fill-opacity="0.3" stroke="#ff6b8a" stroke-width="1" rx="2"/>
+      <text x="630" y="22" class="mono" fill="#ff6b8a" font-size="12">cost: 10</text>
+      <rect x="120" y="35" width="2" height="25" fill="#7ee787" fill-opacity="0.3" stroke="#7ee787" stroke-width="1" rx="2"/>
+      <text x="630" y="52" class="mono" fill="#7ee787" font-size="12">benefit: -2</text>
+    </g>
+    
+    <!-- PM_Firmware -->
+    <g transform="translate(0, 280)">
+      <text x="0" y="20" class="mono" fill="#596775" font-size="14">PM_Firmware</text>
+      <rect x="120" y="5" width="1" height="25" fill="#ff6b8a" fill-opacity="0.3" stroke="#ff6b8a" stroke-width="1" rx="2"/>
+      <text x="630" y="22" class="mono" fill="#ff6b8a" font-size="12">cost: 1</text>
+      <rect x="120" y="35" width="5" height="25" fill="#7ee787" fill-opacity="0.3" stroke="#7ee787" stroke-width="1" rx="2"/>
+      <text x="630" y="52" class="mono" fill="#7ee787" font-size="12">benefit: -10 ("I want verified code")</text>
+    </g>
+  </g>
+
+  <!-- Implication box -->
+  <g transform="translate(100, 720)">
+    <rect x="0" y="0" width="800" height="80" fill="#54aeff" fill-opacity="0.05" stroke="#54aeff" stroke-width="1" rx="4"/>
+    <text x="400" y="35" text-anchor="middle" class="mono" fill="#80ccff" font-size="16">
+      At every layer, the cost of coordinating against you exceeds the benefit.
+    </text>
+    <text x="400" y="60" text-anchor="middle" class="mono" fill="#596775" font-size="14">
+      The oligarchs could crush you, but won't. The apparatus won't execute. Proven at distance 0.
+    </text>
+  </g>
+
+  <!-- Right side: The Economics -->
+  <g transform="translate(1000, 180)">
+    <rect x="0" y="0" width="800" height="100" fill="#7ee787" fill-opacity="0.1" stroke="#7ee787" stroke-width="2" rx="4"/>
+    <text x="400" y="40" text-anchor="middle" class="mono" fill="#7ee787" font-size="22" font-weight="700">
+      THE COST ADVANTAGE
+    </text>
+    <text x="400" y="75" text-anchor="middle" class="mono" fill="#7ee787" font-size="16">
+      64x through optimized GPU sourcing, utilization, and quantization
+    </text>
+  </g>
+
+  <!-- Hardware stack -->
+  <g transform="translate(1000, 320)">
+    <text x="0" y="0" class="mono" fill="#80ccff" font-size="18" font-weight="600">CURRENT DEPLOYMENT</text>
+    
+    <g transform="translate(0, 40)">
+      <rect x="0" y="0" width="380" height="60" fill="#54aeff" fill-opacity="0.1" stroke="#54aeff" stroke-width="1" rx="4"/>
+      <text x="190" y="25" text-anchor="middle" class="mono" fill="#54aeff" font-size="14">ultraviolence</text>
+      <text x="190" y="45" text-anchor="middle" class="mono" fill="#596775" font-size="12">1× RTX PRO 6000 Blackwell · 97GB · 600W</text>
+    </g>
+    
+    <g transform="translate(0, 115)">
+      <rect x="0" y="0" width="380" height="80" fill="#54aeff" fill-opacity="0.1" stroke="#54aeff" stroke-width="1" rx="4"/>
+      <text x="190" y="25" text-anchor="middle" class="mono" fill="#54aeff" font-size="14">fxy-bizon-threadripper-0x01</text>
+      <text x="190" y="45" text-anchor="middle" class="mono" fill="#596775" font-size="12">4× RTX PRO 6000 Blackwell · 391GB · 300W blowers</text>
+      <text x="190" y="65" text-anchor="middle" class="mono" fill="#596775" font-size="12">CUDA 13.0 · Driver 580.119.02 · TensorRT-LLM</text>
+    </g>
+    
+    <g transform="translate(0, 210)">
+      <rect x="0" y="0" width="380" height="60" fill="#7ee787" fill-opacity="0.1" stroke="#7ee787" stroke-width="1" rx="4"/>
+      <text x="190" y="25" text-anchor="middle" class="mono" fill="#7ee787" font-size="14">NVFP4 Quantization</text>
+      <text x="190" y="45" text-anchor="middle" class="mono" fill="#596775" font-size="12">7.1x compression · 25 TB/s quantization throughput</text>
+    </g>
+  </g>
+
+  <!-- Benchmark results -->
+  <g transform="translate(1000, 580)">
+    <text x="0" y="0" class="mono" fill="#80ccff" font-size="18" font-weight="600">BENCHMARKS (myelin4.py)</text>
+    
+    <g transform="translate(0, 30)">
+      <text x="0" y="20" class="mono" fill="#596775" font-size="14">Fused MLP</text>
+      <text x="300" y="20" class="mono" fill="#7ee787" font-size="14" font-weight="600">1397.95 TFLOPS</text>
+    </g>
+    <g transform="translate(0, 60)">
+      <text x="0" y="20" class="mono" fill="#596775" font-size="14">Transformer Block</text>
+      <text x="300" y="20" class="mono" fill="#7ee787" font-size="14" font-weight="600">1111.28 TFLOPS</text>
+    </g>
+    <g transform="translate(0, 90)">
+      <text x="0" y="20" class="mono" fill="#596775" font-size="14">Deep Linear Chain</text>
+      <text x="300" y="20" class="mono" fill="#7ee787" font-size="14" font-weight="600">1290.85 TFLOPS</text>
+    </g>
+    <g transform="translate(0, 120)">
+      <text x="0" y="20" class="mono" fill="#596775" font-size="14">FLUX dims validated</text>
+      <text x="300" y="20" class="mono" fill="#7ee787" font-size="14">✓ qkv · ✓ mlp_up · ✓ mlp_down · ✓ proj_out</text>
+    </g>
+  </g>
+
+  <!-- The punchline -->
+  <g transform="translate(1000, 760)">
+    <rect x="0" y="0" width="800" height="100" fill="#d4a72c" fill-opacity="0.1" stroke="#d4a72c" stroke-width="2" rx="4"/>
+    <text x="400" y="40" text-anchor="middle" class="mono" fill="#d4a72c" font-size="18" font-weight="600">
+      "Companies buy from a vendor what they can't politically build themselves."
+    </text>
+    <text x="400" y="75" text-anchor="middle" class="mono" fill="#596775" font-size="14">
+      Anthropic has genius CUDA hackers who can't run TensorRT-LLM. The dysfunction is the moat.
+    </text>
+  </g>
+
+  <!-- Bottom quote -->
+  <g transform="translate(200, 920)">
+    <text x="760" y="30" text-anchor="middle" class="mono" fill="#54aeff" font-size="20" font-style="italic">
+      "Any oligarch could crush me, but can't really."
+    </text>
+    <text x="760" y="60" text-anchor="middle" class="mono" fill="#596775" font-size="14">
+      — principal_agent_moat, proven by rfl at distance 0
+    </text>
+  </g>
+
+  <!-- Page marker -->
+  <text x="100" y="1050" class="mono" fill="#596775" font-size="14">Continuity.Thesis · mathlib 4.26</text>
+  <text x="1820" y="1050" text-anchor="end" class="mono" fill="#596775" font-size="14">razorgirl · straylight · 2026</text>
+</svg>

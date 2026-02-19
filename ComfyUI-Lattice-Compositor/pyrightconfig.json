@@ -1,0 +1,33 @@
+{
+  "include": [
+    "src"
+  ],
+  "exclude": [
+    "**/__pycache__",
+    "**/node_modules",
+    ".venv",
+    "venv",
+    "build",
+    "dist"
+  ],
+  "extraPaths": [
+    "src"
+  ],
+  "pythonVersion": "3.13",
+  "pythonPlatform": "Linux",
+  "typeCheckingMode": "basic",
+  "reportMissingImports": true,
+  "reportMissingTypeStubs": false,
+  "reportUnusedImport": false,
+  "reportUnusedClass": false,
+  "reportUnusedFunction": false,
+  "reportUnusedVariable": false,
+  "reportGeneralTypeIssues": "warning",
+  "reportOptionalMemberAccess": "none",
+  "reportOptionalSubscript": "none",
+  "reportPrivateImportUsage": "none",
+  "stubPath": "src/lattice-stubs",
+  "venvPath": ".",
+  "venv": ".venv"
+}
+

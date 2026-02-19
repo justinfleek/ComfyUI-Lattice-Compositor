@@ -1,0 +1,29 @@
+name: Haskell build
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'src/lattice/**/*.hs'
+      - 'lattice.cabal'
+      - 'cabal.project'
+  pull_request:
+    paths:
+      - 'src/lattice/**/*.hs'
+      - 'lattice.cabal'
+      - 'cabal.project'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: haskell/actions/setup@v2
+        with:
+          ghc-version: '9.10.1'
+          cabal-version: '3.10.1.0'
+
+      - name: Build lattice library
+        run: cabal build

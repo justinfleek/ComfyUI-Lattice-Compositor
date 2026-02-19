@@ -1,0 +1,89 @@
+# src/haskell/BUCK
+#
+# Straylight Haskell library - typed scripting and Nix package generation.
+#
+# Modules:
+#   Straylight.Script    - Batteries-included shell scripting (shelly + turtle ergonomics)
+#   Straylight.Nix       - Typed Nix package generation (for builtins.wasm)
+#
+# Dependencies come from ghcWithPackages in the Nix devshell.
+
+# Straylight.Script source files (explicit list, no globs per WSN lint rules)
+SCRIPT_SRCS = [
+    "Straylight/Script.hs",
+    "Straylight/Script/Clap.hs",
+    "Straylight/Script/Config.hs",
+    "Straylight/Script/Getopt.hs",
+    "Straylight/Script/Nvidia/Config.hs",
+    "Straylight/Script/Nvidia/Container.hs",
+    "Straylight/Script/Nvidia/Versions.hs",
+    "Straylight/Script/Nvidia/Wheel.hs",
+    "Straylight/Script/Oci.hs",
+    "Straylight/Script/Tools.hs",
+    "Straylight/Script/Tools/Bat.hs",
+    "Straylight/Script/Tools/Bwrap.hs",
+    "Straylight/Script/Tools/CMake.hs",
+    "Straylight/Script/Tools/Crane.hs",
+    "Straylight/Script/Tools/Deadnix.hs",
+    "Straylight/Script/Tools/Delta.hs",
+    "Straylight/Script/Tools/Dust.hs",
+    "Straylight/Script/Tools/Fd.hs",
+    "Straylight/Script/Tools/Find.hs",
+    "Straylight/Script/Tools/Grep.hs",
+    "Straylight/Script/Tools/Gzip.hs",
+    "Straylight/Script/Tools/Hyperfine.hs",
+    "Straylight/Script/Tools/Jq.hs",
+    "Straylight/Script/Tools/Ls.hs",
+    "Straylight/Script/Tools/Rg.hs",
+    "Straylight/Script/Tools/Rsync.hs",
+    "Straylight/Script/Tools/Sed.hs",
+    "Straylight/Script/Tools/Statix.hs",
+    "Straylight/Script/Tools/Stylua.hs",
+    "Straylight/Script/Tools/Taplo.hs",
+    "Straylight/Script/Tools/Tar.hs",
+    "Straylight/Script/Tools/Tokei.hs",
+    "Straylight/Script/Tools/Wget.hs",
+    "Straylight/Script/Tools/Xargs.hs",
+    "Straylight/Script/Tools/Zoxide.hs",
+    "Straylight/Script/Vfio.hs",
+    "Straylight/Script/Vm.hs",
+    "Straylight/Script/Vm/Config.hs",
+]
+
+# Packages required by Straylight.Script (from ghcWithPackages in devshell)
+STRAYLIGHT_SCRIPT_PACKAGES = [
+    "-package", "text",
+    "-package", "shelly",
+    "-package", "foldl",
+    "-package", "aeson",
+    "-package", "dhall",
+    "-package", "directory",
+    "-package", "filepath",
+    "-package", "bytestring",
+    "-package", "megaparsec",
+    "-package", "crypton",
+    "-package", "memory",
+    "-package", "unordered-containers",
+    "-package", "vector",
+    "-package", "unix",
+    "-package", "async",
+    "-package", "process",
+    "-package", "containers",
+    "-package", "transformers",
+    "-package", "mtl",
+    "-package", "time",
+]
+
+# Core library - Straylight.Script for shell scripting
+haskell_library(
+    name = "straylight-script",
+    srcs = SCRIPT_SRCS,
+    compiler_flags = [
+        "-O2",
+        "-Wall",
+        "-Wno-unused-imports",
+    ] + STRAYLIGHT_SCRIPT_PACKAGES,
+    # Expose packages to dependents
+    linker_flags = STRAYLIGHT_SCRIPT_PACKAGES,
+    visibility = ["PUBLIC"],
+)

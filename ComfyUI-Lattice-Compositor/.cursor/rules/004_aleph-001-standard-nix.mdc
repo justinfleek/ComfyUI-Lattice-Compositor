@@ -1,0 +1,202 @@
+# Aleph-001: Standard Nix Enforcement
+
+## Description
+CRITICAL: Enforces Aleph-001 (Standard Nix) rules for all Nix code. ALL Nix code MUST conform to lisp-case naming, forbidden pattern restrictions, and module structure requirements.
+
+## Globs
+**/*.nix
+
+## Rules
+
+### Before Writing Nix Code
+1. Read: `docs/rfc/aleph/aleph-001-standard-nix.md`
+2. Verify: File location per CONTRIBUTING.md decision tree
+
+### Naming Convention: lisp-case
+
+All identifiers SHALL use `lisp-case` (kebab-case):
+
+```nix
+# ✅ Conformant
+straylight-api-server
+config.aleph.services.inference-server.model-path
+nix/modules/nixos/gpu-worker-common.nix
+
+# ❌ Non-conformant
+straylightApiServer
+config.aleph.services.inferenceServer.modelPath
+```
+
+**Exceptions:**
+- Standard Nix idioms: `pkgs`, `lib`, `config`, `final`, `prev`
+- External API attributes retain upstream names
+
+### Forbidden Patterns
+
+#### ALEPH-E001: No `with lib;`
+```nix
+# ❌ ERROR
+with lib;
+{ options.foo = mkOption { }; }
+
+# ✅ OK
+{ lib, ... }:
+inherit (lib) mkOption mkIf mkMerge;
+{ options.foo = mkOption { }; }
+```
+
+#### ALEPH-E002: No `rec {` in derivations
+```nix
+# ❌ ERROR
+rec {
+  pname = "my-package";
+  version = "1.0.0";
+}
+
+# ✅ OK
+finalAttrs: {
+  pname = "my-package";
+  version = "1.0.0";
+}
+```
+
+#### ALEPH-E003: No camelCase
+```nix
+# ❌ ERROR
+myPackageName
+configValue
+
+# ✅ OK
+my-package-name
+config-value
+```
+
+#### ALEPH-E004: Modules need `_class`
+```nix
+# ❌ ERROR
+{ config, ... }: { }
+
+# ✅ OK
+{ config, ... }: {
+  _class = "nixos";  # or "flake"
+}
+```
+
+#### ALEPH-E005: No `default.nix` in packages
+```nix
+# ❌ ERROR
+nix/packages/my-package/default.nix
+
+# ✅ OK
+nix/packages/my-package.nix
+```
+
+#### ALEPH-E006: No heredocs
+```nix
+# ❌ ERROR
+buildPhase = ''
+  make
+'';
+
+# ✅ OK
+buildPhase = writeText "build.sh" ''
+  make
+'';
+```
+
+#### ALEPH-E007: No `if/then/else` in module config
+```nix
+# ❌ ERROR
+{ config, lib, ... }: {
+  services.foo.enable = if config.enableBar then true else false;
+}
+
+# ✅ OK
+{ config, lib, ... }: {
+  services.foo.enable = lib.mkIf config.enableBar true;
+}
+```
+
+#### ALEPH-E008: No import from derivation (IFD)
+```nix
+# ❌ ERROR
+src = import (runCommand "gen.nix" { } "echo '{}' > $out");
+
+# ✅ OK
+# Restructure to avoid IFD
+```
+
+#### ALEPH-E010: No per-flake nixpkgs config
+```nix
+# ❌ ERROR
+perSystem = { system, pkgs, ... }: {
+  _module.args.pkgs = import nixpkgs {
+    config = { allowUnfree = true; };
+  };
+}
+
+# ✅ OK
+perSystem = { system, ... }: {
+  _module.args.pkgs = inputs.aleph.nixpkgs.${system};
+}
+```
+
+### Package Requirements
+
+#### ALEPH-W004: Packages need `meta`
+```nix
+# ⚠️ WARNING
+finalAttrs: {
+  pname = "my-package";
+  version = "1.0.0";
+}
+
+# ✅ OK
+finalAttrs: {
+  pname = "my-package";
+  version = "1.0.0";
+  meta = {
+    description = "My package description";
+    license = lib.licenses.mit;
+    mainProgram = "my-program";
+  };
+}
+```
+
+### Directory Structure
+
+Follow the prescribed structure:
+```
+project/
+├── flake.nix                    # Inputs and single import only
+├── nix/
+│   ├── main.nix                 # Top-level flake module
+│   ├── modules/flake/           # Flake-parts modules
+│   ├── modules/nixos/            # NixOS modules
+│   ├── overlays/                # Overlay compositions
+│   ├── packages/                # Callpackageables
+│   └── prelude/                 # Prelude functions
+```
+
+### File Locations
+
+Use decision tree from CONTRIBUTING.md:
+- **Packages**: `nix/packages/{name}.nix`
+- **Overlays**: `nix/overlays/{name}.nix`
+- **Flake modules**: `nix/modules/flake/{name}.nix`
+- **NixOS modules**: `nix/modules/nixos/{name}.nix`
+- **Prelude functions**: `nix/prelude/functions/{name}.nix`
+
+### Validation
+
+ALWAYS validate Nix code before writing:
+- Run `nix flake check`
+- Run `nix run .#lint` (if available)
+- Use `scripts/validate-file.js` for file-level checks
+
+## Examples
+
+Study these reference implementations:
+- Packages: `nix/packages/fmt.nix`
+- Overlays: `nix/overlays/libmodern/default.nix`
+- Modules: `nix/modules/flake/default.nix`

@@ -1,0 +1,21 @@
+rust_library(
+    name = "arch",
+    srcs = glob(["src/**/*.rs"]),
+    crate = "arch",
+    edition = "2024",
+    features = ["kvm"],
+    deps = [
+        "//cloud-hypervisor/hypervisor:hypervisor",
+        "//third-party/rust:anyhow",
+        "//third-party/rust:byteorder",
+        "//third-party/rust:libc",
+        "//third-party/rust:linux-loader",
+        "//third-party/rust:log",
+        "//third-party/rust:serde",
+        "//third-party/rust:thiserror",
+        "//third-party/rust:uuid",
+        "//third-party/rust:vm-memory",
+        "//third-party/rust:vmm-sys-util",
+    ],
+    visibility = ["PUBLIC"],
+)

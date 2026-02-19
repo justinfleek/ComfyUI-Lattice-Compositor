@@ -1,0 +1,22 @@
+rust_library(
+    name = "net_util",
+    srcs = glob(["src/**/*.rs"]),
+    crate = "net_util",
+    edition = "2024",
+    deps = [
+        "//cloud-hypervisor/net_gen:net_gen",
+        "//cloud-hypervisor/rate_limiter:rate_limiter",
+        "//cloud-hypervisor/vm-virtio:vm-virtio",
+        "//third-party/rust:epoll",
+        "//third-party/rust:getrandom",
+        "//third-party/rust:libc",
+        "//third-party/rust:log",
+        "//third-party/rust:serde",
+        "//third-party/rust:thiserror",
+        "//third-party/rust:virtio-bindings",
+        "//third-party/rust:virtio-queue",
+        "//third-party/rust:vm-memory",
+        "//third-party/rust:vmm-sys-util",
+    ],
+    visibility = ["PUBLIC"],
+)

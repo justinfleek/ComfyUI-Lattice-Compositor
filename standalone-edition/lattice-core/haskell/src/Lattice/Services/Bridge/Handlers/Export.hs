@@ -157,7 +157,8 @@ handleExportOp ctx = \case
         result <- try $ finalizeEncoder enc
         case result of
           Left (e :: SomeException) -> pure $ RespError 0 (T.pack $ show e)
-          Right videoBytes -> do
+          Right (Left errMsg) -> pure $ RespError 0 errMsg
+          Right (Right videoBytes) -> do
             -- Remove encoder from active list
             modifyMVar_ (ecActiveEncoders ctx) $ \m -> pure $ Map.delete encId m
             pure $ RespData 0 videoBytes
@@ -191,36 +192,37 @@ handleExportOp ctx = \case
 -- ────────────────────────────────────────────────────────────────────────────
 
 -- | Finalize encoder and produce video bytes
-finalizeEncoder :: EncoderState -> IO ByteString
+-- Returns Left with error message if no frames, Right with video bytes on success
+finalizeEncoder :: EncoderState -> IO (Either Text ByteString)
 finalizeEncoder enc = do
   frames <- reverse <$> readIORef (esFrames enc)
   
-  when (null frames) $
-    error "No frames to encode"
-  
-  -- Create encoding parameters
-  let params = defaultParams (esWidth enc) (esHeight enc)
-        & setFps (esFps enc)
-        & setBitrate (esBitrate enc)
-        & setCodec (selectCodec (esCodec enc))
-  
-  -- Encode frames
-  withSystemTempDirectory "lattice-export" $ \tmpDir -> do
-    let outputPath = tmpDir </> "output.mp4"
-    
-    -- Create frame writer
-    frameWriter <- imageWriter params outputPath
-    
-    -- Write each frame
-    forM_ frames $ \frameBytes -> do
-      let img = bytesToImage (esWidth enc) (esHeight enc) frameBytes
-      frameWriter (Just img)
-    
-    -- Finalize
-    frameWriter Nothing
-    
-    -- Read output file
-    BS.readFile outputPath
+  case frames of
+    [] -> pure $ Left "No frames to encode"
+    _ -> do
+      -- Create encoding parameters
+      let params = defaultParams (esWidth enc) (esHeight enc)
+            & setFps (esFps enc)
+            & setBitrate (esBitrate enc)
+            & setCodec (selectCodec (esCodec enc))
+      
+      -- Encode frames
+      withSystemTempDirectory "lattice-export" $ \tmpDir -> do
+        let outputPath = tmpDir </> "output.mp4"
+        
+        -- Create frame writer
+        frameWriter <- imageWriter params outputPath
+        
+        -- Write each frame
+        forM_ frames $ \frameBytes -> do
+          let img = bytesToImage (esWidth enc) (esHeight enc) frameBytes
+          frameWriter (Just img)
+        
+        -- Finalize
+        frameWriter Nothing
+        
+        -- Read output file
+        Right <$> BS.readFile outputPath
 
 -- | Convert RGBA bytes to JuicyPixels Image
 bytesToImage :: Int -> Int -> ByteString -> Image PixelRGBA8

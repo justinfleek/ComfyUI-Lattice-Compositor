@@ -1,0 +1,349 @@
+# AUDIT SESSION LOG
+
+**Purpose:** Real-time documentation of every action taken during audit.
+**Rule:** EVERY fix, EVERY finding, EVERY change gets documented HERE IMMEDIATELY.
+
+---
+
+## SESSION: 2026-01-06 - Documentation Verification & Audit Planning
+
+### Actions Completed This Session
+
+| Time | Action | Result | Verified By |
+|------|--------|--------|-------------|
+| Start | Verified bug count | 80 bugs (BUG-001 to BUG-080) | `Select-String "^## BUG-\|^### BUG-"` |
+| Start | Verified severity P0 | 16 | `Select-String "Severity:\*\* P0"` |
+| Start | Verified severity P1 | 55 | `Select-String "Severity:\*\* P1"` |
+| Start | Verified severity P2 | 3 | `Select-String "Severity:\*\* P2"` |
+| Start | Verified severity P3 | 6 | `Select-String "Severity:\*\* P3"` |
+| Start | Verified test count | 2274 passed, 20 skipped, 3 todo | `npx vitest run` |
+| Start | Verified test files | 57 | `npx vitest run` |
+| Start | Verified line counts | 6,488 total (7 files) | `(Get-Content file).Count` × 7 |
+| Start | Verified bug fixes exist | 50+ fixes grep'd in source | Multiple `Select-String` commands |
+| 12:22 | Added cameraExportFormats.property.test.ts | 41 new tests (1 skipped) | `npx vitest run` |
+| 12:22 | Found BUG-081 | Duplicate frame keyframes undefined behavior | Property test counterexample |
+| 12:25 | Updated MASTER_AUDIT.md | Tests 2274→2315, Skipped 20→21, Bugs 80→81 | Manual edit |
+| 12:25 | Updated COMPREHENSIVE_BUG_REPORT.md | Added BUG-081, P2 3→4, Export tests 599→640 | Manual edit |
+| 12:35 | Rebuilt Audit Progress table | Full system map: 336 files across 37 dirs | Codebase scan |
+| 12:50 | Created animation.property.test.ts | 33 property tests for animation.ts | `npx vitest run` |
+| 12:55 | Reviewed assets.ts | NO FUNCTIONS - types only, nothing to test | Code review |
+| 13:00 | Created blendModes.property.test.ts | 31 property tests for blendModes.ts | `npx vitest run` |
+| 13:10 | Created camera.property.test.ts | 51 property tests for camera.ts | `npx vitest run` |
+| 13:15 | Reviewed cameraTracking.ts | NO FUNCTIONS - types only, nothing to test | Code review |
+| 13:25 | Created effects.property.test.ts | 40 property tests for effects.ts | `npx vitest run` |
+| 13:30 | Reviewed export.ts | NO FUNCTIONS - types only | Code review |
+| 13:35 | Created layerData.property.test.ts | 15 property tests for layerData.ts | `npx vitest run` |
+| 13:40 | Created masks.property.test.ts | 22 property tests for masks.ts | `npx vitest run` |
+| 13:45 | Created meshWarp.property.test.ts | 18 property tests for meshWarp.ts | `npx vitest run` |
+
+---
+
+## SESSION: 2026-01-06 (Continued) - types/ and export/ Audit
+
+### Actions Completed
+
+| Time | Action | Result |
+|------|--------|--------|
+| 13:11 | Created transform.property.test.ts | 42 tests |
+| 13:12 | Created text.property.test.ts | 25 tests |
+| 13:14 | Created shapes.property.test.ts | 121 tests |
+| 13:15 | Created spline.property.test.ts | 37 tests |
+| 13:15 | **types/ COMPLETE** | 780 passed, 16 files, 0 bugs |
+| 13:18 | Created vaceControlExport.property.test.ts | 22 tests |
+| 13:19 | Intermediate total | 2715 passed, 21 skipped (68 files) |
+| 13:27 | **CAUGHT MISSING FILES** | layerStyles.ts, templateBuilder.ts, dataAsset.ts |
+| 13:27 | Created layerStyles.property.test.ts | 37 tests |
+| 13:28 | Created templateBuilder.property.test.ts | 33 tests |
+| 13:29 | Created dataAsset.property.test.ts | 24 tests |
+| 13:30 | **types/ NOW COMPLETE** | 874 tests, 19 files, 0 bugs |
+| 13:31 | **ALL tests** | 2809 passed, 21 skipped, 3 todo (71 files) |
+| 13:32 | Updated MASTER_AUDIT.md | Fixed all outdated test counts |
+| 13:32 | Updated COMPREHENSIVE_BUG_REPORT.md | Fixed all outdated test counts |
+| 13:40 | Created wanMoveExport.property.test.ts | 38 tests |
+| 13:42 | Created depthRenderer.property.test.ts | 18 tests |
+| 13:43 | **export/ NOW COMPLETE** | 670 tests, 15 files |
+| 13:44 | **ALL tests** | 2864 passed, 21 skipped, 3 todo (73 files) |
+| 13:44 | Note: 1 flaky test in math3d.ts | Translation composition (pre-existing) |
+| 14:02 | Created svgExport.property.test.ts | 28 tests |
+| 14:03 | Created videoEncoder.test.ts | 10 tests (3 skipped - browser) |
+| 14:03 | Created exportPipeline.test.ts | 13 tests (5 skipped - browser) |
+| 14:04 | **ALL GAPS CLOSED** | export/ now has 18 test files, 713 tests |
+| 14:04 | **FULL SUITE** | 2908 passed, 29 skipped, 3 todo (76 files) |
+
+---
+
+## AUDIT SCOPE (54 files across 8 tiers)
+
+### Verified File & Test Counts (2026-01-06)
+
+| System | Source Files | Test Files | Tests | Status |
+|--------|--------------|------------|-------|--------|
+| **types/** | 23 | 19 | 874 | ✅ COMPLETE |
+| **export/** | 16 (11 in subfolder + 5 in services/) | 18 | 713 (18 skip, 3 todo) | ✅ COMPLETE |
+
+**Export source files breakdown:**
+- `services/export/`: cameraExportFormats, depthRenderer, exportPipeline, frameSequenceExporter, index, meshDeformExport, poseExport, vaceControlExport, videoEncoder, wanMoveExport, wanMoveFlowGenerators (11)
+- `services/`: cameraExport, exportTemplates, matteExporter, modelExport, svgExport (5)
+
+### Systems Still To Audit
+
+| Tier | System | Files | Status |
+|------|--------|-------|--------|
+| 2 | Core Math & Interpolation | 4 | 🔄 math3d done, 3 remain |
+| 4 | Specialized Services | 7 | ⬜ NEEDS AUDIT |
+| 5 | Particles | 3 | ⬜ NEEDS AUDIT |
+| 6 | Physics | 3 | ⬜ NEEDS AUDIT |
+| 7 | Stores | 5 | ⬜ NEEDS AUDIT |
+| 8 | Actions | 6 | ⬜ NEEDS AUDIT |
+
+### Full Directory Test Coverage
+
+| Directory | Source Files | Test Files | Tests | Status |
+|-----------|--------------|------------|-------|--------|
+| types/ | 23 | 19 | 874 | ✅ COMPLETE |
+| services/export/ | 11 | 18 | 713 | ✅ COMPLETE |
+| services/ (export-related) | 5 | (included above) | (included above) | ✅ COMPLETE |
+| services/ (other) | ~165 | ~27 | ~880 | ⬜ NEEDS AUDIT |
+| stores/ | 36 | 2 | ~124 | ⬜ NEEDS AUDIT |
+| engine/ | 62 | 4 | ~200 | ⬜ NEEDS AUDIT |
+| components/ | 157 | 0 | 0 | ⬜ NEEDS AUDIT |
+| composables/ | 18 | 0 | 0 | ⬜ NEEDS AUDIT |
+
+### Documents Fixed This Session
+
+| Document | Line(s) | Old Value | New Value | Reason |
+|----------|---------|-----------|-----------|--------|
+| COMPREHENSIVE_BUG_REPORT.md | 1876-1880 | P0=23, P1=28, P2=15, Total=66 | P0=16, P1=55, P2=3, P3=6, Total=80 | SUMMARY didn't match Executive Summary |
+| COMPREHENSIVE_BUG_REPORT.md | 1883-1898 | Missing 14 bugs | Full 80-bug table | Table didn't sum to 80 |
+| COMPREHENSIVE_BUG_REPORT.md | 117-127 | Inaccurate category counts | Actual counts from vitest | Category totals were wrong |
+| MASTER_AUDIT.md | 29 | 9 | 20 | Skipped count was wrong |
+| MASTER_AUDIT.md | 189 | 2221 | 2274 | Test count was wrong |
+| MASTER_AUDIT.md | 394 | 2221 | 2274 | Test count was wrong |
+| MASTER_AUDIT.md | 2066 | 9 skipped | 20 skipped | Skipped count was wrong |
+| HANDOFF_ERRORS.md | Multiple | UNRELIABLE | VERIFIED | Updated status |
+
+---
+
+## AUDIT STRATEGY
+
+### Approach: Property Testing by System (Bottom-Up)
+
+**Tier 0 (Pure Functions):** SeededRandom, easing, math3d
+**Tier 1 (Types):** animation, transform, project, camera, layer, effects
+**Tier 2 (Services):** interpolation, layerTime, blendModes
+**Tier 3 (Engine):** MotionEngine, layerEvaluation
+**Tier 4+:** Everything else
+
+### Property Test Files That Exist (39 total)
+
+**types/ (15 property test files + 4 unit test files):**
+```
+types/animation.property.test.ts
+types/blendModes.property.test.ts
+types/camera.property.test.ts
+types/dataAsset.property.test.ts
+types/effects.property.test.ts
+types/layerData.property.test.ts
+types/layerStyles.property.test.ts
+types/masks.property.test.ts
+types/meshWarp.property.test.ts
+types/project.property.test.ts
+types/shapes.property.test.ts
+types/spline.property.test.ts
+types/templateBuilder.property.test.ts
+types/text.property.test.ts
+types/transform.property.test.ts
+```
+
+**export/ (6 property test files):**
+```
+export/cameraExportFormats.property.test.ts
+export/depthRenderer.property.test.ts
+export/poseExport.property.test.ts
+export/vaceControlExport.property.test.ts
+export/wanMoveExport.property.test.ts
+export/wanMoveFlowGenerators.property.test.ts
+```
+
+**services/ (17 files - PRE-EXISTING):**
+```
+services/audio.property.test.ts
+services/blendModes.property.test.ts
+services/camera.property.test.ts
+services/easing.property.test.ts
+services/effectProcessor.property.test.ts
+services/expressions.property.test.ts
+services/interpolation.property.test.ts
+services/layerEvaluationCache.property.test.ts
+services/masks.property.test.ts
+services/math3d.property.test.ts
+services/particles.property.test.ts
+services/projectStorage.property.test.ts
+services/SeededRandom.property.test.ts
+services/selection.property.test.ts
+services/serialization.property.test.ts
+services/transforms.property.test.ts
+services/undoredo.property.test.ts
+```
+
+**engine/ (1 file):**
+```
+engine/layerEvaluation.property.test.ts
+```
+
+### Type Files Property Test Status (Updated 2026-01-06)
+
+| File | Has Functions | Tests | Status |
+|------|---------------|-------|--------|
+| animation.ts | ✅ 3 | 33 | ✅ COMPLETE |
+| assets.ts | ❌ types only | - | ✅ N/A |
+| blendModes.ts | ✅ 3 | 31 | ✅ COMPLETE |
+| camera.ts | ✅ 2 | 51 | ✅ COMPLETE |
+| cameraTracking.ts | ❌ types only | - | ✅ N/A |
+| dataAsset.ts | ✅ 4 | 24 | ✅ COMPLETE |
+| effects.ts | ✅ 3 | 40 | ✅ COMPLETE |
+| export.ts | ❌ types only | - | ✅ N/A |
+| layerData.ts | ✅ 1 | 15 | ✅ COMPLETE |
+| layerStyles.ts | ✅ 14 | 37 | ✅ COMPLETE |
+| masks.ts | ✅ 2 | 22 | ✅ COMPLETE |
+| meshWarp.ts | ✅ 2 | 18 | ✅ COMPLETE |
+| particles.ts | ❌ types only | - | ✅ N/A |
+| physics.ts | ❌ types only | - | ✅ N/A |
+| presets.ts | ❌ types only | - | ✅ N/A |
+| project.ts | ✅ 10 | 43 | ✅ COMPLETE |
+| shapes.ts | ✅ 30 | 121 | ✅ COMPLETE |
+| spline.ts | ✅ 4 | 37 | ✅ COMPLETE |
+| templateBuilder.ts | ✅ 5 | 33 | ✅ COMPLETE |
+| text.ts | ✅ 1 | 25 | ✅ COMPLETE |
+| transform.ts | ✅ 7 | 42 | ✅ COMPLETE |
+| index.ts | ❌ re-exports | - | ✅ N/A |
+| modules.d.ts | ❌ declarations | - | ✅ N/A |
+
+---
+
+## CURRENT AUDIT PROGRESS
+
+### Files Fully Audited (with property tests, all exports covered)
+
+| # | File | Lines | Tests | Property Tests | Date |
+|---|------|-------|-------|----------------|------|
+| 1 | math3d.ts | 1047 | 148 | ✅ | 2026-01-05 |
+| 2 | SeededRandom.ts | 115 | 80 | ✅ | 2026-01-05 |
+| 3 | interpolation.ts | 884 | 96 | ✅ | 2026-01-05 |
+| 4 | easing.ts | 212 | 198 | ✅ | 2026-01-06 |
+| 5 | MotionEngine.ts | 1474 | 81 | ⬜ unit only | 2026-01-06 |
+| 6 | projectActions.ts | 802 | 65 | ⬜ unit only | 2026-01-06 |
+| 7 | keyframeActions.ts | 1954 | 59 | ⬜ unit only | 2026-01-06 |
+| **TOTAL** | | **6,488** | **727** | | |
+
+### Files In Progress
+
+| File | Status | Notes |
+|------|--------|-------|
+| (none currently) | | |
+
+---
+
+## EXPORT SYSTEM VERIFICATION (2026-01-06)
+
+### Source Files vs Test Coverage (UPDATED 2026-01-06)
+
+| Source File | Tests | Property | Status |
+|-------------|-------|----------|--------|
+| cameraExportFormats.ts | 66 + 41 | ✅ 41 | ✅ COMPLETE |
+| depthRenderer.ts | 18 | ✅ 18 | ✅ COMPLETE |
+| exportPipeline.ts | 13 (5 skip) | types | ✅ COMPLETE |
+| frameSequenceExporter.ts | 14 | unit | ✅ COMPLETE |
+| meshDeformExport.ts | 51 | unit | ✅ COMPLETE |
+| poseExport.ts | 34 + 11 | ✅ 11 | ✅ COMPLETE |
+| vaceControlExport.ts | 19 + 22 | ✅ 22 | ✅ COMPLETE |
+| videoEncoder.ts | 10 (3 skip) | types | ✅ COMPLETE |
+| wanMoveExport.ts | 52 + 38 | ✅ 38 | ✅ COMPLETE |
+| wanMoveFlowGenerators.ts | 87 | ✅ 87 | ✅ COMPLETE |
+| svgExport.ts | 28 | ✅ 28 | ✅ COMPLETE |
+
+### Additional Test Files
+
+| Test File | Tests | What It Tests |
+|-----------|-------|---------------|
+| cameraExport.test.ts | 13 | services/cameraExport.ts |
+| modelExport.test.ts | 62 | services/modelExport.ts |
+| export-format-contracts.test.ts | 56 | Format contracts across all exporters |
+
+### Export System Summary (UPDATED 2026-01-06)
+
+- **Total Source Files:** 16 (11 in services/export/ + 5 in services/)
+- **Total Test Files:** 18
+- **Total Export Tests:** 713 passed, 18 skipped, 3 todo
+- **Property Test Files:** 6 (cameraExportFormats, depthRenderer, poseExport, vaceControlExport, wanMoveExport, wanMoveFlowGenerators)
+- **Browser-Only (Need E2E):** 2 (exportPipeline.ts, videoEncoder.ts)
+- **Status:** ✅ COMPLETE
+
+### Gaps Identified ✅ ALL CLOSED (2026-01-06)
+
+1. **Property Tests Added:**
+   - ✅ cameraExportFormats.property.test.ts (41 tests)
+   - ✅ depthRenderer.property.test.ts (18 tests)
+   - ✅ vaceControlExport.property.test.ts (22 tests)
+   - ✅ wanMoveExport.property.test.ts (38 tests)
+   - ✅ svgExport.property.test.ts (28 tests)
+
+2. **Unit Tests Added:**
+   - ✅ exportPipeline.test.ts (13 tests, 5 skipped - browser)
+   - ✅ videoEncoder.test.ts (10 tests, 3 skipped - browser)
+
+3. **Browser-Only (Deferred to E2E Phase):**
+   - exportPipeline.ts - Uses Canvas API
+   - videoEncoder.ts - Uses WebCodecs API
+
+### Upstream Dependencies (What Export System Depends On)
+
+| Export File | Upstream Dependencies |
+|-------------|----------------------|
+| cameraExportFormats.ts | math3d.ts, interpolation.ts, camera types |
+| depthRenderer.ts | project types, camera types, layer types |
+| frameSequenceExporter.ts | (minimal - mostly standalone) |
+| meshDeformExport.ts | spline types, interpolation.ts |
+| poseExport.ts | layer types, interpolation.ts |
+| vaceControlExport.ts | spline types, easing.ts |
+| wanMoveExport.ts | wanMoveFlowGenerators.ts |
+| wanMoveFlowGenerators.ts | SeededRandom pattern (internal) |
+
+### Downstream Dependents (What Depends on Export System)
+
+| Export File | Downstream |
+|-------------|------------|
+| All exporters | exportPipeline.ts |
+| exportPipeline.ts | ComfyUI integration, UI export buttons |
+
+---
+
+## NEXT ACTIONS
+
+### EXPORT SYSTEM - ✅ COMPLETE
+1. [x] ADD property tests for cameraExportFormats.ts - ✅ 41 tests
+2. [x] ADD property tests for depthRenderer.ts - ✅ 18 tests
+3. [x] ADD tests for frameSequenceExporter.ts - ✅ has 14 unit tests
+4. [x] ADD tests for meshDeformExport.ts - ✅ has 51 unit tests
+5. [x] ADD property tests for vaceControlExport.ts - ✅ 22 tests
+6. [x] ADD property tests for wanMoveExport.ts - ✅ 38 tests
+7. [x] ADD tests for svgExport.ts - ✅ 28 property tests
+8. [x] ADD tests for exportPipeline.ts - ✅ 13 tests (5 browser-skipped)
+9. [x] ADD tests for videoEncoder.ts - ✅ 10 tests (3 browser-skipped)
+
+### TYPES SYSTEM - ✅ COMPLETE
+10. [x] Verify animation.property.test.ts - ✅ 33 tests
+11. [x] Verify project.property.test.ts - ✅ 43 tests
+12. [x] Verify transform.property.test.ts - ✅ 42 tests
+
+### REMAINING SYSTEMS - ⬜ TODO
+13. [ ] Audit services/ (other than export)
+14. [ ] Audit stores/
+15. [ ] Audit engine/
+16. [ ] Audit composables/ (browser-only)
+
+---
+
+## PROPERTY TESTS ADDED THIS SESSION
+
+| F

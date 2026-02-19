@@ -1,0 +1,17 @@
+# Test 44: Literate programming circular dependency (should be caught)
+
+```haskell
+@name: chunk-a
+@target: cpp23
+@depends: [chunk-b]
+@description: Depends on B
+module A where
+```
+
+```haskell
+@name: chunk-b
+@target: cpp23
+@depends: [chunk-a]
+@description: Depends on A (circular!)
+module B where
+```

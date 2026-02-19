@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PackageImports #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
@@ -47,9 +48,10 @@ import Crypto.Hash (SHA256 (..), hashWith)
 import Crypto.Number.Serialize (i2osp)
 import Crypto.PubKey.RSA (PrivateKey (..), PublicKey (..), generate)
 import qualified Crypto.PubKey.RSA.PKCS15 as PKCS15
-import Data.ASN1.BinaryEncoding (DER (..))
-import Data.ASN1.Encoding (decodeASN1', encodeASN1')
-import Data.ASN1.Types
+import "asn1-encoding" Data.ASN1.BinaryEncoding (DER (..))
+import "asn1-encoding" Data.ASN1.Encoding (decodeASN1', encodeASN1')
+import "asn1-types" Data.ASN1.OID (OID)
+import "asn1-types" Data.ASN1.Types (ASN1 (..), ASN1ConstructionType (..), ASN1StringEncoding (..))
 import Data.Aeson (ToJSON (..), encode, object, (.=))
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
@@ -61,14 +63,14 @@ import Data.IORef (IORef, atomicModifyIORef', newIORef, readIORef)
 import Data.List (find)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
-import Data.PEM (PEM (..), pemParseBS, pemWriteBS)
+import "crypton-pem" Data.PEM (PEM (..), pemParseBS, pemWriteBS)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
 import Data.Time.Format.ISO8601 (iso8601Show)
-import Data.X509 hiding (HashSHA256)
-import qualified Data.X509 as X509
+import "crypton-x509" Data.X509 hiding (HashSHA256)
+import qualified "crypton-x509" Data.X509 as X509
 import GHC.Generics (Generic)
 import Network.Socket
 import qualified Network.Socket.ByteString as SBS
@@ -82,6 +84,23 @@ import System.Hourglass (dateCurrent)
 import System.IO (BufferMode (..), hSetBuffering, stderr, stdout)
 import Text.Read (readMaybe)
 import Time.Types (Date (..))
+
+-- ────────────────────────────────────────────────────────────────────────────
+-- DN Element OID Helper
+-- ────────────────────────────────────────────────────────────────────────────
+
+-- | Get the OID for a distinguished name element
+-- Standard OIDs from X.500 attribute types
+dnElementOID :: DnElement -> OID
+dnElementOID DnCommonName = [2, 5, 4, 3]
+dnElementOID DnCountry = [2, 5, 4, 6]
+dnElementOID DnOrganization = [2, 5, 4, 10]
+dnElementOID DnOrganizationUnit = [2, 5, 4, 11]
+dnElementOID DnEmailAddress = [1, 2, 840, 113549, 1, 9, 1]
+
+-- | Create an ASN1CharacterString with UTF8 encoding
+mkUtf8String :: ByteString -> ASN1CharacterString
+mkUtf8String bs = ASN1CharacterString UTF8 bs
 
 -- ────────────────────────────────────────────────────────────────────────────
 -- Configuration
@@ -142,8 +161,8 @@ generateCA keyPath certPath = do
 
         dn =
             DistinguishedName
-                [ (getObjectID DnCommonName, ASN1CharacterString UTF8 "Armitage Proxy CA")
-                , (getObjectID DnOrganization, ASN1CharacterString UTF8 "Straylight")
+                [ (dnElementOID DnCommonName, mkUtf8String "Armitage Proxy CA")
+                , (dnElementOID DnOrganization, mkUtf8String "Straylight")
                 ]
 
         cert =
@@ -282,7 +301,7 @@ decodePrivKey bs = do
                     PrivateKey
                         { private_pub =
                             PublicKey
-                                { public_size = (fromIntegral (BS.length (i2osp n)))
+                                { public_size = BS.length (i2osp n)
                                 , public_n = n
                                 , public_e = e
                                 }
@@ -333,7 +352,7 @@ generateHostCert CA{..} host = do
 
         subjectDN =
             DistinguishedName
-                [(getObjectID DnCommonName, ASN1CharacterString UTF8 (BC.pack host))]
+                [(dnElementOID DnCommonName, mkUtf8String (BC.pack host))]
 
         -- Subject Alternative Name for the host
         san = ExtSubjectAltName [AltNameDNS host]
@@ -564,7 +583,7 @@ handleClient cfg ca certCache logger clientSock = do
 
 -- | Handle CONNECT (HTTPS interception via TLS MITM)
 handleConnect :: Config -> CA -> CertCache -> Logger -> Socket -> ByteString -> ByteString -> UTCTime -> IO ()
-handleConnect cfg ca certCache logger clientSock host path now = do
+handleConnect cfg ca certCache logger clientSock _host path now = do
     let (targetHost, targetPort) = case BC.split ':' path of
             [h, p] -> (BC.unpack h, maybe 443 id $ readMaybe $ BC.unpack p)
             [h] -> (BC.unpack h, 443)

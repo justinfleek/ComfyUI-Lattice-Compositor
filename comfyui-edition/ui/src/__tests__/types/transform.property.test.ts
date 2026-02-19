@@ -1,25 +1,29 @@
 /**
  * Property tests for ui/src/types/transform.ts
  * Tests: createDefaultTransform, normalizeLayerTransform, createFollowPathConstraint,
- *        separatePositionDimensions, linkPositionDimensions, 
+ *        separatePositionDimensions, linkPositionDimensions,
  *        separateScaleDimensions, linkScaleDimensions
- * 
+ *
  * Audit: 2026-01-06
  */
 
-import { describe, it, expect } from "vitest";
 import * as fc from "fast-check";
+import { describe, expect, it } from "vitest";
+import {
+  type AnimatableProperty,
+  createAnimatableProperty,
+} from "@/types/animation";
 import {
   createDefaultTransform,
-  normalizeLayerTransform,
   createFollowPathConstraint,
-  separatePositionDimensions,
-  linkPositionDimensions,
-  separateScaleDimensions,
-  linkScaleDimensions,
   type LayerTransform,
+  linkPositionDimensions,
+  linkScaleDimensions,
+  normalizeLayerTransform,
+  separatePositionDimensions,
+  separateScaleDimensions,
 } from "@/types/transform";
-import { createAnimatableProperty, createKeyframe, type AnimatableProperty } from "@/types/animation";
+import { createTestKeyframe as createKeyframe } from "../fixtures";
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 //                                                               // arbitraries
@@ -39,7 +43,7 @@ const positionArb = fc.record({
 describe("PROPERTY: createDefaultTransform", () => {
   it("returns LayerTransform with all required properties", () => {
     const transform = createDefaultTransform();
-    
+
     expect(transform).toHaveProperty("position");
     expect(transform).toHaveProperty("origin");
     expect(transform).toHaveProperty("anchorPoint");
@@ -90,7 +94,7 @@ describe("PROPERTY: createDefaultTransform", () => {
 
   it("all properties are AnimatableProperty with correct structure", () => {
     const transform = createDefaultTransform();
-    
+
     const props = [
       transform.position,
       transform.origin,
@@ -101,7 +105,7 @@ describe("PROPERTY: createDefaultTransform", () => {
       transform.rotationY,
       transform.rotationZ,
     ];
-    
+
     for (const prop of props) {
       expect(prop).toHaveProperty("id");
       expect(prop).toHaveProperty("name");
@@ -117,7 +121,7 @@ describe("PROPERTY: createDefaultTransform", () => {
   it("is deterministic (same structure every call)", () => {
     const t1 = createDefaultTransform();
     const t2 = createDefaultTransform();
-    
+
     expect(t1.position.value).toEqual(t2.position.value);
     expect(t1.scale.value).toEqual(t2.scale.value);
     expect(t1.rotation.value).toBe(t2.rotation.value);
@@ -139,13 +143,19 @@ describe("PROPERTY: normalizeLayerTransform", () => {
     const baseTransform = createDefaultTransform();
     // Create transform without origin for testing fallback behavior
     const { origin, ...transformWithoutOrigin } = baseTransform;
-    const transform: Omit<LayerTransform, 'origin'> & { anchorPoint?: AnimatableProperty<{ x: number; y: number; z?: number }> } = {
+    const transform: Omit<LayerTransform, "origin"> & {
+      anchorPoint?: AnimatableProperty<{ x: number; y: number; z?: number }>;
+    } = {
       ...transformWithoutOrigin,
-      anchorPoint: createAnimatableProperty("test", { x: 10, y: 20, z: 30 }, "vector3"),
+      anchorPoint: createAnimatableProperty(
+        "test",
+        { x: 10, y: 20, z: 30 },
+        "vector3",
+      ),
     };
-    
+
     normalizeLayerTransform(transform as LayerTransform);
-    
+
     expect((transform as LayerTransform).origin).toBe(transform.anchorPoint);
   });
 
@@ -153,12 +163,12 @@ describe("PROPERTY: normalizeLayerTransform", () => {
     const baseTransform = createDefaultTransform();
     // Create transform without anchorPoint for testing fallback behavior
     const { anchorPoint, ...transformWithoutAnchorPoint } = baseTransform;
-    const transform: Omit<LayerTransform, 'anchorPoint'> = {
+    const transform: Omit<LayerTransform, "anchorPoint"> = {
       ...transformWithoutAnchorPoint,
     };
-    
+
     normalizeLayerTransform(transform);
-    
+
     expect(transform.anchorPoint).toBe(transform.origin);
   });
 
@@ -166,9 +176,9 @@ describe("PROPERTY: normalizeLayerTransform", () => {
     const transform = createDefaultTransform();
     const originalOrigin = transform.origin;
     const originalAnchor = transform.anchorPoint;
-    
+
     normalizeLayerTransform(transform);
-    
+
     expect(transform.origin).toBe(originalOrigin);
     expect(transform.anchorPoint).toBe(originalAnchor);
   });
@@ -183,7 +193,7 @@ describe("PROPERTY: createFollowPathConstraint", () => {
     fc.assert(
       fc.property(layerIdArb, (pathLayerId) => {
         const constraint = createFollowPathConstraint(pathLayerId);
-        
+
         expect(constraint).toHaveProperty("enabled");
         expect(constraint).toHaveProperty("pathLayerId");
         expect(constraint).toHaveProperty("progress");
@@ -193,7 +203,7 @@ describe("PROPERTY: createFollowPathConstraint", () => {
         expect(constraint).toHaveProperty("rotationOffset");
         expect(constraint).toHaveProperty("banking");
         expect(constraint).toHaveProperty("loopMode");
-      })
+      }),
     );
   });
 
@@ -202,7 +212,7 @@ describe("PROPERTY: createFollowPathConstraint", () => {
       fc.property(layerIdArb, (pathLayerId) => {
         const constraint = createFollowPathConstraint(pathLayerId);
         expect(constraint.pathLayerId).toBe(pathLayerId);
-      })
+      }),
     );
   });
 
@@ -211,7 +221,7 @@ describe("PROPERTY: createFollowPathConstraint", () => {
       fc.property(layerIdArb, (pathLayerId) => {
         const constraint = createFollowPathConstraint(pathLayerId);
         expect(constraint.enabled).toBe(true);
-      })
+      }),
     );
   });
 
@@ -220,7 +230,7 @@ describe("PROPERTY: createFollowPathConstraint", () => {
       fc.property(layerIdArb, (pathLayerId) => {
         const constraint = createFollowPathConstraint(pathLayerId);
         expect(constraint.progress.value).toBe(0);
-      })
+      }),
     );
   });
 
@@ -229,7 +239,7 @@ describe("PROPERTY: createFollowPathConstraint", () => {
       fc.property(layerIdArb, (pathLayerId) => {
         const constraint = createFollowPathConstraint(pathLayerId);
         expect(constraint.offset.value).toBe(0);
-      })
+      }),
     );
   });
 
@@ -238,7 +248,7 @@ describe("PROPERTY: createFollowPathConstraint", () => {
       fc.property(layerIdArb, (pathLayerId) => {
         const constraint = createFollowPathConstraint(pathLayerId);
         expect(constraint.autoOrient).toBe(true);
-      })
+      }),
     );
   });
 
@@ -247,7 +257,7 @@ describe("PROPERTY: createFollowPathConstraint", () => {
       fc.property(layerIdArb, (pathLayerId) => {
         const constraint = createFollowPathConstraint(pathLayerId);
         expect(constraint.loopMode).toBe("clamp");
-      })
+      }),
     );
   });
 });
@@ -260,7 +270,7 @@ describe("PROPERTY: separatePositionDimensions", () => {
   it("creates positionX, positionY, positionZ properties", () => {
     const transform = createDefaultTransform();
     separatePositionDimensions(transform);
-    
+
     expect(transform.positionX).toBeDefined();
     expect(transform.positionY).toBeDefined();
     expect(transform.positionZ).toBeDefined();
@@ -271,11 +281,11 @@ describe("PROPERTY: separatePositionDimensions", () => {
       fc.property(positionArb, (pos) => {
         const transform = createDefaultTransform();
         transform.position.value = pos;
-        
+
         separatePositionDimensions(transform);
-        
+
         expect(transform.positionX?.value).toBe(pos.x);
-      })
+      }),
     );
   });
 
@@ -284,11 +294,11 @@ describe("PROPERTY: separatePositionDimensions", () => {
       fc.property(positionArb, (pos) => {
         const transform = createDefaultTransform();
         transform.position.value = pos;
-        
+
         separatePositionDimensions(transform);
-        
+
         expect(transform.positionY?.value).toBe(pos.y);
-      })
+      }),
     );
   });
 
@@ -297,18 +307,18 @@ describe("PROPERTY: separatePositionDimensions", () => {
       fc.property(positionArb, (pos) => {
         const transform = createDefaultTransform();
         transform.position.value = pos;
-        
+
         separatePositionDimensions(transform);
-        
+
         expect(transform.positionZ?.value).toBe(pos.z);
-      })
+      }),
     );
   });
 
   it("sets separateDimensions.position to true", () => {
     const transform = createDefaultTransform();
     separatePositionDimensions(transform);
-    
+
     expect(transform.separateDimensions?.position).toBe(true);
   });
 
@@ -319,9 +329,9 @@ describe("PROPERTY: separatePositionDimensions", () => {
       createKeyframe(0, { x: 0, y: 0, z: 0 }),
       createKeyframe(10, { x: 100, y: 200, z: 300 }),
     ];
-    
+
     separatePositionDimensions(transform);
-    
+
     expect(transform.positionX?.keyframes.length).toBe(2);
     expect(transform.positionY?.keyframes.length).toBe(2);
     expect(transform.positionZ?.keyframes.length).toBe(2);
@@ -337,16 +347,16 @@ describe("PROPERTY: linkPositionDimensions", () => {
   it("merges separate dimensions back to combined position", () => {
     const transform = createDefaultTransform();
     transform.position.value = { x: 10, y: 20, z: 30 };
-    
+
     separatePositionDimensions(transform);
-    
+
     // Modify separate values
     transform.positionX!.value = 100;
     transform.positionY!.value = 200;
     transform.positionZ!.value = 300;
-    
+
     linkPositionDimensions(transform);
-    
+
     expect(transform.position.value).toEqual({ x: 100, y: 200, z: 300 });
   });
 
@@ -354,7 +364,7 @@ describe("PROPERTY: linkPositionDimensions", () => {
     const transform = createDefaultTransform();
     separatePositionDimensions(transform);
     linkPositionDimensions(transform);
-    
+
     expect(transform.positionX).toBeUndefined();
     expect(transform.positionY).toBeUndefined();
     expect(transform.positionZ).toBeUndefined();
@@ -364,16 +374,16 @@ describe("PROPERTY: linkPositionDimensions", () => {
     const transform = createDefaultTransform();
     separatePositionDimensions(transform);
     linkPositionDimensions(transform);
-    
+
     expect(transform.separateDimensions?.position).toBe(false);
   });
 
   it("does nothing if positionX or positionY missing", () => {
     const transform = createDefaultTransform();
     const originalValue = { ...transform.position.value };
-    
+
     linkPositionDimensions(transform);
-    
+
     expect(transform.position.value).toEqual(originalValue);
   });
 
@@ -382,14 +392,14 @@ describe("PROPERTY: linkPositionDimensions", () => {
       fc.property(positionArb, (pos) => {
         const transform = createDefaultTransform();
         transform.position.value = pos;
-        
+
         separatePositionDimensions(transform);
         linkPositionDimensions(transform);
-        
+
         expect(transform.position.value.x).toBeCloseTo(pos.x, 10);
         expect(transform.position.value.y).toBeCloseTo(pos.y, 10);
         expect(transform.position.value.z).toBeCloseTo(pos.z, 10);
-      })
+      }),
     );
   });
 });
@@ -402,7 +412,7 @@ describe("PROPERTY: separateScaleDimensions", () => {
   it("creates scaleX, scaleY, scaleZ properties", () => {
     const transform = createDefaultTransform();
     separateScaleDimensions(transform);
-    
+
     expect(transform.scaleX).toBeDefined();
     expect(transform.scaleY).toBeDefined();
     expect(transform.scaleZ).toBeDefined();
@@ -411,34 +421,34 @@ describe("PROPERTY: separateScaleDimensions", () => {
   it("scaleX matches original x value", () => {
     const transform = createDefaultTransform();
     transform.scale.value = { x: 50, y: 75, z: 100 };
-    
+
     separateScaleDimensions(transform);
-    
+
     expect(transform.scaleX?.value).toBe(50);
   });
 
   it("scaleY matches original y value", () => {
     const transform = createDefaultTransform();
     transform.scale.value = { x: 50, y: 75, z: 100 };
-    
+
     separateScaleDimensions(transform);
-    
+
     expect(transform.scaleY?.value).toBe(75);
   });
 
   it("scaleZ matches original z value", () => {
     const transform = createDefaultTransform();
     transform.scale.value = { x: 50, y: 75, z: 100 };
-    
+
     separateScaleDimensions(transform);
-    
+
     expect(transform.scaleZ?.value).toBe(100);
   });
 
   it("sets separateDimensions.scale to true", () => {
     const transform = createDefaultTransform();
     separateScaleDimensions(transform);
-    
+
     expect(transform.separateDimensions?.scale).toBe(true);
   });
 });
@@ -450,15 +460,15 @@ describe("PROPERTY: separateScaleDimensions", () => {
 describe("PROPERTY: linkScaleDimensions", () => {
   it("merges separate dimensions back to combined scale", () => {
     const transform = createDefaultTransform();
-    
+
     separateScaleDimensions(transform);
-    
+
     transform.scaleX!.value = 50;
     transform.scaleY!.value = 75;
     transform.scaleZ!.value = 125;
-    
+
     linkScaleDimensions(transform);
-    
+
     expect(transform.scale.value).toEqual({ x: 50, y: 75, z: 125 });
   });
 
@@ -466,7 +476,7 @@ describe("PROPERTY: linkScaleDimensions", () => {
     const transform = createDefaultTransform();
     separateScaleDimensions(transform);
     linkScaleDimensions(transform);
-    
+
     expect(transform.scaleX).toBeUndefined();
     expect(transform.scaleY).toBeUndefined();
     expect(transform.scaleZ).toBeUndefined();
@@ -476,26 +486,26 @@ describe("PROPERTY: linkScaleDimensions", () => {
     const transform = createDefaultTransform();
     separateScaleDimensions(transform);
     linkScaleDimensions(transform);
-    
+
     expect(transform.separateDimensions?.scale).toBe(false);
   });
 
   it("does nothing if scaleX or scaleY missing", () => {
     const transform = createDefaultTransform();
     const originalValue = { ...transform.scale.value };
-    
+
     linkScaleDimensions(transform);
-    
+
     expect(transform.scale.value).toEqual(originalValue);
   });
 
   it("round-trip preserves scale value", () => {
     const transform = createDefaultTransform();
     transform.scale.value = { x: 50, y: 75, z: 125 };
-    
+
     separateScaleDimensions(transform);
     linkScaleDimensions(transform);
-    
+
     expect(transform.scale.value.x).toBe(50);
     expect(transform.scale.value.y).toBe(75);
     expect(transform.scale.value.z).toBe(125);

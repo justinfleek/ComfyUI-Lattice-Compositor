@@ -1,0 +1,105 @@
+# LAZY HACKS (as unknown as) - FIX FIRST
+
+These are type assertions that bypass TypeScript completely.
+Replace with proper validation or type guards.
+
+src/components/dialogs/DecomposeDialog.vue:355:      layer.data as unknown as import("@/types/project").SolidLayerData;
+src/components/layout/WorkspaceLayout.vue:453:  currentTool: currentTool as unknown as Ref<string>,
+src/components/layout/WorkspaceLayout.vue:454:  leftTab: leftTab as unknown as Ref<string>,
+src/components/properties/LightProperties.vue:171:    (props.layer.data as unknown as LightData) || {
+src/components/properties/LightProperties.vue:192:    } as unknown as typeof props.layer.data,
+src/composables/useKeyboardShortcuts.ts:1035:      const data = layer.data as unknown as LayerDataWithDimensions;
+src/composables/useKeyboardShortcuts.ts:1124:              const data = layer.data as unknown as Record<string, unknown>;
+src/composables/useKeyboardShortcuts.ts:1138:            const data = layer.data as unknown as Record<string, unknown>;
+src/composables/useKeyboardShortcuts.ts:1148:            const data = layer.data as unknown as Record<string, unknown>;
+src/composables/useKeyboardShortcuts.ts:807:      const data = layer.data as unknown as LayerDataWithDimensions;
+src/composables/useKeyboardShortcuts.ts:838:      const data = layer.data as unknown as LayerDataWithDimensions;
+src/composables/useKeyboardShortcuts.ts:861:      const data = layer.data as unknown as LayerDataWithDimensions;
+src/composables/useKeyboardShortcuts.ts:900:      const data = layer.data as unknown as LayerDataWithDimensions;
+src/composables/useKeyboardShortcuts.ts:983:    const data = layer.data as unknown as LayerDataWithDimensions;
+src/engine/animation/KeyframeEvaluator.ts:265:      return (from + (to - from) * t) as unknown as T;
+src/engine/animation/KeyframeEvaluator.ts:270:      return this.interpolatePosition(from, to, t) as unknown as T;
+src/engine/animation/KeyframeEvaluator.ts:276:        return this.interpolateColor(from, to, t) as unknown as T;
+src/engine/animation/KeyframeEvaluator.ts:282:      return this.interpolateArray(from, to, t) as unknown as T;
+src/engine/core/LayerManager.ts:1291:      layer as unknown as { getSourceCanvas(): HTMLCanvasElement | null }
+src/engine/core/LayerManager.ts:173:          (layer as unknown as EffectLayer).setRenderContext(context);
+src/engine/core/LayerManager.ts:380:        (layer as unknown as EffectLayer).setRenderContext(
+src/engine/particles/ParticleAudioReactive.ts:158:          (emitter as unknown as Record<string, unknown>)[binding.parameter] =
+src/engine/particles/ParticleAudioReactive.ts:164:          (field as unknown as Record<string, unknown>)[binding.parameter] =
+src/engine/particles/ParticleGPUPhysics.ts:258:        this.forceFieldBuffer as unknown as BufferSource,
+src/engine/TransformControlsManager.ts:107:        this.transformControls as unknown as THREE.Object3D,
+src/engine/TransformControlsManager.ts:112:        this.transformControls as unknown as THREE.Object3D,
+src/services/ai/actionExecutor.ts:1829:    layer.data = {} as unknown as typeof layer.data;
+src/services/ai/actionExecutor.ts:1834:  const layerData = layer.data as unknown as LayerDataWithSpeedMap;
+src/services/ai/actionExecutor.ts:1935:  const layerData = sourceLayer.data as unknown as ImageLayerDataExtended;
+src/services/ai/actionExecutor.ts:1980:      (layer.data as unknown as ImageLayerDataExtended).source = decomposed.image;
+src/services/ai/actionExecutor.ts:2028:  const layerData = sourceLayer.data as unknown as ImageLayerDataExtended;
+src/services/ai/actionExecutor.ts:779:    setNestedProperty(layer.data as unknown as Record<string, unknown>, parts.slice(1), value);
+src/services/ai/actionExecutor.ts:803:      setNestedProperty(layer.data as unknown as Record<string, unknown>, parts, value);
+src/services/effects/audioVisualizer.ts:508:        params as unknown as AudioSpectrumParams,
+src/services/effects/audioVisualizer.ts:520:        params as unknown as AudioWaveformParams,
+src/services/export/backendDepthService.ts:305:    ctx.drawImage(canvas as unknown as CanvasImageSource, 0, 0);
+src/services/physics/PhysicsEngine.ts:1819:        const p = prev as unknown as PhysicsVec2;
+src/services/physics/PhysicsEngine.ts:1820:        const c = curr as unknown as PhysicsVec2;
+src/services/physics/PhysicsEngine.ts:1821:        const n = next as unknown as PhysicsVec2;
+src/services/physics/PhysicsEngine.ts:1844:        const p = prev as unknown as number;
+src/services/physics/PhysicsEngine.ts:1845:        const c = curr as unknown as number;
+src/services/physics/PhysicsEngine.ts:1846:        const n = next as unknown as number;
+src/stores/actions/layer/layerDefaults.ts:111:      } as unknown as AnyLayerData;
+src/stores/actions/layer/layerDefaults.ts:177:      } as unknown as AnyLayerData;
+src/stores/actions/layer/layerDefaults.ts:199:      } as unknown as AnyLayerData;
+src/stores/actions/layer/layerDefaults.ts:212:      } as unknown as AnyLayerData;
+src/stores/actions/layer/layerDefaults.ts:218:      } as unknown as AnyLayerData;
+src/stores/actions/layer/layerDefaults.ts:224:      } as unknown as AnyLayerData;
+src/stores/actions/layer/layerDefaults.ts:232:      } as unknown as AnyLayerData;
+src/stores/actions/layer/layerDefaults.ts:254:      } as unknown as AnyLayerData;
+src/stores/actions/layer/layerDefaults.ts:265:      } as unknown as AnyLayerData;
+src/stores/actions/layer/layerDefaults.ts:352:      } as unknown as AnyLayerData;
+src/stores/actions/layer/layerDefaults.ts:368:      } as unknown as AnyLayerData;
+src/stores/actions/layer/layerDefaults.ts:383:      } as unknown as AnyLayerData;
+src/stores/actions/layer/layerDefaults.ts:394:      } as unknown as AnyLayerData;
+src/stores/actions/layer/layerDefaults.ts:402:      } as unknown as AnyLayerData;
+src/stores/actions/layer/layerDefaults.ts:415:      } as unknown as AnyLayerData;
+src/stores/actions/layer/layerDefaults.ts:423:      } as unknown as AnyLayerData;
+src/stores/actions/layer/layerDefaults.ts:88:      } as unknown as AnyLayerData;
+src/stores/actions/physicsActions/bake.ts:121:    const physicsData = (layer.data as unknown as Record<string, unknown>)?.physics as
+src/stores/actions/physicsActions/rigidBody.ts:111:  const physicsData = (layer.data as unknown as Record<string, unknown>)?.physics as
+src/stores/actions/physicsActions/simulation.ts:102:    const physicsData = (layer.data as unknown as Record<string, unknown>)?.physics as
+src/stores/actions/physicsActions/simulation.ts:69:    const physicsData = (layer.data as unknown as Record<string, unknown>)?.physics as
+src/stores/actions/projectActions/assets.ts:241:  (exportProject.meta as unknown as Record<string, unknown>).exportedAt =
+src/stores/actions/projectActions/assets.ts:245:  (exportProject as unknown as Record<string, unknown>)._assetManifest = assetManifest;
+src/stores/actions/projectActions/assets.ts:28:        const data = layer.data as unknown as Record<string, unknown>;
+src/stores/actions/projectActions/history.ts:26:  const engine = (window as unknown as { __latticeEngine?: {
+src/stores/actions/projectActions/serialization.ts:104:    store.project = projectWithoutSnapConfig as unknown as LatticeProject;
+src/stores/actions/projectActions/serialization.ts:57:        (project as unknown as { schemaVersion?: number }).schemaVersion ?? 1;
+src/stores/actions/projectActions/serialization.ts:85:    const projectWithSnap = project as unknown as Record<string, unknown>;
+src/stores/actions/projectActions/serialization.ts:88:        (store as unknown as Record<string, unknown>).snapConfig = projectWithSnap.snapConfig;
+src/stores/actions/projectActions/server.ts:78:          (project as unknown as { schemaVersion?: number }).schemaVersion ?? 1;
+src/stores/layerStore/crud.ts:177:      (layer.data as unknown as Record<string, unknown>).pathLayerId === layerId
+src/stores/layerStore/crud.ts:179:      (layer.data as unknown as Record<string, unknown>).pathLayerId = null;
+src/stores/layerStore/crud.ts:274:    const transformRecord = layer.transform as unknown as Record<
+src/stores/layerStore/crud.ts:63:    const splineData = layerData as unknown as {
+
+=== Count by file ===
+     17 src/stores/actions/layer/layerDefaults.ts
+      9 src/composables/useKeyboardShortcuts.ts
+      7 src/services/ai/actionExecutor.ts
+      6 src/services/physics/PhysicsEngine.ts
+      4 src/stores/layerStore/crud.ts
+      4 src/stores/actions/projectActions/serialization.ts
+      4 src/engine/animation/KeyframeEvaluator.ts
+      3 src/stores/actions/projectActions/assets.ts
+      3 src/engine/core/LayerManager.ts
+      2 src/stores/actions/physicsActions/simulation.ts
+      2 src/services/effects/audioVisualizer.ts
+      2 src/engine/TransformControlsManager.ts
+      2 src/engine/particles/ParticleAudioReactive.ts
+      2 src/components/properties/LightProperties.vue
+      2 src/components/layout/WorkspaceLayout.vue
+      1 src/stores/actions/projectActions/server.ts
+      1 src/stores/actions/projectActions/history.ts
+      1 src/stores/actions/physicsActions/rigidBody.ts
+      1 src/stores/actions/physicsActions/bake.ts
+      1 src/services/export/backendDepthService.ts
+      1 src/engine/particles/ParticleGPUPhysics.ts
+      1 src/components/dialogs/DecomposeDialog.vue

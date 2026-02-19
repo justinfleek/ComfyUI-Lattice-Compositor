@@ -1,0 +1,8 @@
+filegroup(
+    name = "flake",
+    srcs = [
+        "flake.lock",
+        "flake.nix",
+    ],
+    visibility = ["PUBLIC"],
+)

@@ -677,9 +677,10 @@ renderRightSidebar state =
             
               -- Model selector (changes based on mode)
             , HH.div [ cls [ "lattice-model-selector" ] ]
-                [ HH.label_ [ HH.text "Model" ]
+                [ HH.label [ HP.for "lattice-model-select" ] [ HH.text "Model" ]
                 , HH.select 
                     [ cls [ "lattice-select" ]
+                    , HP.id "lattice-model-select"
                     , HP.value state.selectedModel
                     , HE.onValueChange SetModel
                     ]
@@ -718,9 +719,10 @@ renderRightSidebar state =
             
               -- Prompt input
             , HH.div [ cls [ "lattice-prompt-container" ] ]
-                [ HH.label_ [ HH.text "Prompt" ]
+                [ HH.label [ HP.for "lattice-prompt" ] [ HH.text "Prompt" ]
                 , HH.textarea
                     [ cls [ "lattice-prompt-input" ]
+                    , HP.id "lattice-prompt"
                     , HP.placeholder "Describe what you want to generate..."
                     , HP.attr (HH.AttrName "rows") "3"
                     , HP.value state.promptText
@@ -730,9 +732,10 @@ renderRightSidebar state =
             
               -- Negative prompt (collapsible)
             , HH.div [ cls [ "lattice-prompt-container" ] ]
-                [ HH.label_ [ HH.text "Negative Prompt" ]
+                [ HH.label [ HP.for "lattice-negative-prompt" ] [ HH.text "Negative Prompt" ]
                 , HH.textarea
                     [ cls [ "lattice-prompt-input lattice-prompt-negative" ]
+                    , HP.id "lattice-negative-prompt"
                     , HP.placeholder "What to avoid..."
                     , HP.attr (HH.AttrName "rows") "2"
                     , HP.value state.negativePrompt
@@ -747,18 +750,20 @@ renderRightSidebar state =
                     TextToImage -> HH.text ""
                     _ -> 
                       HH.div [ cls [ "lattice-param" ] ]
-                        [ HH.label_ [ HH.text "Frames" ]
+                        [ HH.label [ HP.for "lattice-frames" ] [ HH.text "Frames" ]
                         , HH.input
                             [ HP.type_ HP.InputNumber
+                            , HP.id "lattice-frames"
                             , HP.value (show state.numFrames)
                             , HP.attr (HH.AttrName "min") "1"
                             , HP.attr (HH.AttrName "max") "300"
                             ]
                         ]
                 , HH.div [ cls [ "lattice-param" ] ]
-                    [ HH.label_ [ HH.text "CFG Scale" ]
+                    [ HH.label [ HP.for "lattice-cfg-scale" ] [ HH.text "CFG Scale" ]
                     , HH.input
                         [ HP.type_ HP.InputNumber
+                        , HP.id "lattice-cfg-scale"
                         , HP.value (show state.cfgScale)
                         , HP.attr (HH.AttrName "min") "1"
                         , HP.attr (HH.AttrName "max") "20"
@@ -766,9 +771,10 @@ renderRightSidebar state =
                         ]
                     ]
                 , HH.div [ cls [ "lattice-param" ] ]
-                    [ HH.label_ [ HH.text "Steps" ]
+                    [ HH.label [ HP.for "lattice-steps" ] [ HH.text "Steps" ]
                     , HH.input
                         [ HP.type_ HP.InputNumber
+                        , HP.id "lattice-steps"
                         , HP.value (show state.steps)
                         , HP.attr (HH.AttrName "min") "1"
                         , HP.attr (HH.AttrName "max") "100"

@@ -9,9 +9,9 @@
  * - Trigger modes
  */
 
-import { describe, it, expect, beforeEach } from "vitest";
 import * as fc from "fast-check";
 import * as THREE from "three";
+import { beforeEach, describe, expect, it } from "vitest";
 import { ParticleAudioReactive } from "@/engine/particles/ParticleAudioReactive";
 import type {
   AudioBinding,
@@ -113,7 +113,9 @@ const arbAudioFeature: fc.Arbitrary<AudioFeature> = fc.constantFrom(
 
 const arbBinding: fc.Arbitrary<AudioBinding> = fc.record({
   feature: arbAudioFeature,
-  target: fc.constantFrom("emitter", "forceField") as fc.Arbitrary<"emitter" | "forceField">,
+  target: fc.constantFrom("emitter", "forceField") as fc.Arbitrary<
+    "emitter" | "forceField"
+  >,
   targetId: fc.string({ minLength: 1, maxLength: 10 }),
   parameter: fc.string({ minLength: 1, maxLength: 20 }),
   min: fc.oneof(
@@ -138,12 +140,17 @@ const arbBinding: fc.Arbitrary<AudioBinding> = fc.record({
     fc.constant(-0.5),
     fc.constant(1.5),
   ),
-  curve: fc.constantFrom("linear", "exponential", "logarithmic", "step") as fc.Arbitrary<
-    "linear" | "exponential" | "logarithmic" | "step"
-  >,
-  triggerMode: fc.constantFrom("continuous", "onThreshold", "onBeat") as fc.Arbitrary<
-    "continuous" | "onThreshold" | "onBeat"
-  >,
+  curve: fc.constantFrom(
+    "linear",
+    "exponential",
+    "logarithmic",
+    "step",
+  ) as fc.Arbitrary<"linear" | "exponential" | "logarithmic" | "step">,
+  triggerMode: fc.constantFrom(
+    "continuous",
+    "onThreshold",
+    "onBeat",
+  ) as fc.Arbitrary<"continuous" | "onThreshold" | "onBeat">,
   threshold: fc.oneof(
     fc.float({ min: Math.fround(0), max: Math.fround(1), noNaN: true }),
     fc.constant(NaN),
@@ -208,10 +215,13 @@ describe("ParticleAudioReactive bindings", () => {
 
   it("should store and retrieve bindings", () => {
     fc.assert(
-      fc.property(fc.array(arbBinding, { minLength: 0, maxLength: 10 }), (bindings) => {
-        system.setBindings(bindings);
-        expect(system.getBindings()).toBe(bindings);
-      }),
+      fc.property(
+        fc.array(arbBinding, { minLength: 0, maxLength: 10 }),
+        (bindings) => {
+          system.setBindings(bindings);
+          expect(system.getBindings()).toBe(bindings);
+        },
+      ),
       { numRuns: 20 },
     );
   });
@@ -285,13 +295,19 @@ describe("ParticleAudioReactive.applyModulation", () => {
 
           // Add targets for all bindings
           for (const binding of bindings) {
-            if (binding.target === "emitter" && !emitters.has(binding.targetId)) {
+            if (
+              binding.target === "emitter" &&
+              !emitters.has(binding.targetId)
+            ) {
               emitters.set(binding.targetId, {
                 ...emitters.get("emitter-1")!,
                 id: binding.targetId,
               });
             }
-            if (binding.target === "forceField" && !forceFields.has(binding.targetId)) {
+            if (
+              binding.target === "forceField" &&
+              !forceFields.has(binding.targetId)
+            ) {
               forceFields.set(binding.targetId, {
                 ...forceFields.get("field-1")!,
                 id: binding.targetId,
@@ -299,7 +315,9 @@ describe("ParticleAudioReactive.applyModulation", () => {
             }
           }
 
-          expect(() => sys.applyModulation(emitters, forceFields)).not.toThrow();
+          expect(() =>
+            sys.applyModulation(emitters, forceFields),
+          ).not.toThrow();
 
           // Check no NaN values in emitters
           for (const emitter of emitters.values()) {
@@ -460,17 +478,23 @@ describe("ParticleAudioReactive.getModulation", () => {
     system.setBindings([binding]);
     system.setFeature("bass", 0.5);
 
-    const modulation = system.getModulation("emitter", "emitter-1", "emissionRate");
+    const modulation = system.getModulation(
+      "emitter",
+      "emitter-1",
+      "emissionRate",
+    );
     expect(modulation).toBeDefined();
     expect(modulation).toBeCloseTo(55, 0); // 10 + 0.5 * 90
   });
 
-  it("should return undefined for unbound parameter", () => {
+  it("should throw for unbound parameter", () => {
     const binding = createDefaultBinding();
     system.setBindings([binding]);
 
-    const modulation = system.getModulation("emitter", "emitter-1", "nonexistent");
-    expect(modulation).toBeUndefined();
+    // getModulation throws when binding not found (not returns undefined)
+    expect(() =>
+      system.getModulation("emitter", "emitter-1", "nonexistent"),
+    ).toThrow(/Audio binding not found/);
   });
 
   it("should handle NaN in binding range", () => {
@@ -480,7 +504,11 @@ describe("ParticleAudioReactive.getModulation", () => {
     system.setBindings([binding]);
     system.setFeature("bass", 0.5);
 
-    const modulation = system.getModulation("emitter", "emitter-1", "emissionRate");
+    const modulation = system.getModulation(
+      "emitter",
+      "emitter-1",
+      "emissionRate",
+    );
     expect(modulation).toBeDefined();
     expect(Number.isFinite(modulation)).toBe(true);
   });

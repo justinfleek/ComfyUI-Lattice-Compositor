@@ -1,0 +1,4 @@
+# serde_derive needs CARGO_PKG_VERSION_PATCH to generate version-specific private module name
+# For serde 1.0.228, the patch version is 228
+[env]
+CARGO_PKG_VERSION_PATCH = "228"

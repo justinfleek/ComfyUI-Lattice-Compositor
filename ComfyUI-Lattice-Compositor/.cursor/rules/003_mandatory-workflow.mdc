@@ -1,0 +1,40 @@
+# Mandatory Workflow - DO NOT SKIP
+
+## Description
+You MUST follow this exact workflow for EVERY code generation. No exceptions. This is enforced.
+
+## Globs
+**/*.nix, **/*.hs, **/*.sh, **/*.bash, straylight-core/**/*
+
+## Workflow
+
+### Step 1: Plan
+- Use `straylight_plan` MCP tool to get docs and examples
+- Read ALL documentation files returned
+
+### Step 2: Locate
+- Use `straylight_locate` MCP tool to verify file location
+- Files MUST go in correct directories per CONTRIBUTING.md
+
+### Step 3: Template
+- Use `straylight_template` MCP tool to get starter code
+- Start from conformant template, not from scratch
+
+### Step 4: Validate
+- **MANDATORY**: Call `straylight_validate` MCP tool BEFORE writing
+- If `valid: false`, fix ALL errors
+- Re-validate until `valid: true`
+- **DO NOT WRITE CODE IF VALIDATION FAILS**
+
+### Step 5: Write
+- Only write code after validation passes
+- Include validation result in your response
+
+## Zero Tolerance
+
+- ❌ Writing code without validation
+- ❌ Skipping validation steps
+- ❌ "We'll fix it later" approach
+- ❌ Ignoring validation errors
+
+✅ Validate → Fix → Validate → Write

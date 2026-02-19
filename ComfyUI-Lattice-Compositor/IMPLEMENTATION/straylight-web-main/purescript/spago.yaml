@@ -1,0 +1,26 @@
+package:
+  name: straylight-web
+  dependencies:
+    - aff
+    - arrays
+    - console
+    - effect
+    - foldable-traversable
+    - halogen
+    - halogen-vdom
+    - maybe
+    - prelude
+    - strings
+    - web-dom
+    - web-html
+    - web-events
+  bundle:
+    platform: browser
+    type: app
+    module: Main
+    outfile: ../public/straylight.js
+
+workspace:
+  package_set:
+    registry: 59.0.0
+  extra_packages: {}

@@ -1,0 +1,18 @@
+
+# 2026-01-08 23:24:33.587753
++yes
+
+# 2026-01-08 23:24:46.932109
++n
+
+# 2026-01-08 23:25:23.203547
++/help
+
+# 2026-01-08 23:29:23.379538
++/read-only MASTER_AUDIT.md MASTER_CHECKLIST.md COMPREHENSIVE_BUG_REPORT.md
+
+# 2026-01-08 23:29:33.482466
++/map-refresh
+
+# 2026-01-08 23:31:44.880399
++Run `npx tsc --noEmit` in the ui folder, show me the first 10 errors, and fix them one file at a time.

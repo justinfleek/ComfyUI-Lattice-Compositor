@@ -53,7 +53,10 @@ function bytesToUuid(bytes: Uint8Array): string {
  * @param namespace - UUID namespace (default: LATTICE_NAMESPACE)
  * @returns Deterministic UUID5 string
  */
-export function uuid5(name: string, namespace: string = LATTICE_NAMESPACE): string {
+export function uuid5(
+  name: string,
+  namespace: string = LATTICE_NAMESPACE,
+): string {
   // Convert namespace UUID to bytes
   const namespaceBytes = uuidToBytes(namespace);
 
@@ -101,7 +104,7 @@ function sha1Sync(data: Uint8Array): Uint8Array {
   const padding = new Uint8Array(((msgLength + 9 + 63) >> 6) * 64);
   padding.set(data, 0);
   padding[msgLength] = 0x80;
-  
+
   // Append length (big-endian)
   const lengthBytes = new Uint8Array(8);
   const view = new DataView(lengthBytes.buffer);
@@ -113,31 +116,37 @@ function sha1Sync(data: Uint8Array): Uint8Array {
   for (let chunkStart = 0; chunkStart < padding.length; chunkStart += 64) {
     const w = new Uint32Array(80);
     const chunk = padding.slice(chunkStart, chunkStart + 64);
-    
+
     // Copy chunk into first 16 words
     for (let i = 0; i < 16; i++) {
-      w[i] = (chunk[i * 4] << 24) | (chunk[i * 4 + 1] << 16) | (chunk[i * 4 + 2] << 8) | chunk[i * 4 + 3];
+      w[i] =
+        (chunk[i * 4] << 24) |
+        (chunk[i * 4 + 1] << 16) |
+        (chunk[i * 4 + 2] << 8) |
+        chunk[i * 4 + 3];
     }
-    
+
     // Extend to 80 words
     for (let i = 16; i < 80; i++) {
-      w[i] = ((w[i - 3] ^ w[i - 8] ^ w[i - 14] ^ w[i - 16]) << 1) | ((w[i - 3] ^ w[i - 8] ^ w[i - 14] ^ w[i - 16]) >>> 31);
+      w[i] =
+        ((w[i - 3] ^ w[i - 8] ^ w[i - 14] ^ w[i - 16]) << 1) |
+        ((w[i - 3] ^ w[i - 8] ^ w[i - 14] ^ w[i - 16]) >>> 31);
     }
-    
+
     // Initialize hash value for this chunk
     let a = h0;
     let b = h1;
     let c = h2;
     let d = h3;
     let e = h4;
-    
+
     // Main loop
     for (let i = 0; i < 80; i++) {
       let f: number;
       let k: number;
-      
+
       if (i < 20) {
-        f = (b & c) | ((~b) & d);
+        f = (b & c) | (~b & d);
         k = 0x5a827999;
       } else if (i < 40) {
         f = b ^ c ^ d;
@@ -149,15 +158,15 @@ function sha1Sync(data: Uint8Array): Uint8Array {
         f = b ^ c ^ d;
         k = 0xca62c1d6;
       }
-      
+
       const temp = ((a << 5) | (a >>> 27)) + f + e + k + w[i];
       e = d;
       d = c;
-      c = ((b << 30) | (b >>> 2));
+      c = (b << 30) | (b >>> 2);
       b = a;
       a = temp;
     }
-    
+
     // Add this chunk's hash to result
     h0 = (h0 + a) | 0;
     h1 = (h1 + b) | 0;
@@ -165,7 +174,7 @@ function sha1Sync(data: Uint8Array): Uint8Array {
     h3 = (h3 + d) | 0;
     h4 = (h4 + e) | 0;
   }
-  
+
   // Produce final hash value
   const hash = new Uint8Array(20);
   const hashView = new DataView(hash.buffer);
@@ -174,35 +183,46 @@ function sha1Sync(data: Uint8Array): Uint8Array {
   hashView.setUint32(8, h2 >>> 0, false);
   hashView.setUint32(12, h3 >>> 0, false);
   hashView.setUint32(16, h4 >>> 0, false);
-  
+
   return hash;
 }
 
 /**
  * Generate deterministic UUID5 for a layer based on its properties
  */
-export function generateLayerId(layerName: string, parentId: string | null, index: number): string {
+export function generateLayerId(
+  layerName: string,
+  parentId: string | null,
+  index: number,
+): string {
   const name = `${layerName}:${parentId ?? "root"}:${index}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
 
 /**
  * Generate deterministic UUID5 for a keyframe based on its properties
+ * Returns `kf_${frame}_${uuid5Hash}` format for backwards compatibility
  */
 export function generateKeyframeId(
   layerId: string,
   propertyPath: string,
   frame: number,
-  value: string | number
+  value: string | number,
 ): string {
   const name = `${layerId}:${propertyPath}:${frame}:${value}`;
-  return uuid5(name, LATTICE_NAMESPACE);
+  const uuid = uuid5(name, LATTICE_NAMESPACE);
+  // Return kf_ prefixed format with frame for compatibility with existing tests/code
+  return `kf_${frame}_${uuid.replace(/-/g, "").slice(0, 16)}`;
 }
 
 /**
  * Generate deterministic UUID5 for a composition
  */
-export function generateCompositionId(projectId: string, compositionName: string, index: number): string {
+export function generateCompositionId(
+  projectId: string,
+  compositionName: string,
+  index: number,
+): string {
   const name = `composition:${projectId}:${compositionName}:${index}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -210,7 +230,11 @@ export function generateCompositionId(projectId: string, compositionName: string
 /**
  * Generate deterministic UUID5 for an effect
  */
-export function generateEffectId(layerId: string, effectType: string, orderIndex: number): string {
+export function generateEffectId(
+  layerId: string,
+  effectType: string,
+  orderIndex: number,
+): string {
   const name = `effect:${layerId}:${effectType}:${orderIndex}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -218,7 +242,11 @@ export function generateEffectId(layerId: string, effectType: string, orderIndex
 /**
  * Generate deterministic UUID5 for a text animator
  */
-export function generateTextAnimatorId(textLayerId: string, animatorType: string, orderIndex: number): string {
+export function generateTextAnimatorId(
+  textLayerId: string,
+  animatorType: string,
+  orderIndex: number,
+): string {
   const name = `text-animator:${textLayerId}:${animatorType}:${orderIndex}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -226,7 +254,10 @@ export function generateTextAnimatorId(textLayerId: string, animatorType: string
 /**
  * Generate deterministic UUID5 for a property driver
  */
-export function generatePropertyDriverId(layerId: string, propertyPath: string): string {
+export function generatePropertyDriverId(
+  layerId: string,
+  propertyPath: string,
+): string {
   const name = `property-driver:${layerId}:${propertyPath}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -234,7 +265,11 @@ export function generatePropertyDriverId(layerId: string, propertyPath: string):
 /**
  * Generate deterministic UUID5 for a camera
  */
-export function generateCameraId(compositionId: string, cameraName: string, index: number): string {
+export function generateCameraId(
+  compositionId: string,
+  cameraName: string,
+  index: number,
+): string {
   const name = `camera:${compositionId}:${cameraName}:${index}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -242,7 +277,10 @@ export function generateCameraId(compositionId: string, cameraName: string, inde
 /**
  * Generate deterministic UUID5 for a camera keyframe
  */
-export function generateCameraKeyframeId(cameraId: string, frame: number): string {
+export function generateCameraKeyframeId(
+  cameraId: string,
+  frame: number,
+): string {
   const name = `camera-keyframe:${cameraId}:${frame}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -250,7 +288,10 @@ export function generateCameraKeyframeId(cameraId: string, frame: number): strin
 /**
  * Generate deterministic UUID5 for a particle system
  */
-export function generateParticleSystemId(layerId: string, index: number): string {
+export function generateParticleSystemId(
+  layerId: string,
+  index: number,
+): string {
   const name = `particle-system:${layerId}:${index}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -258,7 +299,10 @@ export function generateParticleSystemId(layerId: string, index: number): string
 /**
  * Generate deterministic UUID5 for a particle emitter
  */
-export function generateParticleEmitterId(particleSystemId: string, index: number): string {
+export function generateParticleEmitterId(
+  particleSystemId: string,
+  index: number,
+): string {
   const name = `particle-emitter:${particleSystemId}:${index}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -266,7 +310,11 @@ export function generateParticleEmitterId(particleSystemId: string, index: numbe
 /**
  * Generate deterministic UUID5 for a particle force
  */
-export function generateParticleForceId(particleSystemId: string, forceType: string, index: number): string {
+export function generateParticleForceId(
+  particleSystemId: string,
+  forceType: string,
+  index: number,
+): string {
   const name = `particle-force:${particleSystemId}:${forceType}:${index}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -274,7 +322,11 @@ export function generateParticleForceId(particleSystemId: string, forceType: str
 /**
  * Generate deterministic UUID5 for a physics body
  */
-export function generatePhysicsBodyId(physicsSpaceId: string, layerId: string, index: number): string {
+export function generatePhysicsBodyId(
+  physicsSpaceId: string,
+  layerId: string,
+  index: number,
+): string {
   const name = `physics-body:${physicsSpaceId}:${layerId}:${index}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -282,7 +334,12 @@ export function generatePhysicsBodyId(physicsSpaceId: string, layerId: string, i
 /**
  * Generate deterministic UUID5 for a physics joint
  */
-export function generatePhysicsJointId(physicsSpaceId: string, bodyAId: string, bodyBId: string, jointType: string): string {
+export function generatePhysicsJointId(
+  physicsSpaceId: string,
+  bodyAId: string,
+  bodyBId: string,
+  jointType: string,
+): string {
   const name = `physics-joint:${physicsSpaceId}:${bodyAId}:${bodyBId}:${jointType}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -290,7 +347,11 @@ export function generatePhysicsJointId(physicsSpaceId: string, bodyAId: string, 
 /**
  * Generate deterministic UUID5 for an export job
  */
-export function generateExportJobId(projectId: string, compositionId: string | null, timestamp: number): string {
+export function generateExportJobId(
+  projectId: string,
+  compositionId: string | null,
+  timestamp: number,
+): string {
   const compPart = compositionId ?? "global";
   const name = `export-job:${projectId}:${compPart}:${timestamp}`;
   return uuid5(name, LATTICE_NAMESPACE);
@@ -299,7 +360,11 @@ export function generateExportJobId(projectId: string, compositionId: string | n
 /**
  * Generate deterministic UUID5 for a preset
  */
-export function generatePresetId(presetName: string, presetType: string, projectId: string | null): string {
+export function generatePresetId(
+  presetName: string,
+  presetType: string,
+  projectId: string | null,
+): string {
   const projPart = projectId ?? "global";
   const name = `preset:${presetType}:${presetName}:${projPart}`;
   return uuid5(name, LATTICE_NAMESPACE);
@@ -308,7 +373,11 @@ export function generatePresetId(presetName: string, presetType: string, project
 /**
  * Generate deterministic UUID5 for a template
  */
-export function generateTemplateId(templateName: string, projectId: string | null, version: string): string {
+export function generateTemplateId(
+  templateName: string,
+  projectId: string | null,
+  version: string,
+): string {
   const projPart = projectId ?? "global";
   const name = `template:${templateName}:${projPart}:${version}`;
   return uuid5(name, LATTICE_NAMESPACE);
@@ -317,7 +386,11 @@ export function generateTemplateId(templateName: string, projectId: string | nul
 /**
  * Generate deterministic UUID5 for an asset
  */
-export function generateAssetId(projectId: string, assetName: string, assetType: string): string {
+export function generateAssetId(
+  projectId: string,
+  assetName: string,
+  assetType: string,
+): string {
   const name = `asset:${projectId}:${assetType}:${assetName}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -325,7 +398,12 @@ export function generateAssetId(projectId: string, assetName: string, assetType:
 /**
  * Generate deterministic UUID5 for a chat message
  */
-export function generateChatMessageId(projectId: string | null, role: string, timestamp: number, contentHash: string): string {
+export function generateChatMessageId(
+  projectId: string | null,
+  role: string,
+  timestamp: number,
+  contentHash: string,
+): string {
   const projPart = projectId ?? "global";
   const name = `chat-message:${projPart}:${role}:${timestamp}:${contentHash}`;
   return uuid5(name, LATTICE_NAMESPACE);
@@ -334,7 +412,11 @@ export function generateChatMessageId(projectId: string | null, role: string, ti
 /**
  * Generate deterministic UUID5 for a marker
  */
-export function generateMarkerId(compositionId: string, frame: number, label: string): string {
+export function generateMarkerId(
+  compositionId: string,
+  frame: number,
+  label: string,
+): string {
   const name = `marker:${compositionId}:${frame}:${label}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -342,7 +424,10 @@ export function generateMarkerId(compositionId: string, frame: number, label: st
 /**
  * Generate deterministic UUID5 for a mesh warp pin
  */
-export function generateMeshWarpPinId(layerId: string, pinIndex: number): string {
+export function generateMeshWarpPinId(
+  layerId: string,
+  pinIndex: number,
+): string {
   const name = `mesh-warp-pin:${layerId}:${pinIndex}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -350,7 +435,11 @@ export function generateMeshWarpPinId(layerId: string, pinIndex: number): string
 /**
  * Generate deterministic UUID5 for an audio analysis entry
  */
-export function generateAudioAnalysisId(audioTrackId: string, analysisType: string, frame: number): string {
+export function generateAudioAnalysisId(
+  audioTrackId: string,
+  analysisType: string,
+  frame: number,
+): string {
   const name = `audio-analysis:${audioTrackId}:${analysisType}:${frame}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -366,7 +455,11 @@ export function generateAIModelId(modelName: string, provider: string): string {
 /**
  * Generate deterministic UUID5 for a segmentation
  */
-export function generateSegmentationId(layerId: string, method: string, timestamp: number): string {
+export function generateSegmentationId(
+  layerId: string,
+  method: string,
+  timestamp: number,
+): string {
   const name = `segmentation:${layerId}:${method}:${timestamp}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -374,7 +467,11 @@ export function generateSegmentationId(layerId: string, method: string, timestam
 /**
  * Generate deterministic UUID5 for a vectorization
  */
-export function generateVectorizationId(layerId: string, method: string, timestamp: number): string {
+export function generateVectorizationId(
+  layerId: string,
+  method: string,
+  timestamp: number,
+): string {
   const name = `vectorization:${layerId}:${method}:${timestamp}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -382,7 +479,10 @@ export function generateVectorizationId(layerId: string, method: string, timesta
 /**
  * Generate deterministic UUID5 for a template exposed property
  */
-export function generateTemplateExposedPropertyId(templateId: string, propertyPath: string): string {
+export function generateTemplateExposedPropertyId(
+  templateId: string,
+  propertyPath: string,
+): string {
   const name = `template-property:${templateId}:${propertyPath}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -390,7 +490,12 @@ export function generateTemplateExposedPropertyId(templateId: string, propertyPa
 /**
  * Generate deterministic UUID5 for an event
  */
-export function generateEventId(eventType: string, projectId: string | null, timestamp: number, dataHash: string): string {
+export function generateEventId(
+  eventType: string,
+  projectId: string | null,
+  timestamp: number,
+  dataHash: string,
+): string {
   const projPart = projectId ?? "global";
   const name = `event:${eventType}:${projPart}:${timestamp}:${dataHash}`;
   return uuid5(name, LATTICE_NAMESPACE);
@@ -399,7 +504,11 @@ export function generateEventId(eventType: string, projectId: string | null, tim
 /**
  * Generate deterministic UUID5 for a metric
  */
-export function generateMetricId(metricName: string, projectId: string | null, timestamp: number): string {
+export function generateMetricId(
+  metricName: string,
+  projectId: string | null,
+  timestamp: number,
+): string {
   const projPart = projectId ?? "global";
   const name = `metric:${metricName}:${projPart}:${timestamp}`;
   return uuid5(name, LATTICE_NAMESPACE);
@@ -408,7 +517,10 @@ export function generateMetricId(metricName: string, projectId: string | null, t
 /**
  * Generate deterministic UUID5 for a project
  */
-export function generateProjectId(projectName: string, timestamp: number): string {
+export function generateProjectId(
+  projectName: string,
+  timestamp: number,
+): string {
   const name = `project:${projectName}:${timestamp}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -432,7 +544,11 @@ export function generatePhysicsSpaceId(compositionId: string): string {
 /**
  * Generate deterministic UUID5 for an audio track
  */
-export function generateAudioTrackId(compositionId: string, trackName: string, index: number): string {
+export function generateAudioTrackId(
+  compositionId: string,
+  trackName: string,
+  index: number,
+): string {
   const name = `audio-track:${compositionId}:${trackName}:${index}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -440,7 +556,11 @@ export function generateAudioTrackId(compositionId: string, trackName: string, i
 /**
  * Generate deterministic UUID5 for audio reactivity
  */
-export function generateAudioReactivityId(layerId: string, audioTrackId: string, propertyPath: string): string {
+export function generateAudioReactivityId(
+  layerId: string,
+  audioTrackId: string,
+  propertyPath: string,
+): string {
   const name = `audio-reactivity:${layerId}:${audioTrackId}:${propertyPath}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -456,7 +576,11 @@ export function generateCameraPathId(cameraId: string): string {
 /**
  * Generate deterministic UUID5 for a layer mask
  */
-export function generateLayerMaskId(layerId: string, maskName: string, index: number): string {
+export function generateLayerMaskId(
+  layerId: string,
+  maskName: string,
+  index: number,
+): string {
   const name = `layer-mask:${layerId}:${maskName}:${index}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -472,7 +596,10 @@ export function generateLayerStylesId(layerId: string): string {
 /**
  * Generate deterministic UUID5 for an expression
  */
-export function generateExpressionId(layerId: string, propertyPath: string): string {
+export function generateExpressionId(
+  layerId: string,
+  propertyPath: string,
+): string {
   const name = `expression:${layerId}:${propertyPath}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -488,7 +615,10 @@ export function generateRenderSettingsId(compositionId: string): string {
 /**
  * Generate deterministic UUID5 for an export template
  */
-export function generateExportTemplateId(templateName: string, projectId: string | null): string {
+export function generateExportTemplateId(
+  templateName: string,
+  projectId: string | null,
+): string {
   const projPart = projectId ?? "global";
   const name = `export-template:${templateName}:${projPart}`;
   return uuid5(name, LATTICE_NAMESPACE);
@@ -513,7 +643,10 @@ export function generateMeshWarpMeshId(layerId: string): string {
 /**
  * Generate deterministic UUID5 for physics cloth
  */
-export function generatePhysicsClothId(physicsSpaceId: string, layerId: string): string {
+export function generatePhysicsClothId(
+  physicsSpaceId: string,
+  layerId: string,
+): string {
   const name = `physics-cloth:${physicsSpaceId}:${layerId}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -521,7 +654,10 @@ export function generatePhysicsClothId(physicsSpaceId: string, layerId: string):
 /**
  * Generate deterministic UUID5 for physics ragdoll
  */
-export function generatePhysicsRagdollId(physicsSpaceId: string, layerId: string): string {
+export function generatePhysicsRagdollId(
+  physicsSpaceId: string,
+  layerId: string,
+): string {
   const name = `physics-ragdoll:${physicsSpaceId}:${layerId}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -536,14 +672,14 @@ export function generatePhysicsRigidBodyId(physicsBodyId: string): string {
 
 /**
  * Generate deterministic UUID5 for an individual particle
- * 
+ *
  * CRITICAL: Every particle needs a UUID5 for determinism at scale.
  * For 400k particles per layer, this ensures:
  * - Same seed + index = same particle ID
  * - Deterministic tracking across frames
  * - No collisions (SHA-1 hash space)
  * - Memory efficient (just string IDs)
- * 
+ *
  * @param layerId - Layer containing the particle
  * @param emitterId - Emitter that spawned the particle
  * @param particleIndex - Index within the particle system
@@ -555,7 +691,7 @@ export function generateParticleId(
   emitterId: string,
   particleIndex: number,
   spawnFrame: number,
-  seed: number
+  seed: number,
 ): string {
   const name = `particle:${layerId}:${emitterId}:${particleIndex}:${spawnFrame}:${seed}`;
   return uuid5(name, LATTICE_NAMESPACE);
@@ -564,7 +700,11 @@ export function generateParticleId(
 /**
  * Generate deterministic UUID5 for a particle group
  */
-export function generateParticleGroupId(layerId: string, groupName: string, index: number): string {
+export function generateParticleGroupId(
+  layerId: string,
+  groupName: string,
+  index: number,
+): string {
   const name = `particle-group:${layerId}:${groupName}:${index}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -576,7 +716,7 @@ export function generateParticleConnectionId(
   particleSystemId: string,
   particleAId: string,
   particleBId: string,
-  connectionType: string
+  connectionType: string,
 ): string {
   // Sort IDs to ensure deterministic ordering
   const [idA, idB] = [particleAId, particleBId].sort();
@@ -587,7 +727,10 @@ export function generateParticleConnectionId(
 /**
  * Generate deterministic UUID5 for a particle trail
  */
-export function generateParticleTrailId(particleId: string, trailIndex: number): string {
+export function generateParticleTrailId(
+  particleId: string,
+  trailIndex: number,
+): string {
   const name = `particle-trail:${particleId}:${trailIndex}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -598,7 +741,7 @@ export function generateParticleTrailId(particleId: string, trailIndex: number):
 export function generateParticleSubEmitterId(
   parentParticleId: string,
   subEmitterType: string,
-  instanceIndex: number
+  instanceIndex: number,
 ): string {
   const name = `particle-sub-emitter:${parentParticleId}:${subEmitterType}:${instanceIndex}`;
   return uuid5(name, LATTICE_NAMESPACE);
@@ -607,7 +750,11 @@ export function generateParticleSubEmitterId(
 /**
  * Generate deterministic UUID5 for audio analysis beat/peak
  */
-export function generateAudioBeatId(audioTrackId: string, frame: number, beatIndex: number): string {
+export function generateAudioBeatId(
+  audioTrackId: string,
+  frame: number,
+  beatIndex: number,
+): string {
   const name = `audio-beat:${audioTrackId}:${frame}:${beatIndex}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -615,7 +762,11 @@ export function generateAudioBeatId(audioTrackId: string, frame: number, beatInd
 /**
  * Generate deterministic UUID5 for audio peak
  */
-export function generateAudioPeakId(audioTrackId: string, frame: number, frequencyBand: string): string {
+export function generateAudioPeakId(
+  audioTrackId: string,
+  frame: number,
+  frequencyBand: string,
+): string {
   const name = `audio-peak:${audioTrackId}:${frame}:${frequencyBand}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -628,7 +779,7 @@ export function generateMidiNoteId(
   channel: number,
   note: number,
   frame: number,
-  velocity: number
+  velocity: number,
 ): string {
   const name = `midi-note:${midiTrackId}:${channel}:${note}:${frame}:${velocity}`;
   return uuid5(name, LATTICE_NAMESPACE);
@@ -642,7 +793,7 @@ export function generateMidiCCId(
   channel: number,
   ccNumber: number,
   frame: number,
-  value: number
+  value: number,
 ): string {
   const name = `midi-cc:${midiTrackId}:${channel}:${ccNumber}:${frame}:${value}`;
   return uuid5(name, LATTICE_NAMESPACE);
@@ -651,7 +802,11 @@ export function generateMidiCCId(
 /**
  * Generate deterministic UUID5 for nested composition reference
  */
-export function generateNestedCompId(parentCompId: string, nestedCompId: string, instanceIndex: number): string {
+export function generateNestedCompId(
+  parentCompId: string,
+  nestedCompId: string,
+  instanceIndex: number,
+): string {
   const name = `nested-comp:${parentCompId}:${nestedCompId}:${instanceIndex}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -659,7 +814,11 @@ export function generateNestedCompId(parentCompId: string, nestedCompId: string,
 /**
  * Generate deterministic UUID5 for composition instance in timeline
  */
-export function generateCompInstanceId(compId: string, startFrame: number, endFrame: number): string {
+export function generateCompInstanceId(
+  compId: string,
+  startFrame: number,
+  endFrame: number,
+): string {
   const name = `comp-instance:${compId}:${startFrame}:${endFrame}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -675,7 +834,11 @@ export function generateTextLayerId(layerId: string): string {
 /**
  * Generate deterministic UUID5 for a spline control point
  */
-export function generateSplineControlPointId(splineLayerId: string, pointIndex: number, segmentIndex: number): string {
+export function generateSplineControlPointId(
+  splineLayerId: string,
+  pointIndex: number,
+  segmentIndex: number,
+): string {
   const name = `spline-control-point:${splineLayerId}:${segmentIndex}:${pointIndex}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -683,7 +846,10 @@ export function generateSplineControlPointId(splineLayerId: string, pointIndex: 
 /**
  * Generate deterministic UUID5 for a spline anchor point
  */
-export function generateSplineAnchorPointId(splineLayerId: string, anchorIndex: number): string {
+export function generateSplineAnchorPointId(
+  splineLayerId: string,
+  anchorIndex: number,
+): string {
   const name = `spline-anchor-point:${splineLayerId}:${anchorIndex}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -691,7 +857,10 @@ export function generateSplineAnchorPointId(splineLayerId: string, anchorIndex: 
 /**
  * Generate deterministic UUID5 for a shape path
  */
-export function generateShapePathId(layerId: string, pathIndex: number): string {
+export function generateShapePathId(
+  layerId: string,
+  pathIndex: number,
+): string {
   const name = `shape-path:${layerId}:${pathIndex}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -699,7 +868,10 @@ export function generateShapePathId(layerId: string, pathIndex: number): string 
 /**
  * Generate deterministic UUID5 for a shape path command
  */
-export function generateShapePathCommandId(pathId: string, commandIndex: number): string {
+export function generateShapePathCommandId(
+  pathId: string,
+  commandIndex: number,
+): string {
   const name = `shape-path-command:${pathId}:${commandIndex}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -707,7 +879,11 @@ export function generateShapePathCommandId(pathId: string, commandIndex: number)
 /**
  * Generate deterministic UUID5 for a guide
  */
-export function generateGuideId(compositionId: string, guideType: string, index: number): string {
+export function generateGuideId(
+  compositionId: string,
+  guideType: string,
+  index: number,
+): string {
   const name = `guide:${compositionId}:${guideType}:${index}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -715,7 +891,11 @@ export function generateGuideId(compositionId: string, guideType: string, index:
 /**
  * Generate deterministic UUID5 for a sprite sheet
  */
-export function generateSpriteSheetId(projectId: string, spriteSheetName: string, timestamp: number): string {
+export function generateSpriteSheetId(
+  projectId: string,
+  spriteSheetName: string,
+  timestamp: number,
+): string {
   const name = `sprite-sheet:${projectId}:${spriteSheetName}:${timestamp}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -723,7 +903,10 @@ export function generateSpriteSheetId(projectId: string, spriteSheetName: string
 /**
  * Generate deterministic UUID5 for a sprite frame
  */
-export function generateSpriteFrameId(spriteSheetId: string, frameIndex: number): string {
+export function generateSpriteFrameId(
+  spriteSheetId: string,
+  frameIndex: number,
+): string {
   const name = `sprite-frame:${spriteSheetId}:${frameIndex}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -731,7 +914,11 @@ export function generateSpriteFrameId(spriteSheetId: string, frameIndex: number)
 /**
  * Generate deterministic UUID5 for an SVG document
  */
-export function generateSvgDocumentId(projectId: string, svgName: string, timestamp: number): string {
+export function generateSvgDocumentId(
+  projectId: string,
+  svgName: string,
+  timestamp: number,
+): string {
   const name = `svg-document:${projectId}:${svgName}:${timestamp}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -739,7 +926,10 @@ export function generateSvgDocumentId(projectId: string, svgName: string, timest
 /**
  * Generate deterministic UUID5 for an SVG path
  */
-export function generateSvgPathId(svgDocumentId: string, pathIndex: number): string {
+export function generateSvgPathId(
+  svgDocumentId: string,
+  pathIndex: number,
+): string {
   const name = `svg-path:${svgDocumentId}:${pathIndex}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -747,7 +937,11 @@ export function generateSvgPathId(svgDocumentId: string, pathIndex: number): str
 /**
  * Generate deterministic UUID5 for a material
  */
-export function generateMaterialId(projectId: string, materialName: string, materialType: string): string {
+export function generateMaterialId(
+  projectId: string,
+  materialName: string,
+  materialType: string,
+): string {
   const name = `material:${projectId}:${materialType}:${materialName}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -755,7 +949,11 @@ export function generateMaterialId(projectId: string, materialName: string, mate
 /**
  * Generate deterministic UUID5 for a texture
  */
-export function generateTextureId(projectId: string, textureName: string, textureType: string): string {
+export function generateTextureId(
+  projectId: string,
+  textureName: string,
+  textureType: string,
+): string {
   const name = `texture:${projectId}:${textureType}:${textureName}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -763,7 +961,11 @@ export function generateTextureId(projectId: string, textureName: string, textur
 /**
  * Generate deterministic UUID5 for a mesh
  */
-export function generateMeshId(projectId: string, meshName: string, meshType: string): string {
+export function generateMeshId(
+  projectId: string,
+  meshName: string,
+  meshType: string,
+): string {
   const name = `mesh:${projectId}:${meshType}:${meshName}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -771,7 +973,10 @@ export function generateMeshId(projectId: string, meshName: string, meshType: st
 /**
  * Generate deterministic UUID5 for a mesh vertex
  */
-export function generateMeshVertexId(meshId: string, vertexIndex: number): string {
+export function generateMeshVertexId(
+  meshId: string,
+  vertexIndex: number,
+): string {
   const name = `mesh-vertex:${meshId}:${vertexIndex}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -787,7 +992,10 @@ export function generateMeshFaceId(meshId: string, faceIndex: number): string {
 /**
  * Generate deterministic UUID5 for a render frame
  */
-export function generateRenderFrameId(exportJobId: string, frame: number): string {
+export function generateRenderFrameId(
+  exportJobId: string,
+  frame: number,
+): string {
   const name = `render-frame:${exportJobId}:${frame}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -795,7 +1003,11 @@ export function generateRenderFrameId(exportJobId: string, frame: number): strin
 /**
  * Generate deterministic UUID5 for a render tile
  */
-export function generateRenderTileId(renderFrameId: string, tileX: number, tileY: number): string {
+export function generateRenderTileId(
+  renderFrameId: string,
+  tileX: number,
+  tileY: number,
+): string {
   const name = `render-tile:${renderFrameId}:${tileX}:${tileY}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -803,7 +1015,11 @@ export function generateRenderTileId(renderFrameId: string, tileX: number, tileY
 /**
  * Generate deterministic UUID5 for a workflow node
  */
-export function generateWorkflowNodeId(workflowId: string, nodeType: string, nodeIndex: number): string {
+export function generateWorkflowNodeId(
+  workflowId: string,
+  nodeType: string,
+  nodeIndex: number,
+): string {
   const name = `workflow-node:${workflowId}:${nodeType}:${nodeIndex}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -816,7 +1032,7 @@ export function generateWorkflowConnectionId(
   sourceNodeId: string,
   targetNodeId: string,
   outputIndex: number,
-  inputIndex: number
+  inputIndex: number,
 ): string {
   const name = `workflow-connection:${workflowId}:${sourceNodeId}:${targetNodeId}:${outputIndex}:${inputIndex}`;
   return uuid5(name, LATTICE_NAMESPACE);
@@ -825,7 +1041,11 @@ export function generateWorkflowConnectionId(
 /**
  * Generate deterministic UUID5 for a tool call
  */
-export function generateToolCallId(chatMessageId: string, toolName: string, callIndex: number): string {
+export function generateToolCallId(
+  chatMessageId: string,
+  toolName: string,
+  callIndex: number,
+): string {
   const name = `tool-call:${chatMessageId}:${toolName}:${callIndex}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -833,7 +1053,11 @@ export function generateToolCallId(chatMessageId: string, toolName: string, call
 /**
  * Generate deterministic UUID5 for a user action
  */
-export function generateUserActionId(userId: string, actionType: string, timestamp: number): string {
+export function generateUserActionId(
+  userId: string,
+  actionType: string,
+  timestamp: number,
+): string {
   const name = `user-action:${userId}:${actionType}:${timestamp}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -849,7 +1073,10 @@ export function generateSessionId(userId: string, timestamp: number): string {
 /**
  * Generate deterministic UUID5 for a cache entry
  */
-export function generateCacheEntryId(cacheKey: string, cacheType: string): string {
+export function generateCacheEntryId(
+  cacheKey: string,
+  cacheType: string,
+): string {
   const name = `cache-entry:${cacheType}:${cacheKey}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -857,7 +1084,11 @@ export function generateCacheEntryId(cacheKey: string, cacheType: string): strin
 /**
  * Generate deterministic UUID5 for a frame cache entry
  */
-export function generateFrameCacheEntryId(layerId: string, frame: number, cacheType: string): string {
+export function generateFrameCacheEntryId(
+  layerId: string,
+  frame: number,
+  cacheType: string,
+): string {
   const name = `frame-cache-entry:${layerId}:${frame}:${cacheType}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -865,7 +1096,11 @@ export function generateFrameCacheEntryId(layerId: string, frame: number, cacheT
 /**
  * Generate deterministic UUID5 for a timeline track
  */
-export function generateTimelineTrackId(compositionId: string, trackType: string, trackIndex: number): string {
+export function generateTimelineTrackId(
+  compositionId: string,
+  trackType: string,
+  trackIndex: number,
+): string {
   const name = `timeline-track:${compositionId}:${trackType}:${trackIndex}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -873,7 +1108,11 @@ export function generateTimelineTrackId(compositionId: string, trackType: string
 /**
  * Generate deterministic UUID5 for a timeline clip
  */
-export function generateTimelineClipId(trackId: string, startFrame: number, endFrame: number): string {
+export function generateTimelineClipId(
+  trackId: string,
+  startFrame: number,
+  endFrame: number,
+): string {
   const name = `timeline-clip:${trackId}:${startFrame}:${endFrame}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -881,7 +1120,10 @@ export function generateTimelineClipId(trackId: string, startFrame: number, endF
 /**
  * Generate deterministic UUID5 for a color stop (gradient)
  */
-export function generateColorStopId(gradientId: string, stopIndex: number): string {
+export function generateColorStopId(
+  gradientId: string,
+  stopIndex: number,
+): string {
   const name = `color-stop:${gradientId}:${stopIndex}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -889,7 +1131,11 @@ export function generateColorStopId(gradientId: string, stopIndex: number): stri
 /**
  * Generate deterministic UUID5 for a gradient
  */
-export function generateGradientId(layerId: string, gradientType: string, index: number): string {
+export function generateGradientId(
+  layerId: string,
+  gradientType: string,
+  index: number,
+): string {
   const name = `gradient:${layerId}:${gradientType}:${index}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -897,7 +1143,11 @@ export function generateGradientId(layerId: string, gradientType: string, index:
 /**
  * Generate deterministic UUID5 for a filter
  */
-export function generateFilterId(layerId: string, filterType: string, index: number): string {
+export function generateFilterId(
+  layerId: string,
+  filterType: string,
+  index: number,
+): string {
   const name = `filter:${layerId}:${filterType}:${index}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -905,7 +1155,10 @@ export function generateFilterId(layerId: string, filterType: string, index: num
 /**
  * Generate deterministic UUID5 for a blend mode override
  */
-export function generateBlendModeOverrideId(layerId: string, targetLayerId: string): string {
+export function generateBlendModeOverrideId(
+  layerId: string,
+  targetLayerId: string,
+): string {
   const name = `blend-mode-override:${layerId}:${targetLayerId}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -913,7 +1166,10 @@ export function generateBlendModeOverrideId(layerId: string, targetLayerId: stri
 /**
  * Generate deterministic UUID5 for a transform constraint
  */
-export function generateTransformConstraintId(layerId: string, constraintType: string): string {
+export function generateTransformConstraintId(
+  layerId: string,
+  constraintType: string,
+): string {
   const name = `transform-constraint:${layerId}:${constraintType}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -921,7 +1177,10 @@ export function generateTransformConstraintId(layerId: string, constraintType: s
 /**
  * Generate deterministic UUID5 for a parent constraint
  */
-export function generateParentConstraintId(layerId: string, parentLayerId: string): string {
+export function generateParentConstraintId(
+  layerId: string,
+  parentLayerId: string,
+): string {
   const name = `parent-constraint:${layerId}:${parentLayerId}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -929,7 +1188,10 @@ export function generateParentConstraintId(layerId: string, parentLayerId: strin
 /**
  * Generate deterministic UUID5 for a look-at constraint
  */
-export function generateLookAtConstraintId(layerId: string, targetLayerId: string): string {
+export function generateLookAtConstraintId(
+  layerId: string,
+  targetLayerId: string,
+): string {
   const name = `look-at-constraint:${layerId}:${targetLayerId}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -937,7 +1199,10 @@ export function generateLookAtConstraintId(layerId: string, targetLayerId: strin
 /**
  * Generate deterministic UUID5 for a path constraint
  */
-export function generatePathConstraintId(layerId: string, pathLayerId: string): string {
+export function generatePathConstraintId(
+  layerId: string,
+  pathLayerId: string,
+): string {
   const name = `path-constraint:${layerId}:${pathLayerId}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -945,7 +1210,11 @@ export function generatePathConstraintId(layerId: string, pathLayerId: string): 
 /**
  * Generate deterministic UUID5 for a pose bone
  */
-export function generatePoseBoneId(poseLayerId: string, boneName: string, boneIndex: number): string {
+export function generatePoseBoneId(
+  poseLayerId: string,
+  boneName: string,
+  boneIndex: number,
+): string {
   const name = `pose-bone:${poseLayerId}:${boneName}:${boneIndex}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -953,7 +1222,11 @@ export function generatePoseBoneId(poseLayerId: string, boneName: string, boneIn
 /**
  * Generate deterministic UUID5 for a pose keyframe
  */
-export function generatePoseKeyframeId(poseLayerId: string, boneId: string, frame: number): string {
+export function generatePoseKeyframeId(
+  poseLayerId: string,
+  boneId: string,
+  frame: number,
+): string {
   const name = `pose-keyframe:${poseLayerId}:${boneId}:${frame}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -961,7 +1234,11 @@ export function generatePoseKeyframeId(poseLayerId: string, boneId: string, fram
 /**
  * Generate deterministic UUID5 for a control point (mesh warp, spline, etc.)
  */
-export function generateControlPointId(layerId: string, controlPointType: string, pointIndex: number): string {
+export function generateControlPointId(
+  layerId: string,
+  controlPointType: string,
+  pointIndex: number,
+): string {
   const name = `control-point:${layerId}:${controlPointType}:${pointIndex}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -969,7 +1246,10 @@ export function generateControlPointId(layerId: string, controlPointType: string
 /**
  * Generate deterministic UUID5 for a deformation handle
  */
-export function generateDeformationHandleId(layerId: string, handleIndex: number): string {
+export function generateDeformationHandleId(
+  layerId: string,
+  handleIndex: number,
+): string {
   const name = `deformation-handle:${layerId}:${handleIndex}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -977,7 +1257,11 @@ export function generateDeformationHandleId(layerId: string, handleIndex: number
 /**
  * Generate deterministic UUID5 for a light
  */
-export function generateLightId(compositionId: string, lightType: string, lightIndex: number): string {
+export function generateLightId(
+  compositionId: string,
+  lightType: string,
+  lightIndex: number,
+): string {
   const name = `light:${compositionId}:${lightType}:${lightIndex}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -985,7 +1269,10 @@ export function generateLightId(compositionId: string, lightType: string, lightI
 /**
  * Generate deterministic UUID5 for an environment map
  */
-export function generateEnvironmentMapId(projectId: string, envMapName: string): string {
+export function generateEnvironmentMapId(
+  projectId: string,
+  envMapName: string,
+): string {
   const name = `environment-map:${projectId}:${envMapName}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -993,7 +1280,11 @@ export function generateEnvironmentMapId(projectId: string, envMapName: string):
 /**
  * Generate deterministic UUID5 for a shader
  */
-export function generateShaderId(projectId: string, shaderName: string, shaderType: string): string {
+export function generateShaderId(
+  projectId: string,
+  shaderName: string,
+  shaderType: string,
+): string {
   const name = `shader:${projectId}:${shaderType}:${shaderName}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -1001,7 +1292,10 @@ export function generateShaderId(projectId: string, shaderName: string, shaderTy
 /**
  * Generate deterministic UUID5 for a shader uniform
  */
-export function generateShaderUniformId(shaderId: string, uniformName: string): string {
+export function generateShaderUniformId(
+  shaderId: string,
+  uniformName: string,
+): string {
   const name = `shader-uniform:${shaderId}:${uniformName}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -1009,7 +1303,10 @@ export function generateShaderUniformId(shaderId: string, uniformName: string): 
 /**
  * Generate deterministic UUID5 for a compute shader
  */
-export function generateComputeShaderId(projectId: string, shaderName: string): string {
+export function generateComputeShaderId(
+  projectId: string,
+  shaderName: string,
+): string {
   const name = `compute-shader:${projectId}:${shaderName}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -1017,7 +1314,11 @@ export function generateComputeShaderId(projectId: string, shaderName: string): 
 /**
  * Generate deterministic UUID5 for a render pass
  */
-export function generateRenderPassId(compositionId: string, passType: string, passIndex: number): string {
+export function generateRenderPassId(
+  compositionId: string,
+  passType: string,
+  passIndex: number,
+): string {
   const name = `render-pass:${compositionId}:${passType}:${passIndex}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -1025,7 +1326,10 @@ export function generateRenderPassId(compositionId: string, passType: string, pa
 /**
  * Generate deterministic UUID5 for a render target
  */
-export function generateRenderTargetId(renderPassId: string, targetIndex: number): string {
+export function generateRenderTargetId(
+  renderPassId: string,
+  targetIndex: number,
+): string {
   const name = `render-target:${renderPassId}:${targetIndex}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -1033,7 +1337,11 @@ export function generateRenderTargetId(renderPassId: string, targetIndex: number
 /**
  * Generate deterministic UUID5 for a post-processing effect
  */
-export function generatePostProcessingEffectId(compositionId: string, effectType: string, index: number): string {
+export function generatePostProcessingEffectId(
+  compositionId: string,
+  effectType: string,
+  index: number,
+): string {
   const name = `post-processing-effect:${compositionId}:${effectType}:${index}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -1041,7 +1349,10 @@ export function generatePostProcessingEffectId(compositionId: string, effectType
 /**
  * Generate deterministic UUID5 for a viewport
  */
-export function generateViewportId(compositionId: string, viewportIndex: number): string {
+export function generateViewportId(
+  compositionId: string,
+  viewportIndex: number,
+): string {
   const name = `viewport:${compositionId}:${viewportIndex}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -1057,7 +1368,11 @@ export function generateSelectionId(userId: string, timestamp: number): string {
 /**
  * Generate deterministic UUID5 for a clipboard entry
  */
-export function generateClipboardEntryId(userId: string, entryType: string, timestamp: number): string {
+export function generateClipboardEntryId(
+  userId: string,
+  entryType: string,
+  timestamp: number,
+): string {
   const name = `clipboard-entry:${userId}:${entryType}:${timestamp}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -1065,7 +1380,10 @@ export function generateClipboardEntryId(userId: string, entryType: string, time
 /**
  * Generate deterministic UUID5 for an undo/redo state
  */
-export function generateUndoRedoStateId(projectId: string, stateIndex: number): string {
+export function generateUndoRedoStateId(
+  projectId: string,
+  stateIndex: number,
+): string {
   const name = `undo-redo-state:${projectId}:${stateIndex}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -1073,7 +1391,10 @@ export function generateUndoRedoStateId(projectId: string, stateIndex: number): 
 /**
  * Generate deterministic UUID5 for a history entry
  */
-export function generateHistoryEntryId(projectId: string, entryIndex: number): string {
+export function generateHistoryEntryId(
+  projectId: string,
+  entryIndex: number,
+): string {
   const name = `history-entry:${projectId}:${entryIndex}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -1081,7 +1402,10 @@ export function generateHistoryEntryId(projectId: string, entryIndex: number): s
 /**
  * Generate deterministic UUID5 for a workspace layout
  */
-export function generateWorkspaceLayoutId(userId: string, layoutName: string): string {
+export function generateWorkspaceLayoutId(
+  userId: string,
+  layoutName: string,
+): string {
   const name = `workspace-layout:${userId}:${layoutName}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -1089,7 +1413,11 @@ export function generateWorkspaceLayoutId(userId: string, layoutName: string): s
 /**
  * Generate deterministic UUID5 for a workspace panel
  */
-export function generateWorkspacePanelId(layoutId: string, panelType: string, panelIndex: number): string {
+export function generateWorkspacePanelId(
+  layoutId: string,
+  panelType: string,
+  panelIndex: number,
+): string {
   const name = `workspace-panel:${layoutId}:${panelType}:${panelIndex}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -1097,7 +1425,10 @@ export function generateWorkspacePanelId(layoutId: string, panelType: string, pa
 /**
  * Generate deterministic UUID5 for a keyboard shortcut
  */
-export function generateKeyboardShortcutId(actionId: string, keyCombo: string): string {
+export function generateKeyboardShortcutId(
+  actionId: string,
+  keyCombo: string,
+): string {
   const name = `keyboard-shortcut:${actionId}:${keyCombo}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -1105,7 +1436,10 @@ export function generateKeyboardShortcutId(actionId: string, keyCombo: string): 
 /**
  * Generate deterministic UUID5 for a plugin
  */
-export function generatePluginId(pluginName: string, pluginVersion: string): string {
+export function generatePluginId(
+  pluginName: string,
+  pluginVersion: string,
+): string {
   const name = `plugin:${pluginName}:${pluginVersion}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -1113,7 +1447,10 @@ export function generatePluginId(pluginName: string, pluginVersion: string): str
 /**
  * Generate deterministic UUID5 for a plugin instance
  */
-export function generatePluginInstanceId(pluginId: string, instanceIndex: number): string {
+export function generatePluginInstanceId(
+  pluginId: string,
+  instanceIndex: number,
+): string {
   const name = `plugin-instance:${pluginId}:${instanceIndex}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -1121,7 +1458,10 @@ export function generatePluginInstanceId(pluginId: string, instanceIndex: number
 /**
  * Generate deterministic UUID5 for a plugin hook
  */
-export function generatePluginHookId(pluginId: string, hookName: string): string {
+export function generatePluginHookId(
+  pluginId: string,
+  hookName: string,
+): string {
   const name = `plugin-hook:${pluginId}:${hookName}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -1129,7 +1469,10 @@ export function generatePluginHookId(pluginId: string, hookName: string): string
 /**
  * Generate deterministic UUID5 for a webhook
  */
-export function generateWebhookId(projectId: string, webhookName: string): string {
+export function generateWebhookId(
+  projectId: string,
+  webhookName: string,
+): string {
   const name = `webhook:${projectId}:${webhookName}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -1137,7 +1480,11 @@ export function generateWebhookId(projectId: string, webhookName: string): strin
 /**
  * Generate deterministic UUID5 for a webhook event
  */
-export function generateWebhookEventId(webhookId: string, eventType: string, timestamp: number): string {
+export function generateWebhookEventId(
+  webhookId: string,
+  eventType: string,
+  timestamp: number,
+): string {
   const name = `webhook-event:${webhookId}:${eventType}:${timestamp}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -1153,7 +1500,11 @@ export function generateApiKeyId(userId: string, keyName: string): string {
 /**
  * Generate deterministic UUID5 for an API request
  */
-export function generateApiRequestId(apiKeyId: string, requestHash: string, timestamp: number): string {
+export function generateApiRequestId(
+  apiKeyId: string,
+  requestHash: string,
+  timestamp: number,
+): string {
   const name = `api-request:${apiKeyId}:${requestHash}:${timestamp}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -1161,7 +1512,10 @@ export function generateApiRequestId(apiKeyId: string, requestHash: string, time
 /**
  * Generate deterministic UUID5 for a subscription
  */
-export function generateSubscriptionId(userId: string, subscriptionType: string): string {
+export function generateSubscriptionId(
+  userId: string,
+  subscriptionType: string,
+): string {
   const name = `subscription:${userId}:${subscriptionType}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -1169,7 +1523,10 @@ export function generateSubscriptionId(userId: string, subscriptionType: string)
 /**
  * Generate deterministic UUID5 for a payment
  */
-export function generatePaymentId(subscriptionId: string, paymentIndex: number): string {
+export function generatePaymentId(
+  subscriptionId: string,
+  paymentIndex: number,
+): string {
   const name = `payment:${subscriptionId}:${paymentIndex}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -1177,7 +1534,11 @@ export function generatePaymentId(subscriptionId: string, paymentIndex: number):
 /**
  * Generate deterministic UUID5 for a notification
  */
-export function generateNotificationId(userId: string, notificationType: string, timestamp: number): string {
+export function generateNotificationId(
+  userId: string,
+  notificationType: string,
+  timestamp: number,
+): string {
   const name = `notification:${userId}:${notificationType}:${timestamp}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -1185,7 +1546,11 @@ export function generateNotificationId(userId: string, notificationType: string,
 /**
  * Generate deterministic UUID5 for a collaboration session
  */
-export function generateCollaborationSessionId(projectId: string, userId: string, timestamp: number): string {
+export function generateCollaborationSessionId(
+  projectId: string,
+  userId: string,
+  timestamp: number,
+): string {
   const name = `collaboration-session:${projectId}:${userId}:${timestamp}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -1193,7 +1558,10 @@ export function generateCollaborationSessionId(projectId: string, userId: string
 /**
  * Generate deterministic UUID5 for a collaboration change
  */
-export function generateCollaborationChangeId(sessionId: string, changeIndex: number): string {
+export function generateCollaborationChangeId(
+  sessionId: string,
+  changeIndex: number,
+): string {
   const name = `collaboration-change:${sessionId}:${changeIndex}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -1201,7 +1569,12 @@ export function generateCollaborationChangeId(sessionId: string, changeIndex: nu
 /**
  * Generate deterministic UUID5 for a comment
  */
-export function generateCommentId(compositionId: string, frame: number, userId: string, commentIndex: number): string {
+export function generateCommentId(
+  compositionId: string,
+  frame: number,
+  userId: string,
+  commentIndex: number,
+): string {
   const name = `comment:${compositionId}:${frame}:${userId}:${commentIndex}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -1209,7 +1582,11 @@ export function generateCommentId(compositionId: string, frame: number, userId: 
 /**
  * Generate deterministic UUID5 for a review
  */
-export function generateReviewId(projectId: string, reviewerId: string, timestamp: number): string {
+export function generateReviewId(
+  projectId: string,
+  reviewerId: string,
+  timestamp: number,
+): string {
   const name = `review:${projectId}:${reviewerId}:${timestamp}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -1217,7 +1594,10 @@ export function generateReviewId(projectId: string, reviewerId: string, timestam
 /**
  * Generate deterministic UUID5 for a review comment
  */
-export function generateReviewCommentId(reviewId: string, commentIndex: number): string {
+export function generateReviewCommentId(
+  reviewId: string,
+  commentIndex: number,
+): string {
   const name = `review-comment:${reviewId}:${commentIndex}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -1233,7 +1613,11 @@ export function generateTagId(projectId: string, tagName: string): string {
 /**
  * Generate deterministic UUID5 for a tag assignment
  */
-export function generateTagAssignmentId(tagId: string, entityId: string, entityType: string): string {
+export function generateTagAssignmentId(
+  tagId: string,
+  entityId: string,
+  entityType: string,
+): string {
   const name = `tag-assignment:${tagId}:${entityType}:${entityId}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -1241,7 +1625,10 @@ export function generateTagAssignmentId(tagId: string, entityId: string, entityT
 /**
  * Generate deterministic UUID5 for a collection
  */
-export function generateCollectionId(projectId: string, collectionName: string): string {
+export function generateCollectionId(
+  projectId: string,
+  collectionName: string,
+): string {
   const name = `collection:${projectId}:${collectionName}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -1249,7 +1636,10 @@ export function generateCollectionId(projectId: string, collectionName: string):
 /**
  * Generate deterministic UUID5 for a collection item
  */
-export function generateCollectionItemId(collectionId: string, itemIndex: number): string {
+export function generateCollectionItemId(
+  collectionId: string,
+  itemIndex: number,
+): string {
   const name = `collection-item:${collectionId}:${itemIndex}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -1257,7 +1647,11 @@ export function generateCollectionItemId(collectionId: string, itemIndex: number
 /**
  * Generate deterministic UUID5 for a search query
  */
-export function generateSearchQueryId(userId: string, queryHash: string, timestamp: number): string {
+export function generateSearchQueryId(
+  userId: string,
+  queryHash: string,
+  timestamp: number,
+): string {
   const name = `search-query:${userId}:${queryHash}:${timestamp}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -1265,7 +1659,10 @@ export function generateSearchQueryId(userId: string, queryHash: string, timesta
 /**
  * Generate deterministic UUID5 for a search result
  */
-export function generateSearchResultId(queryId: string, resultIndex: number): string {
+export function generateSearchResultId(
+  queryId: string,
+  resultIndex: number,
+): string {
   const name = `search-result:${queryId}:${resultIndex}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -1273,7 +1670,11 @@ export function generateSearchResultId(queryId: string, resultIndex: number): st
 /**
  * Generate deterministic UUID5 for a bookmark
  */
-export function generateBookmarkId(userId: string, entityId: string, entityType: string): string {
+export function generateBookmarkId(
+  userId: string,
+  entityId: string,
+  entityType: string,
+): string {
   const name = `bookmark:${userId}:${entityType}:${entityId}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -1281,7 +1682,11 @@ export function generateBookmarkId(userId: string, entityId: string, entityType:
 /**
  * Generate deterministic UUID5 for a favorite
  */
-export function generateFavoriteId(userId: string, entityId: string, entityType: string): string {
+export function generateFavoriteId(
+  userId: string,
+  entityId: string,
+  entityType: string,
+): string {
   const name = `favorite:${userId}:${entityType}:${entityId}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -1289,7 +1694,11 @@ export function generateFavoriteId(userId: string, entityId: string, entityType:
 /**
  * Generate deterministic UUID5 for a share link
  */
-export function generateShareLinkId(projectId: string, shareType: string, timestamp: number): string {
+export function generateShareLinkId(
+  projectId: string,
+  shareType: string,
+  timestamp: number,
+): string {
   const name = `share-link:${projectId}:${shareType}:${timestamp}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -1297,7 +1706,10 @@ export function generateShareLinkId(projectId: string, shareType: string, timest
 /**
  * Generate deterministic UUID5 for a download
  */
-export function generateDownloadId(shareLinkId: string, downloadIndex: number): string {
+export function generateDownloadId(
+  shareLinkId: string,
+  downloadIndex: number,
+): string {
   const name = `download:${shareLinkId}:${downloadIndex}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -1305,7 +1717,11 @@ export function generateDownloadId(shareLinkId: string, downloadIndex: number): 
 /**
  * Generate deterministic UUID5 for an import job
  */
-export function generateImportJobId(projectId: string, importType: string, timestamp: number): string {
+export function generateImportJobId(
+  projectId: string,
+  importType: string,
+  timestamp: number,
+): string {
   const name = `import-job:${projectId}:${importType}:${timestamp}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -1313,7 +1729,10 @@ export function generateImportJobId(projectId: string, importType: string, times
 /**
  * Generate deterministic UUID5 for an import item
  */
-export function generateImportItemId(importJobId: string, itemIndex: number): string {
+export function generateImportItemId(
+  importJobId: string,
+  itemIndex: number,
+): string {
   const name = `import-item:${importJobId}:${itemIndex}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -1321,7 +1740,11 @@ export function generateImportItemId(importJobId: string, itemIndex: number): st
 /**
  * Generate deterministic UUID5 for a sync job
  */
-export function generateSyncJobId(projectId: string, syncType: string, timestamp: number): string {
+export function generateSyncJobId(
+  projectId: string,
+  syncType: string,
+  timestamp: number,
+): string {
   const name = `sync-job:${projectId}:${syncType}:${timestamp}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -1329,7 +1752,11 @@ export function generateSyncJobId(projectId: string, syncType: string, timestamp
 /**
  * Generate deterministic UUID5 for a backup
  */
-export function generateBackupId(projectId: string, backupType: string, timestamp: number): string {
+export function generateBackupId(
+  projectId: string,
+  backupType: string,
+  timestamp: number,
+): string {
   const name = `backup:${projectId}:${backupType}:${timestamp}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -1337,7 +1764,10 @@ export function generateBackupId(projectId: string, backupType: string, timestam
 /**
  * Generate deterministic UUID5 for a restore point
  */
-export function generateRestorePointId(projectId: string, timestamp: number): string {
+export function generateRestorePointId(
+  projectId: string,
+  timestamp: number,
+): string {
   const name = `restore-point:${projectId}:${timestamp}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -1345,7 +1775,10 @@ export function generateRestorePointId(projectId: string, timestamp: number): st
 /**
  * Generate deterministic UUID5 for a version
  */
-export function generateVersionId(projectId: string, versionNumber: string): string {
+export function generateVersionId(
+  projectId: string,
+  versionNumber: string,
+): string {
   const name = `version:${projectId}:${versionNumber}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -1353,7 +1786,10 @@ export function generateVersionId(projectId: string, versionNumber: string): str
 /**
  * Generate deterministic UUID5 for a branch
  */
-export function generateBranchId(projectId: string, branchName: string): string {
+export function generateBranchId(
+  projectId: string,
+  branchName: string,
+): string {
   const name = `branch:${projectId}:${branchName}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -1377,7 +1813,11 @@ export function generateDiffId(commitId: string, filePath: string): string {
 /**
  * Generate deterministic UUID5 for a merge
  */
-export function generateMergeId(sourceBranchId: string, targetBranchId: string, timestamp: number): string {
+export function generateMergeId(
+  sourceBranchId: string,
+  targetBranchId: string,
+  timestamp: number,
+): string {
   const name = `merge:${sourceBranchId}:${targetBranchId}:${timestamp}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }
@@ -1385,7 +1825,10 @@ export function generateMergeId(sourceBranchId: string, targetBranchId: string, 
 /**
  * Generate deterministic UUID5 for a conflict
  */
-export function generateConflictId(mergeId: string, conflictIndex: number): string {
+export function generateConflictId(
+  mergeId: string,
+  conflictIndex: number,
+): string {
   const name = `conflict:${mergeId}:${conflictIndex}`;
   return uuid5(name, LATTICE_NAMESPACE);
 }

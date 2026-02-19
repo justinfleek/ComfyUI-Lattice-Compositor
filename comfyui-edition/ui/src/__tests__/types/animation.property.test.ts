@@ -1,19 +1,36 @@
 /**
  * Property tests for ui/src/types/animation.ts
  * Tests: createAnimatableProperty, createKeyframe
- * 
+ *
  * Audit: 2026-01-06
  */
 
-import { describe, it, expect } from "vitest";
 import * as fc from "fast-check";
+import { describe, expect, it } from "vitest";
 import {
-  createAnimatableProperty,
-  createKeyframe,
-  type InterpolationType,
   type AnimatableProperty,
+  createAnimatableProperty,
+  createKeyframe as createKeyframeProd,
+  type InterpolationType,
   type Keyframe,
 } from "@/types/animation";
+
+// Test wrapper for createKeyframe with default layerId/propertyPath
+const TEST_LAYER_ID = "test-layer";
+const TEST_PROPERTY_PATH = "test.property";
+function createKeyframe<T>(
+  frame: number,
+  value: T,
+  interpolation: InterpolationType = "linear",
+): Keyframe<T> {
+  return createKeyframeProd(
+    TEST_LAYER_ID,
+    TEST_PROPERTY_PATH,
+    frame,
+    value,
+    interpolation,
+  );
+}
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 //                                                               // arbitraries
@@ -24,7 +41,7 @@ const propertyTypeArb = fc.constantFrom(
   "position" as const,
   "color" as const,
   "enum" as const,
-  "vector3" as const
+  "vector3" as const,
 );
 
 const interpolationTypeArb = fc.constantFrom<InterpolationType>(
@@ -60,7 +77,7 @@ const interpolationTypeArb = fc.constantFrom<InterpolationType>(
   "easeInOutElastic",
   "easeInBounce",
   "easeOutBounce",
-  "easeInOutBounce"
+  "easeInOutBounce",
 );
 
 // Valid frame number (finite, not NaN)
@@ -70,7 +87,9 @@ const validFrameArb = fc.integer({ min: -10000, max: 10000 });
 const propertyNameArb = fc.string({ minLength: 1, maxLength: 50 });
 
 // Group name (optional)
-const groupNameArb = fc.option(fc.string({ minLength: 1, maxLength: 30 }), { nil: undefined });
+const groupNameArb = fc.option(fc.string({ minLength: 1, maxLength: 30 }), {
+  nil: undefined,
+});
 
 // Various value types
 const numberValueArb = fc.double({ min: -1e6, max: 1e6, noNaN: true });
@@ -111,8 +130,8 @@ describe("PROPERTY: createAnimatableProperty", () => {
           expect(result).toHaveProperty("value");
           expect(result).toHaveProperty("animated");
           expect(result).toHaveProperty("keyframes");
-        }
-      )
+        },
+      ),
     );
   });
 
@@ -121,7 +140,7 @@ describe("PROPERTY: createAnimatableProperty", () => {
       fc.property(propertyNameArb, numberValueArb, (name, value) => {
         const result = createAnimatableProperty(name, value);
         expect(result.id.startsWith("prop_")).toBe(true);
-      })
+      }),
     );
   });
 
@@ -130,7 +149,7 @@ describe("PROPERTY: createAnimatableProperty", () => {
       fc.property(propertyNameArb, numberValueArb, (name, value) => {
         const result = createAnimatableProperty(name, value);
         expect(result.id).toContain(name);
-      })
+      }),
     );
   });
 
@@ -139,7 +158,7 @@ describe("PROPERTY: createAnimatableProperty", () => {
       fc.property(propertyNameArb, numberValueArb, (name, value) => {
         const result = createAnimatableProperty(name, value);
         expect(result.name).toBe(name);
-      })
+      }),
     );
   });
 
@@ -148,7 +167,7 @@ describe("PROPERTY: createAnimatableProperty", () => {
       fc.property(propertyNameArb, numberValueArb, (name, value) => {
         const result = createAnimatableProperty(name, value, "number");
         expect(result.value).toBe(value);
-      })
+      }),
     );
   });
 
@@ -157,7 +176,7 @@ describe("PROPERTY: createAnimatableProperty", () => {
       fc.property(propertyNameArb, positionValueArb, (name, value) => {
         const result = createAnimatableProperty(name, value, "position");
         expect(result.value).toEqual(value);
-      })
+      }),
     );
   });
 
@@ -166,16 +185,21 @@ describe("PROPERTY: createAnimatableProperty", () => {
       fc.property(propertyNameArb, colorValueArb, (name, value) => {
         const result = createAnimatableProperty(name, value, "color");
         expect(result.value).toEqual(value);
-      })
+      }),
     );
   });
 
   it("type matches input", () => {
     fc.assert(
-      fc.property(propertyNameArb, numberValueArb, propertyTypeArb, (name, value, type) => {
-        const result = createAnimatableProperty(name, value, type);
-        expect(result.type).toBe(type);
-      })
+      fc.property(
+        propertyNameArb,
+        numberValueArb,
+        propertyTypeArb,
+        (name, value, type) => {
+          const result = createAnimatableProperty(name, value, type);
+          expect(result.type).toBe(type);
+        },
+      ),
     );
   });
 
@@ -184,7 +208,7 @@ describe("PROPERTY: createAnimatableProperty", () => {
       fc.property(propertyNameArb, numberValueArb, (name, value) => {
         const result = createAnimatableProperty(name, value);
         expect(result.type).toBe("number");
-      })
+      }),
     );
   });
 
@@ -193,7 +217,7 @@ describe("PROPERTY: createAnimatableProperty", () => {
       fc.property(propertyNameArb, numberValueArb, (name, value) => {
         const result = createAnimatableProperty(name, value);
         expect(result.animated).toBe(false);
-      })
+      }),
     );
   });
 
@@ -202,7 +226,7 @@ describe("PROPERTY: createAnimatableProperty", () => {
       fc.property(propertyNameArb, numberValueArb, (name, value) => {
         const result = createAnimatableProperty(name, value);
         expect(result.keyframes).toEqual([]);
-      })
+      }),
     );
   });
 
@@ -215,8 +239,8 @@ describe("PROPERTY: createAnimatableProperty", () => {
         (name, value, group) => {
           const result = createAnimatableProperty(name, value, "number", group);
           expect(result.group).toBe(group);
-        }
-      )
+        },
+      ),
     );
   });
 
@@ -225,7 +249,7 @@ describe("PROPERTY: createAnimatableProperty", () => {
       fc.property(propertyNameArb, numberValueArb, (name, value) => {
         const result = createAnimatableProperty(name, value);
         expect(result.group).toBeUndefined();
-      })
+      }),
     );
   });
 
@@ -235,7 +259,7 @@ describe("PROPERTY: createAnimatableProperty", () => {
         const result1 = createAnimatableProperty(name, value);
         const result2 = createAnimatableProperty(name, value);
         expect(result1.id).not.toBe(result2.id);
-      })
+      }),
     );
   });
 });
@@ -247,17 +271,22 @@ describe("PROPERTY: createAnimatableProperty", () => {
 describe("PROPERTY: createKeyframe", () => {
   it("returns object with all required fields", () => {
     fc.assert(
-      fc.property(validFrameArb, numberValueArb, interpolationTypeArb, (frame, value, interp) => {
-        const result = createKeyframe(frame, value, interp);
+      fc.property(
+        validFrameArb,
+        numberValueArb,
+        interpolationTypeArb,
+        (frame, value, interp) => {
+          const result = createKeyframe(frame, value, interp);
 
-        expect(result).toHaveProperty("id");
-        expect(result).toHaveProperty("frame");
-        expect(result).toHaveProperty("value");
-        expect(result).toHaveProperty("interpolation");
-        expect(result).toHaveProperty("inHandle");
-        expect(result).toHaveProperty("outHandle");
-        expect(result).toHaveProperty("controlMode");
-      })
+          expect(result).toHaveProperty("id");
+          expect(result).toHaveProperty("frame");
+          expect(result).toHaveProperty("value");
+          expect(result).toHaveProperty("interpolation");
+          expect(result).toHaveProperty("inHandle");
+          expect(result).toHaveProperty("outHandle");
+          expect(result).toHaveProperty("controlMode");
+        },
+      ),
     );
   });
 
@@ -266,7 +295,7 @@ describe("PROPERTY: createKeyframe", () => {
       fc.property(validFrameArb, numberValueArb, (frame, value) => {
         const result = createKeyframe(frame, value);
         expect(result.id.startsWith("kf_")).toBe(true);
-      })
+      }),
     );
   });
 
@@ -275,7 +304,7 @@ describe("PROPERTY: createKeyframe", () => {
       fc.property(validFrameArb, numberValueArb, (frame, value) => {
         const result = createKeyframe(frame, value);
         expect(result.id).toContain(String(frame));
-      })
+      }),
     );
   });
 
@@ -284,7 +313,7 @@ describe("PROPERTY: createKeyframe", () => {
       fc.property(validFrameArb, numberValueArb, (frame, value) => {
         const result = createKeyframe(frame, value);
         expect(result.frame).toBe(frame);
-      })
+      }),
     );
   });
 
@@ -293,7 +322,7 @@ describe("PROPERTY: createKeyframe", () => {
       fc.property(validFrameArb, numberValueArb, (frame, value) => {
         const result = createKeyframe(frame, value);
         expect(result.value).toBe(value);
-      })
+      }),
     );
   });
 
@@ -302,7 +331,7 @@ describe("PROPERTY: createKeyframe", () => {
       fc.property(validFrameArb, positionValueArb, (frame, value) => {
         const result = createKeyframe(frame, value);
         expect(result.value).toEqual(value);
-      })
+      }),
     );
   });
 
@@ -311,16 +340,21 @@ describe("PROPERTY: createKeyframe", () => {
       fc.property(validFrameArb, position3DValueArb, (frame, value) => {
         const result = createKeyframe(frame, value);
         expect(result.value).toEqual(value);
-      })
+      }),
     );
   });
 
   it("interpolation matches input", () => {
     fc.assert(
-      fc.property(validFrameArb, numberValueArb, interpolationTypeArb, (frame, value, interp) => {
-        const result = createKeyframe(frame, value, interp);
-        expect(result.interpolation).toBe(interp);
-      })
+      fc.property(
+        validFrameArb,
+        numberValueArb,
+        interpolationTypeArb,
+        (frame, value, interp) => {
+          const result = createKeyframe(frame, value, interp);
+          expect(result.interpolation).toBe(interp);
+        },
+      ),
     );
   });
 
@@ -329,7 +363,7 @@ describe("PROPERTY: createKeyframe", () => {
       fc.property(validFrameArb, numberValueArb, (frame, value) => {
         const result = createKeyframe(frame, value);
         expect(result.interpolation).toBe("linear");
-      })
+      }),
     );
   });
 
@@ -338,7 +372,7 @@ describe("PROPERTY: createKeyframe", () => {
       fc.property(validFrameArb, numberValueArb, (frame, value) => {
         const result = createKeyframe(frame, value);
         expect(result.inHandle).toEqual({ frame: -5, value: 0, enabled: true });
-      })
+      }),
     );
   });
 
@@ -347,7 +381,7 @@ describe("PROPERTY: createKeyframe", () => {
       fc.property(validFrameArb, numberValueArb, (frame, value) => {
         const result = createKeyframe(frame, value);
         expect(result.outHandle).toEqual({ frame: 5, value: 0, enabled: true });
-      })
+      }),
     );
   });
 
@@ -356,17 +390,28 @@ describe("PROPERTY: createKeyframe", () => {
       fc.property(validFrameArb, numberValueArb, (frame, value) => {
         const result = createKeyframe(frame, value);
         expect(result.controlMode).toBe("smooth");
-      })
+      }),
     );
   });
 
-  it("consecutive calls produce unique IDs", () => {
+  it("consecutive calls with same inputs produce same ID (deterministic)", () => {
     fc.assert(
       fc.property(validFrameArb, numberValueArb, (frame, value) => {
         const result1 = createKeyframe(frame, value);
         const result2 = createKeyframe(frame, value);
+        // Deterministic: same inputs = same ID
+        expect(result1.id).toBe(result2.id);
+      }),
+    );
+  });
+
+  it("different inputs produce different IDs", () => {
+    fc.assert(
+      fc.property(validFrameArb, numberValueArb, (frame, value) => {
+        const result1 = createKeyframe(frame, value);
+        const result2 = createKeyframe(frame + 1, value);
         expect(result1.id).not.toBe(result2.id);
-      })
+      }),
     );
   });
 
@@ -376,11 +421,15 @@ describe("PROPERTY: createKeyframe", () => {
   });
 
   it("throws on Infinity frame (BUG-002 fix verification)", () => {
-    expect(() => createKeyframe(Infinity, 100)).toThrow("Invalid keyframe frame");
+    expect(() => createKeyframe(Infinity, 100)).toThrow(
+      "Invalid keyframe frame",
+    );
   });
 
   it("throws on -Infinity frame (BUG-002 fix verification)", () => {
-    expect(() => createKeyframe(-Infinity, 100)).toThrow("Invalid keyframe frame");
+    expect(() => createKeyframe(-Infinity, 100)).toThrow(
+      "Invalid keyframe frame",
+    );
   });
 
   it("accepts zero as valid frame", () => {
@@ -390,26 +439,52 @@ describe("PROPERTY: createKeyframe", () => {
 
   it("accepts negative frames", () => {
     fc.assert(
-      fc.property(fc.integer({ min: -10000, max: -1 }), numberValueArb, (frame, value) => {
-        const result = createKeyframe(frame, value);
-        expect(result.frame).toBe(frame);
-      })
+      fc.property(
+        fc.integer({ min: -10000, max: -1 }),
+        numberValueArb,
+        (frame, value) => {
+          const result = createKeyframe(frame, value);
+          expect(result.frame).toBe(frame);
+        },
+      ),
     );
   });
 
   it("handles all 33 interpolation types", () => {
     const allTypes: InterpolationType[] = [
-      "linear", "bezier", "hold",
-      "easeInSine", "easeOutSine", "easeInOutSine",
-      "easeInQuad", "easeOutQuad", "easeInOutQuad",
-      "easeInCubic", "easeOutCubic", "easeInOutCubic",
-      "easeInQuart", "easeOutQuart", "easeInOutQuart",
-      "easeInQuint", "easeOutQuint", "easeInOutQuint",
-      "easeInExpo", "easeOutExpo", "easeInOutExpo",
-      "easeInCirc", "easeOutCirc", "easeInOutCirc",
-      "easeInBack", "easeOutBack", "easeInOutBack",
-      "easeInElastic", "easeOutElastic", "easeInOutElastic",
-      "easeInBounce", "easeOutBounce", "easeInOutBounce",
+      "linear",
+      "bezier",
+      "hold",
+      "easeInSine",
+      "easeOutSine",
+      "easeInOutSine",
+      "easeInQuad",
+      "easeOutQuad",
+      "easeInOutQuad",
+      "easeInCubic",
+      "easeOutCubic",
+      "easeInOutCubic",
+      "easeInQuart",
+      "easeOutQuart",
+      "easeInOutQuart",
+      "easeInQuint",
+      "easeOutQuint",
+      "easeInOutQuint",
+      "easeInExpo",
+      "easeOutExpo",
+      "easeInOutExpo",
+      "easeInCirc",
+      "easeOutCirc",
+      "easeInOutCirc",
+      "easeInBack",
+      "easeOutBack",
+      "easeInOutBack",
+      "easeInElastic",
+      "easeOutElastic",
+      "easeInOutElastic",
+      "easeInBounce",
+      "easeOutBounce",
+      "easeInOutBounce",
     ];
 
     for (const interpType of allTypes) {

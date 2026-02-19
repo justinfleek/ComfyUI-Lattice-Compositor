@@ -1,0 +1,100 @@
+# Aleph-007: Nix Formalization Enforcement
+
+## Description
+CRITICAL: Enforces Aleph-007 (Nix Formalization) requirements. ALL builds MUST use content-addressed derivations, typed package DSL where applicable, and isospin builder for isolation.
+
+## Globs
+**/*.nix, **/*.hs, **/flake.nix
+
+## Rules
+
+### Before Writing Builds
+1. Read: `docs/rfc/aleph/aleph-007-formalization.md`
+2. Use: Content-addressed derivations (always-on)
+3. Use: Typed package DSL for new packages (where applicable)
+4. Use: Isospin builder for isolation (where applicable)
+
+### Content-Addressed Derivations
+
+#### CA Derivations Always-On
+
+```nix
+# ✅ OK (CA derivations enabled by default)
+finalAttrs: {
+  pname = "my-package";
+  version = "1.0.0";
+  # CA derivations automatically enabled
+}
+```
+
+**Requirements:**
+- All derivations use CA mode
+- Output paths determined by content hash
+- Early cutoff enabled (identical outputs don't rebuild dependents)
+
+### Typed Package DSL
+
+#### Use WASM-Based Package Definitions
+
+```haskell
+# ✅ OK (typed package DSL)
+-- nix/packages/my-package.hs
+module MyPackage where
+
+import Aleph.Nix.Wasm
+
+myPackage :: Package
+myPackage = mkPackage
+  { pname = "my-package"
+  , version = "1.0.0"
+  , src = Input.Src "./."
+  , builder = Builder.Make
+  }
+```
+
+**Requirements:**
+- Package definitions in Haskell
+- Compiled to WASM
+- Evaluated via `builtins.wasm`
+- Type-safe package structure
+
+### Isospin Builder
+
+#### Use Firecracker-Based Builds
+
+```nix
+# ✅ OK (isospin builder)
+finalAttrs: {
+  pname = "my-package";
+  version = "1.0.0";
+  builder = isospin-builder;
+  # Build runs in Firecracker VM
+}
+```
+
+**Requirements:**
+- True isolation (hypervisor, not namespaces)
+- Clean slate every build
+- Minimal VM footprint
+- GPU passthrough support
+
+### Validation
+
+ALWAYS use formalized build infrastructure:
+- Verify CA derivations enabled
+- Use typed DSL for new packages
+- Use isospin for isolated builds
+- Check `nix flake check` passes
+
+## Examples
+
+Study these reference implementations:
+- Typed packages: `nix/packages/*.hs`
+- Isospin scripts: `nix/scripts/isospin-*.hs`
+- CA derivation config: `nix/modules/flake/ca-derivations.nix`
+
+## Notes
+
+- Some components (typed DSL, isospin) may require infrastructure setup
+- CA derivations should be enabled by default in custom Nix fork
+- Typed DSL is optional but recommended for new packages

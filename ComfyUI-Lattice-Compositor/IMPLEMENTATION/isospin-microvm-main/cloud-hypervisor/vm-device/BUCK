@@ -1,0 +1,16 @@
+rust_library(
+    name = "vm-device",
+    srcs = glob(["src/**/*.rs"]),
+    crate = "vm_device",
+    edition = "2024",
+    features = ["kvm"],
+    deps = [
+        "//cloud-hypervisor/hypervisor:hypervisor",
+        "//third-party/rust:serde",
+        "//third-party/rust:thiserror",
+        "//third-party/rust:vfio-ioctls",
+        "//third-party/rust:vm-memory",
+        "//third-party/rust:vmm-sys-util",
+    ],
+    visibility = ["PUBLIC"],
+)

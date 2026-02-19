@@ -1,0 +1,10 @@
+# Valid Literate Programming file
+
+```cpp
+@target: cpp23
+@name: main-function
+@description: Main entry point
+int main() {
+  return 0;
+}
+```

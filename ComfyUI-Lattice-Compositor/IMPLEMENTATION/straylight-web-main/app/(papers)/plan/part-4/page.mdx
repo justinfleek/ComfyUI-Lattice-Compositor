@@ -1,0 +1,144 @@
+
+
+
+
+## Part IV: Take Your Word, Thief
+
+### Composition, the Tensor Core Cathedral, and Jensen's Razor
+
+
+
+*"Stairwells vaulted like intestines, where the eye is trapped in narrow curves. And at the end of each passage: the tensor core. The rectilinear chamber. The thing that actually works."*
+
+
+
+Composition is the final piece. It's how you stack layouts:
+
+- Global memory → shared memory
+- Shared memory → register file
+- Register file → tensor core operand
+
+Each layer is a layout transformation. Composing them gives you the full path from DRAM to silicon.
+
+
+### The algebra of composition
+
+Given layouts `A : Coord(S_A) → Offset` and `B : Coord(S_B) → Offset`:
+
+**Composition:** `(B ∘ A)(c) = B(A(c))`
+
+But this only works if:
+1. `A`'s image is contained in `B`'s coordinate space
+2. The divisibility constraints are preserved
+
+NVIDIA's documentation introduces **LeftDivisible** as the admissibility predicate:
+
+```lean4
+def LeftDivisible (A B : Layout) : Prop :=
+  ∀ i, B.modes[i].stride ∣ (A.cosize * B.modes[i].stride)
+```
+
+This ensures that composing `A` then `B` doesn't violate the tiling constraints at each level.
+
+
+### Why admissibility must be explicit
+
+Consider stacking:
+- Warp-level tiling: 128×128 tiles in shared memory
+- Thread-level tiling: 16×16 tiles per thread
+- Tensor core: 16×16×16 MMA operations
+
+Each level has **divisibility requirements**. If your warp tile isn't divisible by your thread tile, you get:
+- Buffer overruns
+- Misaligned loads
+- Incorrect MMA operands
+- **Silent corruption**
+
+
+
+You can't check this at runtime. By the time you're in the kernel, the damage is done.
+
+You need **compile-time verification**.
+
+
+
+
+### Lean 4: typed composition
+
+```lean4
+def compose (A B : Layout) (h : LeftDivisible A B) : Layout :=
+  sorry -- construction via CuTe's composition rules
+
+theorem compose_sound (A B : Layout) (h : LeftDivisible A B) :
+  ∀ c, (compose A B h).eval c = B.eval (A.eval c) :=
+  sorry -- proof that composition preserves semantics
+```
+
+**The key:** You cannot compose layouts without proving `LeftDivisible`.
+
+
+### Jensen's Razor (Reprise)
+
+> **Never attribute to search what can be proven by construction.**
+
+NVIDIA gives you:
+- The theorems (FTTC, IterDomain algebra, divisibility properties)
+- The documentation (BSD-3-Clause markdown in nvfuser)
+- The hardware (tensor cores with known constraints)
+
+We give you:
+- **Types** that encode the theorems
+- **Proofs** that verify the constraints
+- **Error messages** that explain what went wrong
+
+
+### The Blade
+
+```lean4
+-- This compiles:
+def validKernel : CUDAKernel :=
+  let globalLayout := (128, 128) : (128, 1)
+  let smemLayout := (16, 8) : (8, 1)  -- proof: 16*8 ∣ 128*128 ✓
+  let regLayout := (16, 16) : (16, 1)  -- proof: 16*16 ∣ 16*8 ✓
+  compile (compose (compose globalLayout smemLayout ?h1) regLayout ?h2)
+
+-- This doesn't:
+def invalidKernel : CUDAKernel :=
+  let globalLayout := (128, 128) : (128, 1)
+  let smemLayout := (17, 7) : (7, 1)   -- Error: 17*7 ∤ 128*128
+  compile (compose globalLayout smemLayout ?proof)
+  --                                     ^^^^^^
+  --                                     failed to synthesize
+```
+
+
+### Coda
+
+> **"Take your word, thief."**
+> *He jacked.*
+
+
+## Appendix: Key Documents Referenced
+
+The nvfuser documentation studied includes:
+
+- `doc/reading/tma-modeling-in-depth.md` — The Fundamental Theorem of TMA Correctness
+- `doc/reading/divisibility-of-split.md` — Weak and strong correctness models
+- `doc/reading/iterdomain.md` — Mathematical theory of IterDomain transformations
+- `doc/dev/tma.md` — TMA scheduling tutorial with box/tile definitions
+- `doc/dev/cute_tv_layout.md` — CuTe Thread-Value layout construction
+- `doc/math/integer-division.md` — 35+ theorems about Euclidean and truncation division
+- `doc/math/abstract-algebra.md` — Algebraic structures underlying integer arithmetic
+
+*All BSD-3-Clause licensed. All waiting to be encoded as types.*
+
+
+
+
+The Lean 4 implementation of these concepts is ongoing. Watch this space.
+
+*"While you were tuning hyperparameters, I studied the blade."*
+
+
+
+

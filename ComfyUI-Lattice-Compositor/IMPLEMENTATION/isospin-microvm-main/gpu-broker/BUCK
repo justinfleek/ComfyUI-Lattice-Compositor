@@ -1,0 +1,86 @@
+# GPU Broker - NVIDIA GPU multiplexer daemon
+# Proxies NVIDIA RM API calls from multiple VMs to a single hot GPU
+
+# Common dependencies for gpu-broker
+GPU_BROKER_DEPS = [
+    "//third-party/rust:anyhow",
+    "//third-party/rust:chrono",
+    "//third-party/rust:clap",
+    "//third-party/rust:flate2",
+    "//third-party/rust:hex",
+    "//third-party/rust:io-uring",
+    "//third-party/rust:libc",
+    "//third-party/rust:memmap2",
+    "//third-party/rust:nix",
+    "//third-party/rust:regex",
+    "//third-party/rust:serde",
+    "//third-party/rust:serde_json",
+    "//third-party/rust:thiserror",
+    "//third-party/rust:tracing",
+    "//third-party/rust:tracing-subscriber",
+    "//third-party/rust:zerocopy",
+]
+
+rust_binary(
+    name = "gpu-broker",
+    srcs = glob(["src/**/*.rs"], exclude = ["src/bin/**"]),
+    crate = "gpu_broker",
+    crate_root = "src/main.rs",
+    edition = "2021",
+    deps = GPU_BROKER_DEPS,
+    visibility = ["PUBLIC"],
+)
+
+rust_binary(
+    name = "guest-shim",
+    srcs = glob(["src/**/*.rs"], exclude = ["src/main.rs"]),
+    crate = "guest_shim",
+    crate_root = "src/bin/guest-shim.rs",
+    edition = "2021",
+    deps = GPU_BROKER_DEPS,
+    visibility = ["PUBLIC"],
+)
+
+rust_test(
+    name = "gpu_broker_test",
+    srcs = glob(["src/**/*.rs"], exclude = ["src/bin/**"]),
+    crate = "gpu_broker",
+    crate_root = "src/main.rs",
+    edition = "2021",
+    deps = GPU_BROKER_DEPS + [
+        "//third-party/rust:proptest",
+        "//third-party/rust:tempfile",
+    ],
+    visibility = ["PUBLIC"],
+)
+
+# Kernel module - built using kbuild (kernel's Makefile system)
+# 
+# Kernel modules can't be built in Buck2's sandbox because they need
+# access to /lib/modules/$(uname -r)/build which is outside the sandbox.
+#
+# Build manually:
+#   cd gpu-broker/kernel && make
+#
+# Or use nix:
+#   nix-shell -p linuxHeaders --run "cd gpu-broker/kernel && make"
+#
+# The pre-built .ko is checked in for convenience.
+export_file(
+    name = "kernel-makefile",
+    src = "kernel/Makefile",
+    visibility = ["PUBLIC"],
+)
+
+export_file(
+    name = "kernel-source", 
+    src = "kernel/nvidia-shim.c",
+    visibility = ["PUBLIC"],
+)
+
+# Export the pre-built kernel module (if available)
+export_file(
+    name = "nvidia-shim-ko",
+    src = "kernel/nvidia-shim.ko",
+    visibility = ["PUBLIC"],
+)

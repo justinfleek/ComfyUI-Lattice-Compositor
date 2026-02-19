@@ -1,0 +1,8 @@
+# Test 41: Literate programming missing @target (should be caught)
+
+```haskell
+@name: test-chunk
+@description: Test chunk
+-- Missing @target annotation
+module Test where
+```

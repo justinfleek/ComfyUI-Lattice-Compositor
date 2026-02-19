@@ -1,0 +1,15 @@
+# Test 42: Literate programming duplicate chunk name (should be caught)
+
+```haskell
+@name: test-chunk
+@target: cpp23
+@description: First chunk
+module Test where
+```
+
+```haskell
+@name: test-chunk
+@target: cpp23
+@description: Duplicate name
+module Test2 where
+```

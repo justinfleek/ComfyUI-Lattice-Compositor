@@ -1,0 +1,400 @@
+openapi: 3.0.3
+info:
+  title: Lattice Render API
+  description: |
+    HTTP REST API for Lattice rendering operations.
+    Provides endpoints for image rendering, export, and project management.
+  version: 1.0.0
+  contact:
+    name: Lattice Team
+  license:
+    name: MIT
+
+servers:
+  - url: http://localhost:9876
+    description: Local development server
+  - url: https://sync.render.weyl.ai
+    description: Production render service
+
+security:
+  - BearerAuth: []
+
+tags:
+  - name: image
+    description: Image rendering operations
+  - name: export
+    description: Video/image export operations
+  - name: project
+    description: Project management
+
+paths:
+  /health:
+    get:
+      operationId: healthCheck
+      summary: Health check endpoint
+      tags: [image]
+      security: []
+      responses:
+        '200':
+          description: Server is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [healthy]
+                  version:
+                    type: string
+                required: [status]
+
+  /render/frame:
+    post:
+      operationId: renderFrame
+      summary: Render a single frame
+      tags: [image]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RenderFrameRequest'
+      responses:
+        '200':
+          description: Frame rendered successfully
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RenderFrameResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /render/preview:
+    post:
+      operationId: renderPreview
+      summary: Render a low-resolution preview
+      tags: [image]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RenderPreviewRequest'
+      responses:
+        '200':
+          description: Preview rendered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RenderPreviewResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /render/depth:
+    post:
+      operationId: renderDepth
+      summary: Render depth map
+      tags: [image]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RenderDepthRequest'
+      responses:
+        '200':
+          description: Depth map rendered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DepthBuffer'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /export/encode:
+    post:
+      operationId: encodeFrame
+      summary: Encode a frame to video
+      tags: [export]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EncodeFrameRequest'
+      responses:
+        '200':
+          description: Frame encoded successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  frameIndex:
+                    type: integer
+                required: [success, frameIndex]
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /export/finalize:
+    post:
+      operationId: finalizeExport
+      summary: Finalize video export and get result
+      tags: [export]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                encoderId:
+                  type: string
+                  description: Encoder session ID
+              required: [encoderId]
+      responses:
+        '200':
+          description: Export finalized
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+            application/json:
+              schema:
+                type: object
+                properties:
+                  downloadUrl:
+                    type: string
+                    format: uri
+                  size:
+                    type: integer
+                required: [downloadUrl, size]
+
+  /export/codecs:
+    get:
+      operationId: getSupportedCodecs
+      summary: Get list of supported video codecs
+      tags: [export]
+      responses:
+        '200':
+          description: List of codecs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  codecs:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Codec'
+                required: [codecs]
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        code:
+          type: string
+        details:
+          type: object
+          additionalProperties: true
+      required: [error]
+
+    RenderFrameRequest:
+      type: object
+      properties:
+        width:
+          type: integer
+          minimum: 1
+          maximum: 8192
+          description: Frame width in pixels
+        height:
+          type: integer
+          minimum: 1
+          maximum: 8192
+          description: Frame height in pixels
+        frame:
+          type: integer
+          minimum: 0
+          description: Frame number
+        shader:
+          type: string
+          description: Shader program ID
+      required: [width, height]
+
+    RenderFrameResponse:
+      type: object
+      properties:
+        width:
+          type: integer
+        height:
+          type: integer
+        format:
+          type: string
+          enum: [rgba8, rgb8, rgba16f]
+        data:
+          type: string
+          format: byte
+          description: Base64-encoded frame data
+      required: [width, height, format, data]
+
+    RenderPreviewRequest:
+      type: object
+      properties:
+        width:
+          type: integer
+          minimum: 1
+          maximum: 1024
+        height:
+          type: integer
+          minimum: 1
+          maximum: 1024
+        quality:
+          type: number
+          minimum: 0.1
+          maximum: 1.0
+          default: 0.5
+      required: [width, height]
+
+    RenderPreviewResponse:
+      type: object
+      properties:
+        thumbnail:
+          type: string
+          format: byte
+          description: Base64-encoded JPEG thumbnail
+        width:
+          type: integer
+        height:
+          type: integer
+      required: [thumbnail, width, height]
+
+    RenderDepthRequest:
+      type: object
+      properties:
+        width:
+          type: integer
+          minimum: 1
+          maximum: 8192
+        height:
+          type: integer
+          minimum: 1
+          maximum: 8192
+        near:
+          type: number
+          description: Near clipping plane
+        far:
+          type: number
+          description: Far clipping plane
+      required: [width, height]
+
+    DepthBuffer:
+      type: object
+      properties:
+        width:
+          type: integer
+        height:
+          type: integer
+        data:
+          type: array
+          items:
+            type: number
+          description: Depth values as float array
+        min:
+          type: number
+          description: Minimum depth value
+        max:
+          type: number
+          description: Maximum depth value
+      required: [width, height, data]
+
+    Uniforms:
+      type: object
+      additionalProperties:
+        $ref: '#/components/schemas/UniformValue'
+
+    UniformValue:
+      oneOf:
+        - type: number
+        - type: integer
+        - type: boolean
+        - type: array
+          items:
+            type: number
+          minItems: 2
+          maxItems: 16
+
+    EncodeFrameRequest:
+      type: object
+      properties:
+        encoderId:
+          type: string
+          description: Encoder session ID (from createEncoder)
+        frameData:
+          type: string
+          format: byte
+          description: Base64-encoded frame data
+        timestamp:
+          type: integer
+          minimum: 0
+          description: Frame timestamp in microseconds
+        keyframe:
+          type: boolean
+          default: false
+      required: [encoderId, frameData, timestamp]
+
+    Codec:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Codec identifier (e.g., 'avc1.42001f')
+        name:
+          type: string
+          description: Human-readable name
+        container:
+          type: string
+          enum: [mp4, webm, gif]
+        hardware:
+          type: boolean
+          description: Hardware acceleration available
+      required: [id, name, container]

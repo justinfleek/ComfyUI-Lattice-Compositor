@@ -1,0 +1,8 @@
+# Test 45: Literate programming invalid @target (should be caught)
+
+```haskell
+@name: test-chunk
+@target: invalid-target
+@description: Invalid target value
+module Test where
+```

@@ -1,6 +1,7 @@
 {-# LANGUAGE StrictData #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 {-|
 Module      : Lattice.Utils.Logger

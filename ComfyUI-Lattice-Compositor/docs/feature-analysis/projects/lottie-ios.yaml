@@ -1,0 +1,518 @@
+# Lottie iOS Feature Analysis
+# Analyzed: 2026-01-26
+# Source: newfeatures/lottie-ios-master
+
+project:
+  name: "Lottie iOS"
+  source: "newfeatures/lottie-ios-master/lottie-ios-master"
+  repository: "https://github.com/airbnb/lottie-ios"
+  language: "Swift"
+  domain: "Animation playback/rendering"
+  purpose: "Render After Effects animations from JSON (bodymovin format)"
+  scope: "Playback only - no authoring, no generation"
+
+# =============================================================================
+# LAYER TYPES
+# =============================================================================
+layer_types:
+  precomp:
+    description: "Nested composition (pre-composed layers)"
+    lattice_equivalent: "nestedComp layer type"
+    parity: "FULL"
+
+  solid:
+    description: "Solid color fill layer"
+    lattice_equivalent: "solid layer type"
+    parity: "FULL"
+
+  image:
+    description: "Bitmap image layer"
+    lattice_equivalent: "image layer type"
+    parity: "FULL"
+
+  null:
+    description: "Transform-only layer (no content)"
+    lattice_equivalent: "control/null layer type"
+    parity: "FULL"
+
+  shape:
+    description: "Vector shape layer with modifiers"
+    lattice_equivalent: "shape layer type"
+    parity: "FULL"
+
+  text:
+    description: "Text layer with animators"
+    lattice_equivalent: "text layer type"
+    parity: "FULL"
+
+# =============================================================================
+# SHAPE ITEMS (Vector primitives)
+# =============================================================================
+shape_items:
+  ellipse:
+    description: "Ellipse/circle generator"
+    parameters: [position, size]
+    lattice: true
+    parity: "FULL"
+
+  rectangle:
+    description: "Rectangle with rounded corners"
+    parameters: [position, size, roundness]
+    lattice: true
+    parity: "FULL"
+
+  star:
+    description: "Star/polygon generator"
+    parameters: [points, inner_radius, outer_radius, roundness]
+    lattice: true
+    parity: "FULL"
+
+  path:
+    description: "Bezier path (freeform shape)"
+    parameters: [vertices, in_tangents, out_tangents, closed]
+    lattice: true
+    parity: "FULL"
+
+  fill:
+    description: "Solid color fill"
+    parameters: [color, opacity, fill_rule]
+    lattice: true
+    parity: "FULL"
+
+  stroke:
+    description: "Solid color stroke"
+    parameters: [color, opacity, width, line_cap, line_join, miter_limit, dash_pattern]
+    lattice: true
+    parity: "FULL"
+
+  gradient_fill:
+    description: "Linear/radial gradient fill"
+    parameters: [type, colors, positions, start_point, end_point, highlight]
+    lattice: true
+    parity: "FULL"
+
+  gradient_stroke:
+    description: "Linear/radial gradient stroke"
+    parameters: [type, colors, positions, start_point, end_point, width]
+    lattice: true
+    parity: "FULL"
+
+  group:
+    description: "Container for shape items"
+    parameters: [items, transform]
+    lattice: true
+    parity: "FULL"
+
+  merge:
+    description: "Boolean path operations"
+    parameters: [mode] # add, subtract, intersect, exclude, etc.
+    lattice: true
+    parity: "FULL" # mergePaths in Lattice
+
+  repeater:
+    description: "Repeat shapes with transform offset"
+    parameters: [copies, offset, anchor_point, position, scale, rotation, start_opacity, end_opacity]
+    lattice: true
+    parity: "FULL"
+
+  trim:
+    description: "Trim paths by percentage"
+    parameters: [start, end, offset]
+    lattice: true
+    parity: "FULL" # trimPaths in Lattice
+
+  rounded_corners:
+    description: "Round corners of shapes"
+    parameters: [radius]
+    lattice: true
+    parity: "FULL"
+
+# =============================================================================
+# TRANSFORM PROPERTIES
+# =============================================================================
+transform:
+  anchor_point:
+    description: "Rotation/scale pivot point"
+    lattice: true
+    parity: "FULL"
+
+  position:
+    description: "X/Y position"
+    lattice: true
+    parity: "FULL"
+
+  position_separated:
+    description: "Separate X and Y dimensions"
+    lattice: true
+    parity: "FULL"
+
+  scale:
+    description: "X/Y scale percentage"
+    lattice: true
+    parity: "FULL"
+
+  rotation:
+    description: "Z rotation in degrees"
+    lattice: true
+    parity: "FULL"
+
+  rotation_3d:
+    description: "X/Y/Z rotation (when 3D)"
+    lattice: true
+    parity: "FULL"
+
+  opacity:
+    description: "Layer opacity 0-100"
+    lattice: true
+    parity: "FULL"
+
+  skew:
+    description: "Skew amount"
+    lattice: true
+    parity: "FULL"
+
+  skew_axis:
+    description: "Skew axis angle"
+    lattice: true
+    parity: "FULL"
+
+# =============================================================================
+# TEXT FEATURES
+# =============================================================================
+text:
+  text_document:
+    description: "Text content and styling"
+    parameters:
+      - text_content
+      - font_family
+      - font_size
+      - font_weight
+      - justification
+      - tracking
+      - line_height
+      - baseline_shift
+    lattice: true
+    parity: "FULL"
+
+  text_animators:
+    description: "Per-character animation"
+    parameters:
+      - fill_color
+      - stroke_color
+      - stroke_width
+      - tracking
+      - position
+      - anchor
+      - scale
+      - rotation_xyz
+      - skew
+      - opacity
+    lattice: true
+    parity: "FULL"
+
+  text_range_selector:
+    description: "Select characters for animation"
+    parameters:
+      - start
+      - end
+      - offset
+      - mode # percentage or index
+    lattice: true
+    parity: "FULL"
+    notes: "Lattice adds wiggly and expression selectors"
+
+# =============================================================================
+# BLEND MODES
+# =============================================================================
+blend_modes:
+  supported:
+    - normal
+    - multiply
+    - screen
+    - overlay
+    - darken
+    - lighten
+    - color_dodge
+    - color_burn
+    - hard_light
+    - soft_light
+    - difference
+    - exclusion
+    - hue
+    - saturation
+    - color
+    - luminosity
+  lattice: true
+  parity: "FULL"
+
+# =============================================================================
+# MASKS
+# =============================================================================
+masks:
+  mask_path:
+    description: "Bezier path mask"
+    parameters: [path, opacity, mode, inverted, expansion]
+    lattice: true
+    parity: "FULL"
+
+  mask_modes:
+    supported:
+      - add
+      - subtract
+      - intersect
+      - lighten
+      - darken
+      - difference
+    lattice: true
+    parity: "FULL"
+
+# =============================================================================
+# TRACK MATTES
+# =============================================================================
+track_mattes:
+  types:
+    - none
+    - alpha
+    - alpha_inverted
+    - luma
+    - luma_inverted
+  lattice: true
+  parity: "FULL"
+
+# =============================================================================
+# LAYER EFFECTS
+# =============================================================================
+effects:
+  drop_shadow:
+    description: "Drop shadow effect"
+    parameters: [color, opacity, angle, distance, blur]
+    lattice: true
+    parity: "FULL"
+
+  # NOTE: Lottie iOS only supports drop shadow natively
+  # Other effects from AE are not rendered
+
+  lattice_additional:
+    notes: |
+      Lattice has 40+ effects that Lottie does NOT support:
+      - Blur variants (gaussian, directional, radial, zoom, compound)
+      - Distortion (ripple, twirl, warp, displacement, mesh warp)
+      - Stylize (posterize, halftone, edge detect, mosaic)
+      - Color correction (curves, levels, hue/sat)
+      - Generate (fractal noise, gradient ramp)
+      - Time effects (echo, posterize time, frame blend)
+
+      Lottie is PLAYBACK ONLY - no effect processing capability.
+
+# =============================================================================
+# LAYER STYLES
+# =============================================================================
+layer_styles:
+  drop_shadow:
+    description: "Drop shadow layer style"
+    parameters: [color, opacity, angle, distance, spread, size]
+    lattice: true
+    parity: "FULL"
+
+  lattice_additional:
+    notes: |
+      Lattice has additional layer styles:
+      - Inner Shadow
+      - Outer Glow
+      - Inner Glow
+      - Bevel and Emboss
+      - Satin
+      - Color Overlay
+      - Gradient Overlay
+      - Stroke
+
+# =============================================================================
+# KEYFRAME INTERPOLATION
+# =============================================================================
+keyframes:
+  types:
+    linear:
+      description: "Linear interpolation"
+      lattice: true
+      parity: "FULL"
+
+    bezier:
+      description: "Bezier/eased interpolation with graph editor"
+      parameters: [in_tangent, out_tangent]
+      lattice: true
+      parity: "FULL"
+
+    hold:
+      description: "Step/hold interpolation"
+      lattice: true
+      parity: "FULL"
+
+    spatial:
+      description: "Spatial bezier for position"
+      parameters: [in_tangent_xy, out_tangent_xy]
+      lattice: true
+      parity: "FULL"
+
+# =============================================================================
+# CAPABILITIES LOTTIE DOES NOT HAVE (Lattice advantages)
+# =============================================================================
+lattice_exclusive_features:
+  particles:
+    description: "Full particle system"
+    features:
+      - 2D/3D particle emitters
+      - Force fields (gravity, turbulence, vortex)
+      - Behaviors (flocking, SPH, springs)
+      - Audio-reactive particles
+      - Frame caching for deterministic playback
+    lottie_has: false
+
+  physics:
+    description: "Physics simulation"
+    features:
+      - Rigid body dynamics
+      - Soft body simulation
+      - Cloth simulation
+      - Collision detection
+    lottie_has: false
+
+  3d_rendering:
+    description: "True 3D rendering"
+    features:
+      - 3D model import (GLTF, OBJ)
+      - Point cloud rendering
+      - Depth-based effects
+      - Camera depth of field
+      - PBR materials
+    lottie_has: false
+
+  expression_system:
+    description: "Runtime expression evaluation"
+    features:
+      - Safe DSL for property linking
+      - Property drivers
+      - Audio-reactive expressions
+    lottie_has: false
+    notes: "Lottie is playback-only, expressions are pre-baked"
+
+  generative_ai:
+    description: "AI model integration"
+    features:
+      - Image generation (FLUX, SD)
+      - Video generation (Wan, LTX)
+      - Depth estimation
+      - Pose detection
+    lottie_has: false
+
+  mesh_warp:
+    description: "Mesh-based deformation"
+    features:
+      - Pin-based deformation
+      - Puppet tool equivalent
+      - Path morphing
+    lottie_has: false
+
+  audio:
+    description: "Audio handling"
+    features:
+      - Audio waveform visualization
+      - Beat detection
+      - Frequency band extraction
+      - Audio-reactive properties
+    lottie_has: false
+
+  camera_tracking:
+    description: "Camera tracking data"
+    features:
+      - Import tracking data
+      - 3D camera solve
+      - Point tracking
+    lottie_has: false
+
+  depth_flow:
+    description: "Depth-based parallax"
+    features:
+      - 2.5D depth parallax
+      - Depth-based blur
+      - Depth-based composition
+    lottie_has: false
+
+# =============================================================================
+# GAP ANALYSIS
+# =============================================================================
+gap_analysis:
+  lottie_has_that_lattice_lacks: []
+  # NONE - Lattice has full feature parity with Lottie JSON format
+  # and significantly more capabilities
+
+  notes: |
+    Lottie iOS is a PLAYBACK ENGINE, not an authoring tool.
+    It renders JSON exported from After Effects via bodymovin.
+
+    Lattice is a FULL MOTION GRAPHICS SYSTEM with:
+    - Authoring capabilities
+    - Real-time editing
+    - Generative AI integration
+    - Physics simulation
+    - Particle systems
+    - Expression system
+    - And much more
+
+    The comparison is asymmetric: Lottie's strength is
+    lightweight, cross-platform playback of pre-authored content.
+    Lattice's strength is full creative capability.
+
+# =============================================================================
+# INTEGRATION VALUE
+# =============================================================================
+integration_recommendations:
+  import_capability:
+    value: "HIGH"
+    description: |
+      Lattice should be able to IMPORT Lottie JSON files.
+      This allows users to bring in animations from:
+      - LottieFiles marketplace
+      - After Effects via bodymovin
+      - Other Lottie-compatible tools
+
+  export_capability:
+    value: "HIGH"
+    description: |
+      Lattice should be able to EXPORT to Lottie JSON format.
+      This enables:
+      - Use animations in web/mobile apps
+      - Share on LottieFiles
+      - Integration with Lottie-supporting platforms
+
+  implementation_notes:
+    - "Need Lottie JSON parser (read bodymovin format)"
+    - "Need Lottie JSON writer (export compositions)"
+    - "Handle feature degradation for unsupported features"
+    - "Warn users when features won't export (particles, physics, etc.)"
+
+# =============================================================================
+# VERDICT
+# =============================================================================
+verdict:
+  overall: "LATTICE SUPERIOR"
+
+  summary: |
+    Lottie iOS is a mature, well-engineered playback engine for
+    After Effects animations. It does ONE thing extremely well:
+    render JSON-based vector animations efficiently.
+
+    Lattice has COMPLETE FEATURE PARITY with Lottie's data model
+    AND massive additional capabilities:
+    - Full authoring/editing
+    - Particle systems
+    - Physics simulation
+    - 3D rendering
+    - AI integration
+    - Expression system
+    - Audio reactivity
+    - And much more
+
+  action_items:
+    - "Implement Lottie JSON import"
+    - "Implement Lottie JSON export (subset of features)"
+    - "No features to back-port from Lottie - it's a subset of Lattice"

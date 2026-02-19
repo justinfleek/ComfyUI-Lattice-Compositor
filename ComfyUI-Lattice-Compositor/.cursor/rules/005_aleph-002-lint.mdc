@@ -1,0 +1,209 @@
+# Aleph-002: Linting Enforcement
+
+## Description
+CRITICAL: Enforces Aleph-002 (aleph-lint) mechanical linting rules. ALL Nix code MUST pass AST-based validation before being written.
+
+## Globs
+**/*.nix
+
+## Rules
+
+### Before Writing Nix Code
+1. Read: `docs/rfc/aleph/aleph-002-lint.md`
+2. Run: `nix run .#lint` or `aleph-lint` tool
+3. Fix: ALL errors before committing
+
+### AST Rules (No Evaluation Required)
+
+#### ALEPH-E001: with-statement
+**Level:** ERROR
+
+```nix
+# ❌ ERROR
+with lib;
+{ options.foo = mkOption { }; }
+
+# ✅ OK (list context exception)
+environment.systemPackages = with pkgs; [ vim git ];
+```
+
+#### ALEPH-E002: rec-in-derivation
+**Level:** ERROR
+
+```nix
+# ❌ ERROR
+rec {
+  pname = "my-package";
+  version = "1.0.0";
+}
+
+# ✅ OK
+finalAttrs: {
+  pname = "my-package";
+  version = "1.0.0";
+}
+```
+
+#### ALEPH-E003: non-lisp-case
+**Level:** ERROR
+
+```nix
+# ❌ ERROR
+myPackageName
+configValue
+
+# ✅ OK
+my-package-name
+config-value
+```
+
+#### ALEPH-E004: missing-class
+**Level:** ERROR
+
+```nix
+# ❌ ERROR (NixOS module without _class)
+{ config, ... }: {
+  services.foo.enable = true;
+}
+
+# ✅ OK
+{ config, ... }: {
+  _class = "nixos";
+  services.foo.enable = true;
+}
+```
+
+#### ALEPH-E005: default-nix-in-packages
+**Level:** ERROR
+
+```nix
+# ❌ ERROR
+nix/packages/my-package/default.nix
+
+# ✅ OK
+nix/packages/my-package.nix
+```
+
+#### ALEPH-E006: heredocs
+**Level:** ERROR
+
+```nix
+# ❌ ERROR
+buildPhase = ''
+  make
+'';
+
+# ✅ OK
+buildPhase = writeText "build.sh" ''
+  make
+'';
+```
+
+#### ALEPH-E007: if-then-else-in-module-config
+**Level:** ERROR
+
+```nix
+# ❌ ERROR
+{ config, lib, ... }: {
+  services.foo.enable = if config.enableBar then true else false;
+}
+
+# ✅ OK
+{ config, lib, ... }: {
+  services.foo.enable = lib.mkIf config.enableBar true;
+}
+```
+
+#### ALEPH-E008: import-from-derivation
+**Level:** ERROR
+
+```nix
+# ❌ ERROR
+src = import (runCommand "gen.nix" { } "echo '{}' > $out");
+
+# ✅ OK
+# Restructure to avoid IFD
+```
+
+#### ALEPH-E010: per-flake-nixpkgs-config
+**Level:** ERROR
+
+```nix
+# ❌ ERROR
+perSystem = { system, pkgs, ... }: {
+  _module.args.pkgs = import nixpkgs {
+    config = { allowUnfree = true; };
+  };
+}
+
+# ✅ OK
+perSystem = { system, ... }: {
+  _module.args.pkgs = inputs.aleph.nixpkgs.${system};
+}
+```
+
+### Warning Rules
+
+#### ALEPH-W004: missing-meta
+**Level:** WARNING
+
+```nix
+# ⚠️ WARNING
+finalAttrs: {
+  pname = "my-package";
+  version = "1.0.0";
+}
+
+# ✅ OK
+finalAttrs: {
+  pname = "my-package";
+  version = "1.0.0";
+  meta = {
+    description = "My package description";
+    license = lib.licenses.mit;
+  };
+}
+```
+
+#### ALEPH-W005: missing-meta-description
+**Level:** WARNING
+
+```nix
+# ⚠️ WARNING
+meta = {
+  license = lib.licenses.mit;
+}
+
+# ✅ OK
+meta = {
+  description = "My package description";
+  license = lib.licenses.mit;
+}
+```
+
+### Validation Commands
+
+```bash
+# Via aleph-lint tool
+nix run .#lint
+
+# Via validate-file.js
+node scripts/validate-file.js path/to/file.nix
+```
+
+### Error Handling
+
+If linting fails:
+- Read ALL error messages
+- Fix EVERY error (ALEPH-E*)
+- Address warnings (ALEPH-W*)
+- Re-run lint until clean
+- Only then write code
+
+### Zero Tolerance
+
+- ❌ Writing code without linting
+- ❌ Ignoring lint errors
+- ❌ "We'll fix it later" approach
+
+✅ Lint → Fix → Lint → Write
