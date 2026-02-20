@@ -7,7 +7,7 @@ Description : Lattice HTTP REST API Server
 Copyright   : (c) Lattice, 2026
 License     : MIT
 
-HTTP server implementing the Lattice Render API.
+HTTP server implementing the Lattice Render API with AI generation endpoints.
 Conforms to specs/render.openapi.yaml.
 
 Run: cabal run lattice-server -- --port 8080
@@ -19,7 +19,10 @@ import Data.Aeson (ToJSON(..), FromJSON(..), (.=), (.:), (.:?), object, encode, 
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Base64 as B64
+import qualified Data.ByteString.Lazy as BSL
+import Data.IORef
 import Data.Text (Text)
+import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
 import Data.Word (Word8, Word32)
 import Network.HTTP.Types
@@ -30,6 +33,10 @@ import System.Random (randomRIO)
 
 -- Import Lattice services for actual rendering
 import Lattice.Services.Noise.SimplexNoise (simplexNoise2D, fbm)
+
+-- Import generation modules
+import Api.Generate
+import Generate.Models
 
 -- ────────────────────────────────────────────────────────────────────────────
 -- Configuration
@@ -186,8 +193,9 @@ instance ToJSON ErrorResponse where
 -- Application
 -- ────────────────────────────────────────────────────────────────────────────
 
-app :: Application
-app req respond = do
+-- | Create the application with model path configuration
+mkApp :: IORef ModelPaths -> Application
+mkApp modelPathsRef req respond = do
   let path = pathInfo req
       method = requestMethod req
   
@@ -195,6 +203,82 @@ app req respond = do
     -- Health check
     ("GET", ["health"]) ->
       respond $ jsonResponse status200 $ HealthResponse "healthy" "1.0.0"
+    
+    -- ────────────────────────────────────────────────────────────────────────
+    -- Generation endpoints
+    -- ────────────────────────────────────────────────────────────────────────
+    
+    -- List all available models
+    ("GET", ["generate", "models"]) -> do
+      modelPaths <- readIORef modelPathsRef
+      let categoryFilter = lookup "category" (queryString req) >>= id >>= (pure . TE.decodeUtf8)
+      let searchFilter = lookup "search" (queryString req) >>= id >>= (pure . TE.decodeUtf8)
+      models <- case categoryFilter of
+        Just cat -> listModelsInCategory modelPaths cat
+        Nothing -> discoverModels modelPaths
+      let filteredModels = case searchFilter of
+            Just search -> filter (\m -> T.toLower search `T.isInfixOf` T.toLower (miName m)) models
+            Nothing -> models
+      respond $ jsonResponse status200 filteredModels
+    
+    -- List model categories with counts
+    ("GET", ["generate", "models", "categories"]) -> do
+      modelPaths <- readIORef modelPathsRef
+      categories <- discoverCategories modelPaths
+      respond $ jsonResponse status200 categories
+    
+    -- Get model paths configuration
+    ("GET", ["generate", "config"]) -> do
+      modelPaths <- readIORef modelPathsRef
+      respond $ jsonResponse status200 modelPaths
+    
+    -- Update model paths configuration
+    ("PATCH", ["generate", "config"]) -> do
+      body <- strictRequestBody req
+      case decode body of
+        Nothing -> respond $ jsonResponse status400 $
+          ErrorResponse "Invalid request body" (Just "PARSE_ERROR")
+        Just newPaths -> do
+          writeIORef modelPathsRef newPaths
+          respond $ jsonResponse status200 newPaths
+    
+    -- Generate image (placeholder - needs inference backend)
+    ("POST", ["generate", "image"]) -> do
+      body <- strictRequestBody req
+      case decode body of
+        Nothing -> respond $ jsonResponse status400 $
+          ErrorResponse "Invalid request body" (Just "PARSE_ERROR")
+        Just (cfg :: GenerateConfig) -> do
+          -- For now, return a placeholder response
+          -- The actual implementation requires a TensorRT inference backend
+          respond $ jsonResponse status200 $ GenerateResult
+            { grSuccess = False
+            , grFrames = []
+            , grError = Just "Inference backend not yet implemented. Model loaded from: N/A"
+            , grSeed = maybe 0 id (gcSeed cfg)
+            , grTimeTaken = 0
+            , grModel = gcModel cfg
+            }
+    
+    -- Generate video (placeholder - needs inference backend)
+    ("POST", ["generate", "video"]) -> do
+      body <- strictRequestBody req
+      case decode body of
+        Nothing -> respond $ jsonResponse status400 $
+          ErrorResponse "Invalid request body" (Just "PARSE_ERROR")
+        Just (cfg :: GenerateConfig) -> do
+          respond $ jsonResponse status200 $ GenerateResult
+            { grSuccess = False
+            , grFrames = []
+            , grError = Just "Video inference backend not yet implemented"
+            , grSeed = maybe 0 id (gcSeed cfg)
+            , grTimeTaken = 0
+            , grModel = gcModel cfg
+            }
+    
+    -- ────────────────────────────────────────────────────────────────────────
+    -- Render endpoints
+    -- ────────────────────────────────────────────────────────────────────────
     
     -- Render frame
     ("POST", ["render", "frame"]) -> do
@@ -235,6 +319,10 @@ app req respond = do
           depthBuf <- generateDepth (rdWidth reqBody) (rdHeight reqBody)
           respond $ jsonResponse status200 depthBuf
     
+    -- ────────────────────────────────────────────────────────────────────────
+    -- Export endpoints
+    -- ────────────────────────────────────────────────────────────────────────
+    
     -- Export codecs
     ("GET", ["export", "codecs"]) ->
       respond $ jsonResponse status200 $ object
@@ -257,6 +345,10 @@ app req respond = do
     -- 404 for unknown routes
     _ -> respond $ jsonResponse status404 $
       ErrorResponse "Not found" (Just "NOT_FOUND")
+
+-- | Legacy app without model path ref (for backward compatibility)
+app :: Application
+app = mkApp (error "Model paths not initialized")
 
 jsonResponse :: ToJSON a => Status -> a -> Response
 jsonResponse status body =
@@ -329,13 +421,33 @@ main :: IO ()
 main = do
   args <- getArgs
   let cfg = parseArgs args
+  
+  -- Initialize model paths
+  modelPathsRef <- newIORef defaultModelPaths
+  
   putStrLn $ "Starting Lattice Server on " <> scHost cfg <> ":" <> show (scPort cfg)
+  putStrLn ""
+  putStrLn "Model Directory: /mnt/d/models"
+  putStrLn ""
   putStrLn "Endpoints:"
-  putStrLn "  GET  /health         - Health check"
-  putStrLn "  POST /render/frame   - Render frame"
-  putStrLn "  POST /render/preview - Render preview"
-  putStrLn "  POST /render/depth   - Render depth map"
-  putStrLn "  GET  /export/codecs  - List supported codecs"
-  putStrLn "  POST /export/encode  - Encode frame"
-  putStrLn "  POST /export/finalize - Finalize export"
-  run (scPort cfg) app
+  putStrLn "  GET  /health                    - Health check"
+  putStrLn ""
+  putStrLn "  Generation:"
+  putStrLn "  GET  /generate/models           - List available models"
+  putStrLn "  GET  /generate/models/categories- List model categories"
+  putStrLn "  GET  /generate/config           - Get model paths config"
+  putStrLn "  PATCH /generate/config          - Update model paths config"
+  putStrLn "  POST /generate/image            - Generate image (WIP)"
+  putStrLn "  POST /generate/video            - Generate video (WIP)"
+  putStrLn ""
+  putStrLn "  Render:"
+  putStrLn "  POST /render/frame              - Render frame"
+  putStrLn "  POST /render/preview            - Render preview"
+  putStrLn "  POST /render/depth              - Render depth map"
+  putStrLn ""
+  putStrLn "  Export:"
+  putStrLn "  GET  /export/codecs             - List supported codecs"
+  putStrLn "  POST /export/encode             - Encode frame"
+  putStrLn "  POST /export/finalize           - Finalize export"
+  putStrLn ""
+  run (scPort cfg) (mkApp modelPathsRef)
