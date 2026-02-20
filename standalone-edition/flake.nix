@@ -180,8 +180,14 @@
               pkgs.snappy
               pkgs.protobuf
             ];
-            # Make sure C libraries are found
+            # Make sure C libraries are found at runtime
             LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath [
+              pkgs.zlib
+              pkgs.openssl
+              pkgs.snappy
+            ];
+            # Make sure C libraries are found at link time
+            LIBRARY_PATH = pkgs.lib.makeLibraryPath [
               pkgs.zlib
               pkgs.openssl
               pkgs.snappy
@@ -301,11 +307,13 @@
               result = machine.succeed("curl -s http://localhost:8080/")
               assert "lattice" in result.lower() or "<!DOCTYPE html>" in result, f"UI not served correctly: {result[:200]}"
 
-              # Test that main.js is served
-              machine.succeed("curl -s http://localhost:8080/main.js | head -c 100")
+              # Test that main.js is served (use -o /dev/null to avoid broken pipe with head)
+              result = machine.succeed("curl -sf http://localhost:8080/main.js -o /dev/null -w '%{http_code}'")
+              assert result.strip() == "200", f"main.js not served correctly: HTTP {result}"
 
               # Test that styles.css is served
-              machine.succeed("curl -s http://localhost:8080/styles.css | head -c 100")
+              result = machine.succeed("curl -sf http://localhost:8080/styles.css -o /dev/null -w '%{http_code}'")
+              assert result.strip() == "200", f"styles.css not served correctly: HTTP {result}"
 
               print("✓ All E2E VM tests passed!")
             '';

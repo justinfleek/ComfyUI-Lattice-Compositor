@@ -15,6 +15,7 @@ library
     lattice-core/haskell
     src/haskell
     src/armitage
+    src/inference/hasktorch
   exposed-modules:
     -- Core Lattice modules
     Lattice.Actions
@@ -267,6 +268,18 @@ library
     Armitage.RE
     Armitage.Store
     Armitage.Trace
+    -- Diffusion inference (HaskTorch port of RES4LYF)
+    Lattice.Diffusion
+    Lattice.Diffusion.Noise
+    Lattice.Diffusion.Phi
+    Lattice.Diffusion.Precision.Landauer
+    Lattice.Diffusion.RKCoefficients
+    Lattice.Diffusion.Samplers.Exponential
+    Lattice.Diffusion.Schedulers
+    Lattice.Diffusion.Workflows
+    Lattice.Diffusion.TensorRT.FFI
+    Lattice.Diffusion.TensorRT.Engine
+    Lattice.Diffusion.TensorRT.Pipeline
   -- Note: Aleph.Nix.Examples.* are standalone WASM plugins
   -- They export the same 'nix_wasm_init_v1' symbol and cannot be linked together
   -- Build them separately with: ghc -o fib.wasm Aleph/Nix/Examples/Fib.hs
@@ -316,7 +329,8 @@ library
     crypton-asn1-types >=0.4 && <0.5,
     crypton-pem >=0.3 && <0.4,
     asn1-types >=0.3 && <0.4,
-    asn1-encoding >=0.9 && <0.10
+    asn1-encoding >=0.9 && <0.10,
+    random >=1.2 && <1.3
 
 -- Property-based API tests using haskemathesis
 -- Run: cabal test render-api-property
@@ -427,14 +441,22 @@ executable lattice-server
   default-language: GHC2021
   hs-source-dirs: src/server
   main-is: Main.hs
+  other-modules:
+    Api.Generate
+    Generate.Models
+    Generate.Safetensors
   ghc-options: -threaded -rtsopts "-with-rtsopts=-N"
   build-depends:
     base >=4.18 && <5,
     aeson >=2.2 && <3,
     base64-bytestring >=1.2 && <1.3,
     bytestring >=0.11 && <0.13,
+    containers >=0.6 && <0.8,
+    directory >=1.3 && <1.4,
+    filepath >=1.4 && <1.6,
     http-types >=0.12 && <0.13,
     lattice,
+    mmap >=0.5 && <0.6,
     random >=1.2 && <1.3,
     text >=2.0 && <3,
     vector >=0.13 && <0.14,
