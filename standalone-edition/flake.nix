@@ -4,6 +4,15 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-parts.url = "github:hercules-ci/flake-parts";
+    hasktorch = {
+      url = "github:hasktorch/hasktorch";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    # NVIDIA SDK with CUDA 13.1 + TensorRT for GPU inference
+    nvidia-sdk = {
+      url = "path:../IMPLEMENTATION/nvidia-sdk-main";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     purs-nix = {
       url = "github:purs-nix/purs-nix";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -31,6 +40,8 @@
     inputs@{
       flake-parts,
       nixpkgs,
+      hasktorch,
+      nvidia-sdk,
       purs-nix,
       purescript-overlay,
       haskemathesis,
@@ -132,8 +143,39 @@
             ];
           };
 
+          # ════════════════════════════════════════════════════════════════════
+          #                                                     // cuda // hasktorch
+          # ════════════════════════════════════════════════════════════════════
+          #
+          # Nixpkgs with CUDA support + nvidia-sdk overlay + hasktorch overlay
+          # This provides GPU-accelerated libtorch and TensorRT
+          #
+          pkgsCuda = import nixpkgs {
+            inherit system;
+            config = {
+              allowUnfree = true;
+              cudaSupport = true;
+            };
+            overlays = [
+              nvidia-sdk.overlays.default
+              hasktorch.overlays.default
+            ];
+          };
+
+          # NVIDIA SDK components for TensorRT FFI
+          nvidiaSdk = nvidia-sdk.packages.${system}.nvidia-sdk;
+          tensorrt = nvidia-sdk.packages.${system}.tensorrt;
+
+          # Nixpkgs with hasktorch overlay (CPU fallback for non-CUDA systems)
+          pkgsWithHasktorch = import nixpkgs {
+            inherit system;
+            overlays = [ hasktorch.overlays.default ];
+          };
+
           # Custom Haskell package set with fixes for broken packages
-          hsPkgs = pkgs.haskellPackages.override {
+          # Uses CUDA-enabled pkgs on x86_64-linux, CPU fallback elsewhere
+          hsPkgBase = if system == "x86_64-linux" then pkgsCuda else pkgsWithHasktorch;
+          hsPkgs = hsPkgBase.haskellPackages.override {
             overrides = hself: hsuper: {
               # http2-tls is marked broken in nixpkgs, but works fine
               http2-tls = pkgs.haskell.lib.markUnbroken hsuper.http2-tls;
@@ -162,7 +204,13 @@
               pkgs.ripgrep
               pkgs.fd
               pkgs.biome
-              pkgs.ghc
+              # Use GHC with hasktorch (CUDA-enabled on x86_64-linux)
+              (hsPkgs.ghcWithPackages (ps: [
+                ps.hasktorch
+                ps.vector
+                ps.containers
+                ps.mtl
+              ]))
               pkgs.cabal-install
               pkgs.haskell-language-server
               pkgs.gh
@@ -179,20 +227,77 @@
               pkgs.openssl
               pkgs.snappy
               pkgs.protobuf
+              # CMake for TensorRT C++ library
+              pkgs.cmake
+              pkgs.ninja
             ];
             # Make sure C libraries are found at runtime
-            LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath [
-              pkgs.zlib
-              pkgs.openssl
-              pkgs.snappy
-            ];
+            LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath (
+              [
+                pkgs.zlib
+                pkgs.openssl
+                pkgs.snappy
+              ]
+              ++ pkgs.lib.optionals (system == "x86_64-linux") [
+                nvidiaSdk
+                tensorrt
+              ]
+            );
             # Make sure C libraries are found at link time
-            LIBRARY_PATH = pkgs.lib.makeLibraryPath [
-              pkgs.zlib
-              pkgs.openssl
-              pkgs.snappy
-            ];
+            LIBRARY_PATH = pkgs.lib.makeLibraryPath (
+              [
+                pkgs.zlib
+                pkgs.openssl
+                pkgs.snappy
+              ]
+              ++ pkgs.lib.optionals (system == "x86_64-linux") [
+                nvidiaSdk
+                tensorrt
+              ]
+            );
+
+            # CUDA/TensorRT environment variables (x86_64-linux only)
+            shellHook = pkgs.lib.optionalString (system == "x86_64-linux") ''
+              export CUDA_PATH="${nvidiaSdk}"
+              export CUDA_HOME="${nvidiaSdk}"
+              export TENSORRT_HOME="${tensorrt}"
+              echo "CUDA 13.1 + TensorRT available for GPU inference"
+              echo "CUDA_PATH=$CUDA_PATH"
+              echo "TENSORRT_HOME=$TENSORRT_HOME"
+            '';
           };
+
+          # CUDA-enabled devShell (explicit, always tries CUDA)
+          devShells.cuda = pkgs.lib.optionalAttrs (system == "x86_64-linux") (
+            pkgs.mkShell {
+              packages = [
+                (hsPkgs.ghcWithPackages (ps: [
+                  ps.hasktorch
+                  ps.vector
+                  ps.containers
+                  ps.mtl
+                ]))
+                pkgs.cabal-install
+                nvidiaSdk
+                tensorrt
+                pkgs.cmake
+                pkgs.ninja
+                pkgs.pkg-config
+              ];
+
+              LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath [
+                nvidiaSdk
+                tensorrt
+              ];
+
+              shellHook = ''
+                export CUDA_PATH="${nvidiaSdk}"
+                export CUDA_HOME="${nvidiaSdk}"
+                export TENSORRT_HOME="${tensorrt}"
+                echo "CUDA devShell: CUDA 13.1 + TensorRT"
+              '';
+            }
+          );
 
           # Haskell packages built with cabal
           packages.lattice = hsPkgs.callCabal2nix "lattice" ./. { };
