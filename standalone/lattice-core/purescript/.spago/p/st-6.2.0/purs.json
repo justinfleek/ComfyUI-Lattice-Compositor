@@ -1,0 +1,18 @@
+{
+  "name": "st",
+  "version": "6.2.0",
+  "license": "BSD-3-Clause",
+  "description": "The ST effect, for safe local mutation",
+  "location": {
+    "githubOwner": "purescript",
+    "githubRepo": "purescript-st"
+  },
+  "ref": "v6.2.0",
+  "dependencies": {
+    "effect": ">=4.0.0 <5.0.0",
+    "partial": ">=4.0.0 <5.0.0",
+    "prelude": ">=6.0.0 <7.0.0",
+    "tailrec": ">=6.0.0 <7.0.0",
+    "unsafe-coerce": ">=6.0.0 <7.0.0"
+  }
+}

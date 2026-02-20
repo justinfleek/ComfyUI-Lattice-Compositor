@@ -1,0 +1,1 @@
+{"comments":"Lattice.Services.Midi - MIDI services re-exports\n\nWeb MIDI API integration for Lattice Compositor.\nProvides device capture, message filtering, and property mapping.\n\nSource: ui/src/services/midi/\n","declarations":[],"name":"Lattice.Services.Midi","reExports":[]}

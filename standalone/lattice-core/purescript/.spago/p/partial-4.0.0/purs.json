@@ -1,0 +1,12 @@
+{
+  "name": "partial",
+  "version": "4.0.0",
+  "license": "BSD-3-Clause",
+  "description": "Utilities for working with partial functions",
+  "location": {
+    "githubOwner": "purescript",
+    "githubRepo": "purescript-partial"
+  },
+  "ref": "v4.0.0",
+  "dependencies": {}
+}

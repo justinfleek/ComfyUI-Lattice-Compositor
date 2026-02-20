@@ -1,0 +1,1 @@
+{"comments":"Lattice.Schemas.Layers.LayerDataSchema - Layer data type enums\n\nRe-exports all layer data enums from sub-modules.\nSplit into: Media, Render, Vector, Particle (each under 500 lines)\n\nSource: ui/src/schemas/layers/layer-data-schema.ts\n","declarations":[],"name":"Lattice.Schemas.Layers.LayerDataSchema","reExports":[]}

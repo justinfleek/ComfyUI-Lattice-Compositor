@@ -1,0 +1,1 @@
+{"comments":"Lattice.Services.GLSL - GLSL shader services re-exports\n\nGPU-accelerated image processing using WebGL shaders.\nShadertoy-compatible uniform system for easy shader authoring.\n\nAcknowledgement: Inspired by Jovi/Amorano's Jovi_GLSL\n\nSource: ui/src/services/glsl/\n","declarations":[],"name":"Lattice.Services.GLSL","reExports":[]}

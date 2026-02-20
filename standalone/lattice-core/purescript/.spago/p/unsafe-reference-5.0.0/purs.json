@@ -1,0 +1,14 @@
+{
+  "name": "unsafe-reference",
+  "version": "5.0.0",
+  "license": "MIT",
+  "description": "Unsafe referential equality.",
+  "location": {
+    "githubOwner": "purescript-contrib",
+    "githubRepo": "purescript-unsafe-reference"
+  },
+  "ref": "v5.0.0",
+  "dependencies": {
+    "prelude": ">=6.0.0 <7.0.0"
+  }
+}

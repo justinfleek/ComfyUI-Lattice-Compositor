@@ -1,0 +1,1 @@
+{"file":"index.js","mappings":";;;;;;;;;;;;;AA0CA,eAAA;WAAA;;AAHA;AAoCA,oBAAA;IACmB,oCAAkB;WAAlB,cAAA;eAAA,yCAAA;;;AAEnB;AAGA;AAMA;AAHA;AA9BA,iBAAA;WAEE;yCAAqB;+DAC8B;;;AAZrD;AACA,sBAAA;gBAAA;eAAA;;;AAuBA,oBAAA;iDAEoB,KAAO;QACvB;;;QACA;;;;;;AArCJ,6EACwC;AAOxC","names":[],"sources":["../../.spago/p/web-socket-4.0.0/src/Web/Socket/WebSocket.purs"],"version":3}

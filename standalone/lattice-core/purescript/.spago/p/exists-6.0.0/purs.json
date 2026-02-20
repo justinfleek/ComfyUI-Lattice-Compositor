@@ -1,0 +1,14 @@
+{
+  "name": "exists",
+  "version": "6.0.0",
+  "license": "BSD-3-Clause",
+  "description": "Existential types as a library",
+  "location": {
+    "githubOwner": "purescript",
+    "githubRepo": "purescript-exists"
+  },
+  "ref": "v6.0.0",
+  "dependencies": {
+    "unsafe-coerce": ">=6.0.0 <7.0.0"
+  }
+}

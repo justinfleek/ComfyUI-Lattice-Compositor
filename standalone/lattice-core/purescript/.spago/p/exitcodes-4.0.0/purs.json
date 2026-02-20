@@ -1,0 +1,16 @@
+{
+  "name": "exitcodes",
+  "version": "4.0.0",
+  "license": "MIT",
+  "description": "A purescript library for Bash and BSD compliant exit codes",
+  "location": {
+    "githubOwner": "Risto-Stevcev",
+    "githubRepo": "purescript-exitcodes"
+  },
+  "ref": "v4.0.0",
+  "dependencies": {
+    "enums": ">=4.0.1 <7.0.0",
+    "maybe": ">=4.0.0 <7.0.0",
+    "prelude": ">=4.0.0 <7.0.0"
+  }
+}

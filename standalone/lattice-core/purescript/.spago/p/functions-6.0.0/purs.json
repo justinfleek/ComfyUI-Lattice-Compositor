@@ -1,0 +1,13 @@
+{
+  "name": "functions",
+  "version": "6.0.0",
+  "license": "BSD-3-Clause",
+  "location": {
+    "githubOwner": "purescript",
+    "githubRepo": "purescript-functions"
+  },
+  "ref": "v6.0.0",
+  "dependencies": {
+    "prelude": ">=6.0.0 <7.0.0"
+  }
+}

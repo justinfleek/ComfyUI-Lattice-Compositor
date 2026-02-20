@@ -1,0 +1,1 @@
+{"comments":"Lattice.Services.Video - Video services re-exports\n\nVideo processing, transitions, effects, and frame interpolation.\n\nAttribution:\n- filliptm's ComfyUI_Fill-Nodes for workflow inspiration\n- RIFE (Megvii Research) for frame interpolation\n\nSource: ui/src/services/video/\n","declarations":[],"name":"Lattice.Services.Video","reExports":[]}
