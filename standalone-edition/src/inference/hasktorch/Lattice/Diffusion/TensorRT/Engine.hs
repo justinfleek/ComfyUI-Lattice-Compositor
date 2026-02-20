@@ -1,4 +1,9 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 -- | High-level TensorRT engine wrapper for Haskell
 -- Provides safe, idiomatic interface to GPU inference
@@ -29,9 +34,18 @@ module Lattice.Diffusion.TensorRT.Engine
   , copyToDevice
   , copyToHost
   
+    -- * Type-Level Size
+  , SizedStorable(..)
+  , ElemSize
+  
     -- * Build Config
   , BuildConfig(..)
+  , Precision(..)
+  , Quantization(..)
+  , WorkspaceSize(..)
   , defaultBuildConfig
+  , fp16Config
+  , int8Config
   
     -- * Error Handling
   , TRTError(..)
@@ -39,17 +53,64 @@ module Lattice.Diffusion.TensorRT.Engine
 
 import Lattice.Diffusion.TensorRT.FFI
 
-import Control.Exception (bracket, Exception, throwIO)
+import Control.Exception (Exception, throwIO)
 import Control.Monad (when)
-import Data.IORef
+import Data.Int (Int32, Int64)
+import Data.Kind (Type)
+import Data.Proxy (Proxy(..))
+import Data.Word (Word8, Word16, Word32, Word64)
 import Foreign.Ptr
 import Foreign.C.String
 import Foreign.C.Types
 import Foreign.Marshal.Alloc
 import Foreign.Marshal.Array
 import Foreign.Storable
+import GHC.TypeLits (Nat, KnownNat, natVal)
 import qualified Data.Vector.Storable as V
+import qualified Data.Vector.Storable.Mutable as VM
 import Data.Vector.Storable (Vector)
+
+--------------------------------------------------------------------------------
+-- Type-Level Element Size
+--------------------------------------------------------------------------------
+
+-- | Type family mapping Storable types to their size at the type level.
+-- This allows size computation without runtime values - the compiler 
+-- knows the size from the type alone, like dependent types in Lean4.
+type family ElemSize (a :: Type) :: Nat where
+  ElemSize Float  = 4
+  ElemSize Double = 8
+  ElemSize Int    = 8   -- 64-bit
+  ElemSize Int32  = 4
+  ElemSize Int64  = 8
+  ElemSize Word   = 8
+  ElemSize Word8  = 1
+  ElemSize Word16 = 2
+  ElemSize Word32 = 4
+  ElemSize Word64 = 8
+  ElemSize CFloat = 4
+  ElemSize CDouble = 8
+
+-- | Witness class connecting type-level size to value-level.
+-- The constraint (KnownNat (ElemSize a)) proves at compile time that
+-- we can compute the size without evaluating any value.
+class (Storable a, KnownNat (ElemSize a)) => SizedStorable a where
+  elemSize :: Proxy a -> Int
+  elemSize _ = fromIntegral $ natVal (Proxy @(ElemSize a))
+
+-- Instances - these are compile-time proofs that sizes are known
+instance SizedStorable Float
+instance SizedStorable Double
+instance SizedStorable Int
+instance SizedStorable Int32
+instance SizedStorable Int64
+instance SizedStorable Word
+instance SizedStorable Word8
+instance SizedStorable Word16
+instance SizedStorable Word32
+instance SizedStorable Word64
+instance SizedStorable CFloat
+instance SizedStorable CDouble
 
 -- | TensorRT error
 newtype TRTError = TRTError String
@@ -76,19 +137,61 @@ data Buffer = Buffer
   , bufferSize :: !Int
   }
 
--- | Build configuration
+-- | Precision mode for TensorRT inference.
+-- Each constructor documents exactly what precision will be used.
+data Precision
+  = FP32          -- ^ Full 32-bit floating point (slowest, highest precision)
+  | FP16          -- ^ 16-bit floating point (2x faster on Tensor Cores)
+  | TF32          -- ^ TensorFloat-32 (FP32 range, FP16 precision)
+  deriving (Show, Eq, Ord, Enum, Bounded)
+
+-- | Quantization mode for weight compression.
+-- INT8 requires calibration data for accuracy.
+data Quantization
+  = NoQuantization    -- ^ Keep weights in floating point
+  | INT8Quantized     -- ^ 8-bit integer weights (4x memory reduction)
+  | FP4Quantized      -- ^ 4-bit NVFP4 (E2M1) - requires Blackwell/Ada+
+  deriving (Show, Eq, Ord, Enum, Bounded)
+
+-- | Workspace size with explicit units - no more magic numbers.
+data WorkspaceSize
+  = WorkspaceMB !Int    -- ^ Size in megabytes
+  | WorkspaceGB !Int    -- ^ Size in gigabytes  
+  deriving (Show, Eq)
+
+-- | Convert workspace size to bytes
+workspaceBytes :: WorkspaceSize -> Int
+workspaceBytes (WorkspaceMB mb) = mb * 1024 * 1024
+workspaceBytes (WorkspaceGB gb) = gb * 1024 * 1024 * 1024
+
+-- | Build configuration with explicit, self-documenting types.
+-- No Bool flags - each setting is a distinct type that documents intent.
 data BuildConfig = BuildConfig
-  { bcFP16          :: !Bool
-  , bcINT8          :: !Bool
-  , bcWorkspaceSize :: !Int  -- in MB
+  { bcPrecision    :: !Precision       -- ^ Compute precision
+  , bcQuantization :: !Quantization    -- ^ Weight quantization
+  , bcWorkspace    :: !WorkspaceSize   -- ^ GPU workspace for layer fusion
   } deriving (Show, Eq)
 
--- | Default build configuration
+-- | Default: FP16 precision, no quantization, 1GB workspace.
+-- Good balance of speed and quality for most models.
 defaultBuildConfig :: BuildConfig
 defaultBuildConfig = BuildConfig
-  { bcFP16 = True
-  , bcINT8 = False
-  , bcWorkspaceSize = 1024  -- 1GB
+  { bcPrecision    = FP16
+  , bcQuantization = NoQuantization
+  , bcWorkspace    = WorkspaceGB 1
+  }
+
+-- | FP16 config for maximum Tensor Core utilization.
+fp16Config :: BuildConfig
+fp16Config = defaultBuildConfig
+
+-- | INT8 quantized config for inference-optimized deployment.
+-- Requires calibration dataset for accurate results.
+int8Config :: BuildConfig
+int8Config = BuildConfig
+  { bcPrecision    = FP16           -- Compute in FP16
+  , bcQuantization = INT8Quantized  -- But store weights as INT8
+  , bcWorkspace    = WorkspaceGB 2  -- More workspace for quantization kernels
   }
 
 --------------------------------------------------------------------------------
@@ -115,9 +218,15 @@ loadEngine path = do
 buildEngine :: FilePath -> BuildConfig -> IO (Either TRTError Engine)
 buildEngine onnxPath BuildConfig{..} = do
   cpath <- newCString onnxPath
-  let fp16Flag = if bcFP16 then 1 else 0
-      int8Flag = if bcINT8 then 1 else 0
-      wsSize = fromIntegral (bcWorkspaceSize * 1024 * 1024)
+  let fp16Flag = case bcPrecision of
+        FP32 -> 0
+        FP16 -> 1
+        TF32 -> 0  -- TF32 handled via separate CUDA flag
+      int8Flag = case bcQuantization of
+        NoQuantization -> 0
+        INT8Quantized  -> 1
+        FP4Quantized   -> 2  -- Custom flag for NVFP4
+      wsSize = fromIntegral $ workspaceBytes bcWorkspace
   ptr <- trtBuildFromONNX cpath fp16Flag int8Flag wsSize
   free cpath
   if ptr == nullPtr
@@ -157,14 +266,15 @@ getIOTensors ptr = do
   numTensors <- trtNumIOTensors ptr
   let indices = [0..numTensors - 1]
   names <- mapM (getTensorName ptr) indices
-  let isInputIO i = do
-        cname <- newCString (names !! fromIntegral i)
+  -- Pair indices with names for safe lookup
+  let checkInput (i, name) = do
+        cname <- newCString name
         result <- trtIsInput ptr cname
         free cname
-        pure (result /= 0)
-  inputFlags <- mapM isInputIO indices
-  let inputs = [n | (n, True) <- zip names inputFlags]
-      outputs = [n | (n, False) <- zip names inputFlags]
+        pure (name, result /= 0)
+  pairs <- mapM checkInput (zip indices names)
+  let inputs = [n | (n, True) <- pairs]
+      outputs = [n | (n, False) <- pairs]
   pure (inputs, outputs)
 
 getTensorName :: TRTEngine -> CInt -> IO String
@@ -252,11 +362,13 @@ freeBuffer Buffer{..} = do
   _ <- cudaFree bufferPtr
   pure ()
 
--- | Copy data from host to device
-copyToDevice :: Storable a => Buffer -> Vector a -> IO (Either TRTError ())
+-- | Copy data from host to device.
+-- Uses SizedStorable constraint to compute element size at the type level -
+-- no runtime value inspection, the size is known statically from the type.
+copyToDevice :: forall a. SizedStorable a => Buffer -> Vector a -> IO (Either TRTError ())
 copyToDevice Buffer{..} vec = do
-  let (fptr, len) = V.unsafeToForeignPtr0 vec
-      byteSize = len * sizeOf (V.head vec)
+  let len = V.length vec
+      byteSize = len * elemSize (Proxy @a)  -- Type-level size computation!
   when (byteSize > bufferSize) $
     throwIO $ TRTError "Buffer too small for data"
   V.unsafeWith vec $ \ptr -> do
@@ -265,13 +377,17 @@ copyToDevice Buffer{..} vec = do
       then Right ()
       else Left $ TRTError $ "cudaMemcpy HtoD failed: " ++ show result
 
--- | Copy data from device to host
-copyToHost :: Storable a => Buffer -> Int -> IO (Either TRTError (Vector a))
+-- | Copy data from device to host.
+-- Element size derived from type-level Nat via SizedStorable.
+copyToHost :: forall a. SizedStorable a => Buffer -> Int -> IO (Either TRTError (Vector a))
 copyToHost Buffer{..} numElements = do
-  vec <- V.new numElements
-  V.unsafeWith vec $ \ptr -> do
-    let byteSize = numElements * sizeOf (V.head vec)
+  let byteSize = numElements * elemSize (Proxy @a)  -- Compile-time size!
+  -- Create mutable vector, copy data into it, then freeze
+  mvec <- VM.new numElements
+  VM.unsafeWith mvec $ \ptr -> do
     result <- cudaMemcpyHtoD (castPtr ptr) bufferPtr (fromIntegral byteSize) 2
-    pure $ if result == 0
-      then Right vec
-      else Left $ TRTError $ "cudaMemcpy DtoH failed: " ++ show result
+    if result == 0
+      then do
+        vec <- V.unsafeFreeze mvec
+        pure $ Right vec
+      else pure $ Left $ TRTError $ "cudaMemcpy DtoH failed: " ++ show result
