@@ -84,6 +84,76 @@ const negativePrompt = ref("blurry, low quality, distorted");
 const seed = ref<number | undefined>(undefined);
 const steps = ref(30);
 const cfgScale = ref(5);
+const sampler = ref("res_2m");
+const scheduler = ref("normal");
+
+// RES4LYF Samplers - 100+ RK methods
+const SAMPLERS = [
+  // Multistep (RES)
+  { value: "res_2m", label: "RES 2M (multistep)" },
+  { value: "res_3m", label: "RES 3M (multistep)" },
+  { value: "res_2s", label: "RES 2S (singlestep)" },
+  { value: "res_3s", label: "RES 3S (singlestep)" },
+  { value: "res_2m_sde", label: "RES 2M SDE" },
+  { value: "res_3m_sde", label: "RES 3M SDE" },
+  { value: "res_2s_sde", label: "RES 2S SDE" },
+  { value: "res_3s_sde", label: "RES 3S SDE" },
+  // DPM++ (multistep)
+  { value: "dpmpp_2m", label: "DPM++ 2M" },
+  { value: "dpmpp_3m", label: "DPM++ 3M" },
+  // DPM++ (singlestep)
+  { value: "dpmpp_2s", label: "DPM++ 2S" },
+  { value: "dpmpp_sde_2s", label: "DPM++ SDE 2S" },
+  { value: "dpmpp_3s", label: "DPM++ 3S" },
+  // Euler
+  { value: "euler", label: "Euler" },
+  { value: "euler_ancestral", label: "Euler Ancestral" },
+  { value: "euler_a", label: "Euler A" },
+  // DEIS
+  { value: "deis_2m", label: "DEIS 2M" },
+  { value: "deis_3m", label: "DEIS 3M" },
+  { value: "deis_4m", label: "DEIS 4M" },
+  // Exponential/ETDRK
+  { value: "etdrk2_2s", label: "ETDRK2 2S" },
+  { value: "etdrk3_a_3s", label: "ETDRK3-A 3S" },
+  { value: "etdrk3_b_3s", label: "ETDRK3-B 3S" },
+  { value: "etdrk4_4s", label: "ETDRK4 4S" },
+  // UniPC
+  { value: "unipc", label: "UniPC" },
+  { value: "unipc_snr", label: "UniPC SNR" },
+  // DDIM
+  { value: "ddim", label: "DDIM" },
+  // PLMS
+  { value: "plms", label: "PLMS" },
+  // LMS
+  { value: "lms", label: "LMS" },
+  // KDPM
+  { value: "kdpm_2_ancestral", label: "KDPM 2 Ancestral" },
+  { value: "kdpm_2", label: "KDPM 2" },
+  // ICP
+  { value: "icv_ieks", label: "ICV IEKS" },
+  // TCD
+  { value: "tcd", label: "TCD" },
+] as const;
+
+// RES4LYF Schedulers
+const SCHEDULERS = [
+  { value: "normal", label: "Normal (default)" },
+  { value: "beta57", label: "Beta 57" },
+  { value: "karras", label: "Karras" },
+  { value: "exponential", label: "Exponential" },
+  { value: "shifted_linear", label: "Shifted Linear" },
+  { value: "sqrt_linear", label: "Sqrt Linear" },
+  { value: "linear", label: "Linear" },
+  { value: "linear_quadratic", label: "Linear Quadratic" },
+  { value: "simple", label: "Simple" },
+  { value: "sgm_uniform", label: "SGM Uniform" },
+  { value: "ddim_uniform", label: "DDIM Uniform" },
+  { value: "kl_optimal", label: "KL Optimal" },
+] as const;
+
+type SamplerValue = typeof SAMPLERS[number]["value"];
+type SchedulerValue = typeof SCHEDULERS[number]["value"];
 
 // ComfyUI settings
 const comfyuiServer = ref("127.0.0.1:8188");
