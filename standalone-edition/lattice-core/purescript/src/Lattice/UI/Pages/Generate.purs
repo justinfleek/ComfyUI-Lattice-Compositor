@@ -38,10 +38,12 @@ import Prelude
 
 import Data.Array (length, filter, cons, last)
 import Data.Either (Either(..))
-import Data.Int (toNumber, round)
-import Data.Maybe (Maybe(..), fromMaybe)
-import Data.String (joinWith)
-import Effect.Aff.Class (class MonadAff)
+import Data.Int (toNumber, round, floor)
+import Data.Int as Int
+import Data.Maybe (Maybe(..), fromMaybe, isJust)
+import Data.Number (fromString, isFinite) as Number
+import Data.String (joinWith, trim, null) as String
+import Effect.Aff.Class (class MonadAff, liftAff)
 import Effect.Class (liftEffect)
 import Data.DateTime.Instant (unInstant, Milliseconds(..))
 import Effect (Effect)
@@ -222,6 +224,7 @@ type State =
   , stage :: String         -- "idle" | "encoding" | "sampling" | "decoding"
   , previewUrl :: Maybe String
   , error :: Maybe String
+  , generationHistory :: Array GenerationHistoryEntry  -- Recent generations
     -- Bridge client (for backend communication)
   , bridgeClient :: Maybe Bridge.BridgeClient
     -- Composition settings (from parent)
@@ -274,6 +277,15 @@ newtype GenerationData = GenerationData
   , sigmaMin :: Number
   , sigmaMax :: Number
   , rho :: Number
+  }
+
+-- | Entry in generation history for quick re-use
+type GenerationHistoryEntry =
+  { prompt :: String
+  , model :: Model
+  , seed :: Int
+  , previewUrl :: Maybe String
+  , timestamp :: Number
   }
 
 -- | Queries
@@ -344,6 +356,7 @@ initialState input =
   , stage: "idle"
   , previewUrl: Nothing
   , error: Nothing
+  , generationHistory: []
   , bridgeClient: input.bridgeClient
   , numFrames: input.numFrames
   , fps: input.fps
@@ -647,7 +660,12 @@ renderControlNetSection state =
             ]
         ]
     , HH.div [ cls [ "lattice-form-group" ] ]
-        [ HH.label [] [ HH.text "Control Image" ]
+        [ HH.label [] 
+            [ HH.text "Control Image"
+            , if isJust state.controlNetImage 
+                then HH.span [ cls [ "lattice-badge-success" ] ] [ HH.text " (loaded)" ]
+                else HH.text ""
+            ]
         , HH.input
             [ HP.type_ HP.InputText
             , HP.placeholder "Paste image URL or drop file..."
@@ -793,12 +811,23 @@ handleAction = case _ of
                 let previewUrl = case genResult.frames of
                       [] -> Nothing
                       frames -> Just ("data:image/png;base64," <> headOrLast frames)
-                H.modify_ _ 
+                -- Add to generation history
+                instant <- liftEffect now
+                let (Milliseconds timestamp) = unInstant instant
+                let historyEntry = 
+                      { prompt: state.prompt
+                      , model: state.model
+                      , seed: genResult.seed
+                      , previewUrl: previewUrl
+                      , timestamp: timestamp
+                      }
+                H.modify_ \s -> s
                   { isGenerating = false
                   , progress = 100.0
                   , stage = "idle"
                   , previewUrl = previewUrl
                   , error = Nothing
+                  , generationHistory = cons historyEntry s.generationHistory
                   }
                 let layerType = genModeToLayerType state.mode
                 let genData = GenerationData
@@ -823,7 +852,7 @@ handleAction = case _ of
                       , previewUrl: fromMaybe "" previewUrl
                       , width: resolutionWidth state.resolution
                       , height: resolutionHeight state.resolution
-                      , frames: 1
+                      , frames: length genResult.frames
                       , data: genData
                       }
                 H.raise (GenerationComplete result_)
@@ -1054,15 +1083,31 @@ controlNetToString = case _ of
   ControlPose -> "pose"
   ControlIPAdapter -> "ipadapter"
 
+-- | Parse an integer from string with a default value
 parseInt :: String -> Int -> Int
-parseInt s def = case s of
-  "" -> def
-  _ -> def
+parseInt s def = 
+  case String.trim s of
+    "" -> def
+    trimmed -> case Int.fromString trimmed of
+      Just n -> n
+      Nothing -> def
 
+-- | Parse a float from string with a default value
 parseFloat :: String -> Number -> Number
-parseFloat s def = case s of
-  "" -> def
-  _ -> def
+parseFloat s def = 
+  case String.trim s of
+    "" -> def
+    trimmed -> case Number.fromString trimmed of
+      Just n -> if Number.isFinite n then n else def
+      Nothing -> def
+
+-- | Clamp a number to a range
+clampNumber :: Number -> Number -> Number -> Number
+clampNumber minVal maxVal n = max minVal (min maxVal n)
+
+-- | Clamp an int to a range  
+clampInt :: Int -> Int -> Int -> Int
+clampInt minVal maxVal n = max minVal (min maxVal n)
 
 buildGenerateConfig :: State -> Bridge.GenerateConfig
 buildGenerateConfig state =
@@ -1176,4 +1221,68 @@ headOrLast :: Array String -> String
 headOrLast arr = case arr of
   [] -> ""
   [x] -> x
-  xs -> fromMaybe "" (Array.last xs)
+  xs -> fromMaybe "" (last xs)
+
+-- | All available models with their metadata
+type ModelInfo =
+  { model :: Model
+  , value :: String
+  , label :: String
+  , supportsT2I :: Boolean
+  , supportsI2V :: Boolean
+  , supportsT2V :: Boolean
+  , supportsI2I :: Boolean
+  }
+
+allModels :: Array ModelInfo
+allModels =
+  [ { model: ModelSD15, value: "sd15", label: "Stable Diffusion 1.5", supportsT2I: true, supportsI2V: false, supportsT2V: false, supportsI2I: true }
+  , { model: ModelSD21, value: "sd21", label: "Stable Diffusion 2.1", supportsT2I: true, supportsI2V: false, supportsT2V: false, supportsI2I: true }
+  , { model: ModelSDXL, value: "sdxl", label: "SDXL 1.0", supportsT2I: true, supportsI2V: false, supportsT2V: false, supportsI2I: true }
+  , { model: ModelSDXL_Turbo, value: "sdxl_turbo", label: "SDXL Turbo", supportsT2I: true, supportsI2V: false, supportsT2V: false, supportsI2I: true }
+  , { model: ModelSDXL_Lightning, value: "sdxl_lightning", label: "SDXL Lightning", supportsT2I: true, supportsI2V: false, supportsT2V: false, supportsI2I: true }
+  , { model: ModelWan20I2V, value: "wan20_i2v", label: "Wan 2.0 I2V", supportsT2I: false, supportsI2V: true, supportsT2V: false, supportsI2I: false }
+  , { model: ModelWan20T2V, value: "wan20_t2v", label: "Wan 2.0 T2V", supportsT2I: false, supportsI2V: false, supportsT2V: true, supportsI2I: false }
+  , { model: ModelWan20I2I, value: "wan20_i2i", label: "Wan 2.0 I2I", supportsT2I: false, supportsI2V: false, supportsT2V: false, supportsI2I: true }
+  , { model: ModelWan21I2V, value: "wan21_i2v", label: "Wan 2.1 I2V", supportsT2I: false, supportsI2V: true, supportsT2V: false, supportsI2I: false }
+  , { model: ModelWan21T2V, value: "wan21_t2v", label: "Wan 2.1 T2V", supportsT2I: false, supportsI2V: false, supportsT2V: true, supportsI2I: false }
+  , { model: ModelWan21I2I, value: "wan21_i2i", label: "Wan 2.1 I2I", supportsT2I: false, supportsI2V: false, supportsT2V: false, supportsI2I: true }
+  , { model: ModelWan21Canny, value: "wan21_canny", label: "Wan 2.1 Canny", supportsT2I: false, supportsI2V: true, supportsT2V: true, supportsI2I: true }
+  , { model: ModelWan21Depth, value: "wan21_depth", label: "Wan 2.1 Depth", supportsT2I: false, supportsI2V: true, supportsT2V: true, supportsI2I: true }
+  , { model: ModelWan21Pose, value: "wan21_pose", label: "Wan 2.1 Pose", supportsT2I: false, supportsI2V: true, supportsT2V: true, supportsI2I: true }
+  , { model: ModelWan21Sketch, value: "wan21_sketch", label: "Wan 2.1 Sketch", supportsT2I: false, supportsI2V: true, supportsT2V: true, supportsI2I: true }
+  , { model: ModelWan21IPAdapter, value: "wan21_ipadapter", label: "Wan 2.1 IP-Adapter", supportsT2I: false, supportsI2V: true, supportsT2V: true, supportsI2I: true }
+  , { model: ModelFluxDev, value: "flux_dev", label: "Flux Dev", supportsT2I: true, supportsI2V: false, supportsT2V: false, supportsI2I: true }
+  , { model: ModelFluxSchnell, value: "flux_schnell", label: "Flux Schnell", supportsT2I: true, supportsI2V: false, supportsT2V: false, supportsI2I: true }
+  , { model: ModelFluxFill, value: "flux_fill", label: "Flux Fill", supportsT2I: false, supportsI2V: false, supportsT2V: false, supportsI2I: true }
+  , { model: ModelFluxRealism, value: "flux_realism", label: "Flux Realism", supportsT2I: true, supportsI2V: false, supportsT2V: false, supportsI2I: true }
+  , { model: ModelPixartSigma, value: "pixart_sigma", label: "Pixart Sigma", supportsT2I: true, supportsI2V: false, supportsT2V: false, supportsI2I: false }
+  , { model: ModelPixartAlpha, value: "pixart_alpha", label: "Pixart Alpha", supportsT2I: true, supportsI2V: false, supportsT2V: false, supportsI2I: false }
+  , { model: ModelKolors, value: "kolors", label: "Kolors", supportsT2I: true, supportsI2V: false, supportsT2V: false, supportsI2I: true }
+  , { model: ModelPlayground, value: "playground", label: "Playground", supportsT2I: true, supportsI2V: false, supportsT2V: false, supportsI2I: false }
+  , { model: ModelPlaygroundV2, value: "playground_v2", label: "Playground v2", supportsT2I: true, supportsI2V: false, supportsT2V: false, supportsI2I: false }
+  ]
+
+-- | Filter models that support the given generation mode
+modelsForMode :: GenMode -> Array ModelInfo
+modelsForMode mode = filter (supportsMode mode) allModels
+  where
+    supportsMode GenTextToImage m = m.supportsT2I
+    supportsMode GenImageToVideo m = m.supportsI2V
+    supportsMode GenTextToVideo m = m.supportsT2V
+    supportsMode GenImageToImage m = m.supportsI2I
+    supportsMode GenInpaint m = m.supportsI2I
+    supportsMode GenOutpaint m = m.supportsI2I
+    supportsMode GenUpscale m = m.supportsT2I
+    supportsMode GenRemoveBackground m = m.supportsT2I
+
+-- | Count of available models for a mode
+modelCountForMode :: GenMode -> Int
+modelCountForMode mode = length (modelsForMode mode)
+
+-- | Build prompt with quality tags
+buildPromptWithTags :: String -> Array String -> String
+buildPromptWithTags basePrompt tags =
+  if length tags == 0
+    then basePrompt
+    else basePrompt <> ", " <> joinWith ", " tags
