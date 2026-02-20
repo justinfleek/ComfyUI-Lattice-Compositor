@@ -205,6 +205,10 @@ type GenerateConfig =
   , controlnetImage :: Maybe String -- Base64 encoded control image
   , controlnetType :: Maybe String  -- "depth", "canny", "pose", etc.
   , controlnetStrength :: Maybe Number
+  , controlnetStartStep :: Maybe Number  -- 0.0-1.0 percentage of steps
+  , controlnetEndStep :: Maybe Number    -- 0.0-1.0 percentage of steps
+  , controlnetStartFrame :: Maybe Int    -- Start frame for video controlnet
+  , controlnetEndFrame :: Maybe Int      -- End frame for video controlnet
   }
 
 -- | Result from generation
