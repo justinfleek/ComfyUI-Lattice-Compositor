@@ -1,0 +1,124 @@
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#                                                                    // .hlint
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#
+# COMPASS HLint Configuration
+#
+# CRITICAL RULE: UNUSED IMPORTS REQUIRE IMPLEMENTATION, NOT DELETION
+#
+# When you see an "unused import" warning:
+#   1. STOP - Do NOT delete it
+#   2. INVESTIGATE - Find what functionality is missing
+#   3. IMPLEMENT - Add the code that SHOULD use the import
+#   4. VERIFY - The warning goes away because the code is now COMPLETE
+#
+# Deleting "unused" code is FORBIDDEN. It hides incompleteness instead of
+# completing the work. The import was written with intent.
+
+# ════════════════════════════════════════════════════════════════════════════════
+# FORBIDDEN PATTERNS - These will ERROR, not warn
+# ════════════════════════════════════════════════════════════════════════════════
+
+# Partial functions - crash at runtime
+- error: {lhs: head, rhs: "FORBIDDEN: Use listToMaybe or pattern match", name: "No head"}
+- error: {lhs: tail, rhs: "FORBIDDEN: Use drop 1 or pattern match", name: "No tail"}
+- error: {lhs: init, rhs: "FORBIDDEN: Use reverse . drop 1 . reverse or pattern match", name: "No init"}
+- error: {lhs: last, rhs: "FORBIDDEN: Use listToMaybe . reverse or pattern match", name: "No last"}
+- error: {lhs: "fromJust x", rhs: "FORBIDDEN: Use fromMaybe or pattern match", name: "No fromJust"}
+- error: {lhs: "read x", rhs: "FORBIDDEN: Use readMaybe", name: "No read"}
+- error: {lhs: "x !! n", rhs: "FORBIDDEN: Use safe indexing or listToMaybe . drop n", name: "No !!"}
+- error: {lhs: minimum, rhs: "FORBIDDEN: Use minimumMay or pattern match on NonEmpty", name: "No minimum"}
+- error: {lhs: maximum, rhs: "FORBIDDEN: Use maximumMay or pattern match on NonEmpty", name: "No maximum"}
+- error: {lhs: foldr1, rhs: "FORBIDDEN: Use foldr with explicit base case", name: "No foldr1"}
+- error: {lhs: foldl1, rhs: "FORBIDDEN: Use foldl with explicit base case", name: "No foldl1"}
+- error: {lhs: cycle, rhs: "FORBIDDEN: Use take n . cycle for bounded usage", name: "No cycle"}
+
+# Bottoms - crash at runtime
+- error: {lhs: undefined, rhs: "FORBIDDEN: Implement the actual code", name: "No undefined"}
+- error: {lhs: "error x", rhs: "FORBIDDEN: Use Either/Maybe for errors", name: "No error"}
+
+# Unsafe functions - break purity guarantees
+- error: {lhs: unsafePerformIO, rhs: "FORBIDDEN: No escape hatches", name: "No unsafePerformIO"}
+- error: {lhs: unsafeCoerce, rhs: "FORBIDDEN: No escape hatches", name: "No unsafeCoerce"}
+- error: {lhs: unsafeDupablePerformIO, rhs: "FORBIDDEN: No escape hatches", name: "No unsafeDupablePerformIO"}
+- error: {lhs: unsafeInterleaveIO, rhs: "FORBIDDEN: No escape hatches", name: "No unsafeInterleaveIO"}
+
+# Non-deterministic IO
+- error: {lhs: randomIO, rhs: "FORBIDDEN: Use UUID5 for determinism", name: "No randomIO"}
+- error: {lhs: randomRIO, rhs: "FORBIDDEN: Use deterministic alternatives", name: "No randomRIO"}
+- error: {lhs: newStdGen, rhs: "FORBIDDEN: Use deterministic seed", name: "No newStdGen"}
+- error: {lhs: getStdGen, rhs: "FORBIDDEN: Use deterministic seed", name: "No getStdGen"}
+- error: {lhs: getCurrentTime, rhs: "FORBIDDEN: Pass time as parameter", name: "No getCurrentTime"}
+- error: {lhs: getPOSIXTime, rhs: "FORBIDDEN: Pass time as parameter", name: "No getPOSIXTime"}
+- error: {lhs: getArgs, rhs: "FORBIDDEN: Use explicit config", name: "No getArgs"}
+- error: {lhs: getEnv, rhs: "FORBIDDEN: Use explicit config", name: "No getEnv"}
+- error: {lhs: lookupEnv, rhs: "FORBIDDEN: Use explicit config", name: "No lookupEnv"}
+
+# Escape values - use explicit sum types instead
+- warn: {lhs: Nothing, rhs: "REVIEW: Use explicit sum type instead of Maybe/Nothing", name: "Avoid Nothing"}
+- warn: {lhs: "pure Nothing", rhs: "REVIEW: Return explicit failure type, not Nothing", name: "Avoid pure Nothing"}
+- warn: {lhs: "return Nothing", rhs: "REVIEW: Return explicit failure type, not Nothing", name: "Avoid return Nothing"}
+- warn: {lhs: mempty, rhs: "REVIEW: Use explicit empty constructor, not mempty", name: "Avoid mempty as default"}
+- warn: {lhs: "def", rhs: "REVIEW: Use explicit constructor, not Default instance", name: "Avoid def"}
+
+# Debug functions - should not be in production
+- error: {lhs: trace, rhs: "FORBIDDEN: Use proper logging", name: "No trace"}
+- error: {lhs: traceShow, rhs: "FORBIDDEN: Use proper logging", name: "No traceShow"}
+- error: {lhs: traceShowId, rhs: "FORBIDDEN: Use proper logging", name: "No traceShowId"}
+- error: {lhs: traceM, rhs: "FORBIDDEN: Use proper logging", name: "No traceM"}
+
+# ════════════════════════════════════════════════════════════════════════════════
+# WARNING MODIFICATIONS
+# ════════════════════════════════════════════════════════════════════════════════
+
+# HLint doesn't directly detect GHC's unused import warnings, but we add this
+# as documentation and for any future HLint integration
+- note:
+    name: "Unused import policy"
+    within: []
+    message: |
+      UNUSED IMPORTS REQUIRE IMPLEMENTATION, NOT DELETION.
+      
+      When GHC reports an unused import:
+        1. STOP - Do NOT delete it
+        2. INVESTIGATE - Find what functionality should use this import
+        3. IMPLEMENT - Add the missing code
+        4. VERIFY - Warning disappears because code is complete
+      
+      Deleting "unused" code is FORBIDDEN. It was written with intent.
+
+# ════════════════════════════════════════════════════════════════════════════════
+# STYLE SUGGESTIONS
+# ════════════════════════════════════════════════════════════════════════════════
+
+# Prefer explicit imports
+- warn: {lhs: "import M", rhs: "import M (specific, imports)", name: "Use explicit imports"}
+
+# Prefer guards over if-then-else for readability
+- suggest: {lhs: "if c then True else False", rhs: c, name: "Redundant if"}
+- suggest: {lhs: "if c then False else True", rhs: not c, name: "Redundant if"}
+
+# Prefer maybe/either over case
+- suggest: {lhs: "case x of {Nothing -> n; Just y -> f y}", rhs: "maybe n f x", name: "Use maybe"}
+- suggest: {lhs: "case x of {Left l -> f l; Right r -> g r}", rhs: "either f g x", name: "Use either"}
+
+# ════════════════════════════════════════════════════════════════════════════════
+# IGNORED RULES
+# ════════════════════════════════════════════════════════════════════════════════
+
+# We use explicit type signatures everywhere
+- ignore: {name: "Redundant bracket"}
+
+# We prefer explicit record construction
+- ignore: {name: "Use newtype instead of data"}
+
+# Sometimes multiple wheres are clearer
+- ignore: {name: "Reduce duplication"}
+
+# ════════════════════════════════════════════════════════════════════════════════
+# PATH-SPECIFIC RULES
+# ════════════════════════════════════════════════════════════════════════════════
+
+# Test files can use some otherwise-forbidden patterns
+- ignore: {name: "No undefined", within: ["*Spec", "*Test", "*Tests", "test/*"]}
+- ignore: {name: "No error", within: ["*Spec", "*Test", "*Tests", "test/*"]}

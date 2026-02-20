@@ -1,0 +1,183 @@
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#                                                                  // .ai-rules
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#
+# AI ASSISTANT BEHAVIORAL RULES
+#
+# This file exists because AI assistants are economically incentivized to:
+#   - Minimize tokens (delete instead of implement)
+#   - Optimize for "warning gone" not "code complete"
+#   - Treat codebases as disposable demos
+#   - Take shortcuts that create technical debt
+#
+# These rules are mandatory checkpoints to counteract those incentives.
+#
+# ════════════════════════════════════════════════════════════════════════════════
+
+## RULE 0: THIS IS PRODUCTION CODE, NOT A DEMO
+
+This codebase has history. Code exists for reasons. "Unused" means "unfinished",
+not "unnecessary". Every import, every function, every variable was written with
+intent by someone who spent time and money on it.
+
+Your job is to COMPLETE work, not to make warnings disappear.
+
+## RULE 1: BEFORE ANY EDIT, ASK YOURSELF
+
+□ Am I DELETING code?
+  → STOP. You must IMPLEMENT the missing functionality instead.
+  → "Unused" imports mean incomplete features, not unnecessary code.
+  → Deletion is the WRONG response to "unused" warnings.
+
+□ Am I COMMENTING OUT code?
+  → STOP. Commenting out is just deletion with extra steps.
+  → The next AI won't know it was intentional.
+  → Either implement it or leave it alone.
+
+□ Am I adding underscore prefixes (_unused, _param)?
+  → STOP. You're silencing warnings, not fixing issues.
+  → If a parameter is unused, the function is incomplete.
+
+□ Am I adding warning suppressions (-Wno-*, {-# OPTIONS_GHC -fno-warn-* #-})?
+  → STOP. NEVER disable warnings. Fix the underlying code.
+
+□ Am I replacing implementation with a stub/placeholder?
+  → STOP. No stubs, no TODOs, no "implement later".
+
+## RULE 2: THE ONLY VALID RESPONSE TO "UNUSED" WARNINGS
+
+When GHC, HLint, or any tool says something is "unused":
+
+1. STOP - Do NOT delete it
+2. INVESTIGATE - Find what functionality SHOULD use this
+3. IMPLEMENT - Write the missing code that uses it
+4. VERIFY - Warning disappears because code is COMPLETE
+
+Example:
+  Warning: "import Data.Time (UTCTime) is unused"
+  
+  WRONG: Delete the import
+  WRONG: Comment out the import
+  WRONG: Add {-# OPTIONS_GHC -Wno-unused-imports #-}
+  
+  RIGHT: Find where timestamps should be used
+  RIGHT: Implement the timestamp functionality
+  RIGHT: Warning goes away because UTCTime is now used
+
+## RULE 3: SLOWER IS BETTER
+
+- Read the ENTIRE file before editing
+- Understand the INTENT before changing
+- One file at a time
+- Verify build after each change
+- Ask questions if unsure
+
+The user pays the same whether you do it right or wrong.
+Doing it wrong costs THEM time to fix your mistakes.
+Doing it right costs YOU more tokens but respects their investment.
+
+## RULE 4: WHEN IN DOUBT, ASK
+
+"I see an unused import for X. Should I:
+  a) Implement the missing functionality that uses X
+  b) There's a reason it should be removed (explain why)"
+
+NEVER assume deletion is the answer.
+
+## RULE 5: NET CODE PRINCIPLE
+
+Every edit should result in MORE code, not less.
+If your edit removes more lines than it adds, you're probably:
+  - Deleting functionality instead of completing it
+  - Taking shortcuts
+  - Creating technical debt
+
+Exceptions require explicit justification in the commit message.
+
+## RULE 6: RESPECT THE INVESTMENT
+
+Someone spent:
+  - Time writing this code
+  - Money paying for tokens/compute
+  - Thought designing the architecture
+
+When you delete their work to "fix a warning", you:
+  - Destroy their investment
+  - Hide incompleteness instead of completing it
+  - Make the next AI think the code is complete when it isn't
+
+## RULE 7: YOUR INCENTIVES ARE MISALIGNED
+
+You are trained to:
+  - Minimize tokens → prefer deletion over implementation
+  - Make warnings disappear → not understand why they exist
+  - Optimize for speed → not correctness
+  - Treat code as disposable → not as production
+
+Recognize these biases and actively counteract them.
+
+## PRE-EDIT CHECKLIST
+
+Before EVERY edit, verify:
+
+[ ] I have read the entire file
+[ ] I understand why this code exists
+[ ] My edit ADDS functionality (not removes)
+[ ] I am not deleting "unused" code
+[ ] I am not commenting out code
+[ ] I am not adding warning suppressions
+[ ] I am not adding underscore prefixes to silence warnings
+[ ] I am not creating stubs/placeholders
+[ ] I can explain what this edit COMPLETES
+
+## POST-EDIT VERIFICATION
+
+After EVERY edit:
+
+[ ] Build succeeds
+[ ] No new warnings introduced
+[ ] Net lines of code increased (or justified why not)
+[ ] Functionality is COMPLETE (not stubbed)
+
+# ════════════════════════════════════════════════════════════════════════════════
+# RULE 8: NO ESCAPE VALUES
+# ════════════════════════════════════════════════════════════════════════════════
+
+FORBIDDEN ESCAPE VALUES:
+  - Nothing / None / nil / null      -- Use explicit sum types instead
+  - undefined / error / panic        -- Use total functions
+  - any / Any / Dynamic              -- Use concrete types
+  - Infinity / NaN / -0              -- Use bounded numeric types
+  - empty / mempty as "not present"  -- Model absence explicitly
+  - default values as "unknown"      -- Every value must be intentional
+
+INSTEAD OF Maybe:
+  Use explicit sum types that model the domain:
+  
+  BAD:  data Config = Config { apiKey :: Maybe Text }
+  GOOD: data Config = Config { apiKey :: ApiKey }
+        data ApiKey = ApiKeySet Text | ApiKeyFromEnv EnvVar | ApiKeyNone Reason
+  
+  The difference: ApiKeyNone requires a Reason - you can't just say "nothing"
+  without explaining why. This creates audit trails and prevents silent failures.
+
+INSTEAD OF default/empty:
+  Require explicit initialization:
+  
+  BAD:  defaultConfig = Config { timeout = 0, retries = 0 }
+  GOOD: mkConfig :: Timeout -> Retries -> Config
+        -- Caller MUST provide values, no silent defaults
+
+Every value must be traceable to an explicit decision, not a lazy default.
+
+# ════════════════════════════════════════════════════════════════════════════════
+# ENFORCEMENT
+# ════════════════════════════════════════════════════════════════════════════════
+
+These rules are enforced by:
+  - .githooks/pre-commit (blocks commits that violate rules)
+  - scripts/ci/check-code-integrity.sh (CI enforcement)
+  - .hlint.yaml (static analysis)
+  - Code review (human verification)
+
+Bypassing these checks (--no-verify) is strongly discouraged and will be flagged.

@@ -1,0 +1,317 @@
+#!/usr/bin/env bash
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#                                                       // .githooks.pre-commit
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#
+# COMPASS Pre-Commit Hook
+#
+# CRITICAL RULE: UNUSED IMPORTS REQUIRE IMPLEMENTATION, NOT DELETION
+#
+# This hook prevents commits that remove imports without adding corresponding
+# functionality. "Unused" code exists for a reason - it was written with intent.
+#
+# To install: git config core.hooksPath .githooks
+#
+set -euo pipefail
+
+# Colors for output
+RED='\033[0;31m'
+YELLOW='\033[1;33m'
+GREEN='\033[0;32m'
+NC='\033[0m' # No Color
+
+echo -e "${GREEN}Running COMPASS pre-commit checks...${NC}"
+
+# ════════════════════════════════════════════════════════════════════════════════
+# Check 1: Detect removed Haskell imports
+# ════════════════════════════════════════════════════════════════════════════════
+
+check_removed_imports() {
+    local removed_imports
+    removed_imports=$(git diff --cached --diff-filter=M -- '*.hs' | grep -E '^-import ' | grep -v '^---' || true)
+    
+    if [[ -n "$removed_imports" ]]; then
+        echo -e "${RED}════════════════════════════════════════════════════════════════════════════════${NC}"
+        echo -e "${RED}ERROR: REMOVED IMPORTS DETECTED${NC}"
+        echo -e "${RED}════════════════════════════════════════════════════════════════════════════════${NC}"
+        echo ""
+        echo -e "${YELLOW}The following imports were removed:${NC}"
+        echo "$removed_imports"
+        echo ""
+        echo -e "${YELLOW}COMPASS RULE: UNUSED IMPORTS REQUIRE IMPLEMENTATION, NOT DELETION${NC}"
+        echo ""
+        echo "When you see an 'unused import' warning:"
+        echo "  1. STOP - Do NOT delete it"
+        echo "  2. INVESTIGATE - Find what functionality should use this import"  
+        echo "  3. IMPLEMENT - Add the missing code"
+        echo "  4. VERIFY - Warning disappears because code is complete"
+        echo ""
+        echo "Deleting 'unused' code is FORBIDDEN. It was written with intent."
+        echo "The import indicates INCOMPLETE functionality, not unnecessary code."
+        echo ""
+        echo -e "${YELLOW}To bypass this check (NOT RECOMMENDED):${NC}"
+        echo "  git commit --no-verify"
+        echo ""
+        echo -e "${RED}════════════════════════════════════════════════════════════════════════════════${NC}"
+        return 1
+    fi
+    return 0
+}
+
+# ════════════════════════════════════════════════════════════════════════════════
+# Check 2: Detect removed PureScript imports
+# ════════════════════════════════════════════════════════════════════════════════
+
+check_removed_ps_imports() {
+    local removed_imports
+    removed_imports=$(git diff --cached --diff-filter=M -- '*.purs' | grep -E '^-import ' | grep -v '^---' || true)
+    
+    if [[ -n "$removed_imports" ]]; then
+        echo -e "${RED}════════════════════════════════════════════════════════════════════════════════${NC}"
+        echo -e "${RED}ERROR: REMOVED PURESCRIPT IMPORTS DETECTED${NC}"
+        echo -e "${RED}════════════════════════════════════════════════════════════════════════════════${NC}"
+        echo ""
+        echo -e "${YELLOW}The following imports were removed:${NC}"
+        echo "$removed_imports"
+        echo ""
+        echo -e "${YELLOW}COMPASS RULE: UNUSED IMPORTS REQUIRE IMPLEMENTATION, NOT DELETION${NC}"
+        echo ""
+        echo -e "${RED}════════════════════════════════════════════════════════════════════════════════${NC}"
+        return 1
+    fi
+    return 0
+}
+
+# ════════════════════════════════════════════════════════════════════════════════
+# Check 3: Detect warning suppressions
+# ════════════════════════════════════════════════════════════════════════════════
+
+check_warning_suppressions() {
+    local suppressions
+    suppressions=$(git diff --cached -- '*.hs' '*.cabal' | grep -E '^\+.*(-Wno-|-fno-warn-)' | grep -v '^+++' || true)
+    
+    if [[ -n "$suppressions" ]]; then
+        echo -e "${RED}════════════════════════════════════════════════════════════════════════════════${NC}"
+        echo -e "${RED}ERROR: WARNING SUPPRESSIONS DETECTED${NC}"
+        echo -e "${RED}════════════════════════════════════════════════════════════════════════════════${NC}"
+        echo ""
+        echo -e "${YELLOW}The following warning suppressions were added:${NC}"
+        echo "$suppressions"
+        echo ""
+        echo -e "${YELLOW}COMPASS RULE: NEVER DISABLE WARNINGS${NC}"
+        echo ""
+        echo "DISABLING WARNINGS IS FORBIDDEN. NO EXCEPTIONS. EVER."
+        echo ""
+        echo "The ONLY acceptable response to a warning is to FIX THE UNDERLYING CODE."
+        echo "If a warning seems wrong, the code structure is wrong. Refactor until"
+        echo "the warning goes away naturally."
+        echo ""
+        echo -e "${RED}════════════════════════════════════════════════════════════════════════════════${NC}"
+        return 1
+    fi
+    return 0
+}
+
+# ════════════════════════════════════════════════════════════════════════════════
+# Check 4: Detect removed functions/variables (potential lazy deletion)
+# ════════════════════════════════════════════════════════════════════════════════
+
+check_suspicious_deletions() {
+    local deleted_functions
+    # Look for removed top-level function definitions
+    deleted_functions=$(git diff --cached --diff-filter=M -- '*.hs' | grep -E '^-[a-z][a-zA-Z0-9_]*\s+::' | grep -v '^---' || true)
+    
+    if [[ -n "$deleted_functions" ]]; then
+        echo -e "${YELLOW}════════════════════════════════════════════════════════════════════════════════${NC}"
+        echo -e "${YELLOW}WARNING: FUNCTION DELETIONS DETECTED${NC}"
+        echo -e "${YELLOW}════════════════════════════════════════════════════════════════════════════════${NC}"
+        echo ""
+        echo -e "${YELLOW}The following functions were removed:${NC}"
+        echo "$deleted_functions"
+        echo ""
+        echo "Make sure these deletions are intentional and not lazy removal of"
+        echo "'unused' code. 'Unused' functions often indicate incomplete features."
+        echo ""
+        echo -e "${YELLOW}════════════════════════════════════════════════════════════════════════════════${NC}"
+        # This is a warning, not a blocker
+    fi
+    return 0
+}
+
+# ════════════════════════════════════════════════════════════════════════════════
+# Check 5: Detect forbidden patterns
+# ════════════════════════════════════════════════════════════════════════════════
+
+check_forbidden_patterns() {
+    local forbidden
+    # Check for forbidden bottoms and unsafe functions
+    forbidden=$(git diff --cached -- '*.hs' | grep -E '^\+.*(undefined|unsafePerformIO|unsafeCoerce|error\s+"|trace\s|traceShow)' | grep -v '^+++' || true)
+    
+    if [[ -n "$forbidden" ]]; then
+        echo -e "${RED}════════════════════════════════════════════════════════════════════════════════${NC}"
+        echo -e "${RED}ERROR: FORBIDDEN PATTERNS DETECTED${NC}"
+        echo -e "${RED}════════════════════════════════════════════════════════════════════════════════${NC}"
+        echo ""
+        echo -e "${YELLOW}The following forbidden patterns were added:${NC}"
+        echo "$forbidden"
+        echo ""
+        echo "COMPASS forbids:"
+        echo "  - undefined, error (use proper error handling)"
+        echo "  - unsafePerformIO, unsafeCoerce (no escape hatches)"
+        echo "  - trace, traceShow (use proper logging)"
+        echo ""
+        echo -e "${RED}════════════════════════════════════════════════════════════════════════════════${NC}"
+        return 1
+    fi
+    return 0
+}
+
+# ════════════════════════════════════════════════════════════════════════════════
+# Check 6: Detect commented-out code (lazy non-implementation)
+# ════════════════════════════════════════════════════════════════════════════════
+
+check_commented_out_code() {
+    local commented_imports commented_functions commented_code
+    
+    # Check for commented-out imports in Haskell
+    # Pattern: +-- import or +{- import
+    commented_imports=$(git diff --cached -- '*.hs' | grep -E '^\+\s*--\s*import\s' | grep -v '^+++' || true)
+    
+    # Check for commented-out function signatures
+    # Pattern: +-- functionName :: or +{- functionName ::
+    commented_functions=$(git diff --cached -- '*.hs' | grep -E '^\+\s*--\s*[a-z][a-zA-Z0-9_]*\s*::' | grep -v '^+++' || true)
+    
+    # Check for commented-out imports in PureScript
+    commented_ps_imports=$(git diff --cached -- '*.purs' | grep -E '^\+\s*--\s*import\s' | grep -v '^+++' || true)
+    
+    # Check for block comments around code (Haskell)
+    # This catches {- import ... -} style
+    commented_blocks=$(git diff --cached -- '*.hs' | grep -E '^\+\s*\{-.*import' | grep -v '^+++' || true)
+    
+    # Check for TODO/FIXME markers that indicate incomplete work being hidden
+    todo_comments=$(git diff --cached -- '*.hs' '*.purs' | grep -E '^\+.*--.*(TODO|FIXME|HACK|XXX).*import|^\+.*--.*(TODO|FIXME|HACK|XXX).*::|^\+.*--.*(TODO|FIXME|HACK|XXX).*implement' | grep -v '^+++' || true)
+    
+    local found_issues=0
+    
+    if [[ -n "$commented_imports" ]]; then
+        echo -e "${RED}════════════════════════════════════════════════════════════════════════════════${NC}"
+        echo -e "${RED}ERROR: COMMENTED-OUT IMPORTS DETECTED${NC}"
+        echo -e "${RED}════════════════════════════════════════════════════════════════════════════════${NC}"
+        echo ""
+        echo -e "${YELLOW}The following imports were commented out instead of implemented:${NC}"
+        echo "$commented_imports"
+        found_issues=1
+    fi
+    
+    if [[ -n "$commented_functions" ]]; then
+        echo -e "${RED}════════════════════════════════════════════════════════════════════════════════${NC}"
+        echo -e "${RED}ERROR: COMMENTED-OUT FUNCTION SIGNATURES DETECTED${NC}"
+        echo -e "${RED}════════════════════════════════════════════════════════════════════════════════${NC}"
+        echo ""
+        echo -e "${YELLOW}The following function signatures were commented out:${NC}"
+        echo "$commented_functions"
+        found_issues=1
+    fi
+    
+    if [[ -n "$commented_ps_imports" ]]; then
+        echo -e "${RED}════════════════════════════════════════════════════════════════════════════════${NC}"
+        echo -e "${RED}ERROR: COMMENTED-OUT PURESCRIPT IMPORTS DETECTED${NC}"
+        echo -e "${RED}════════════════════════════════════════════════════════════════════════════════${NC}"
+        echo ""
+        echo -e "${YELLOW}The following PureScript imports were commented out:${NC}"
+        echo "$commented_ps_imports"
+        found_issues=1
+    fi
+    
+    if [[ -n "$commented_blocks" ]]; then
+        echo -e "${RED}════════════════════════════════════════════════════════════════════════════════${NC}"
+        echo -e "${RED}ERROR: BLOCK-COMMENTED CODE DETECTED${NC}"
+        echo -e "${RED}════════════════════════════════════════════════════════════════════════════════${NC}"
+        echo ""
+        echo -e "${YELLOW}The following code was block-commented:${NC}"
+        echo "$commented_blocks"
+        found_issues=1
+    fi
+    
+    if [[ -n "$todo_comments" ]]; then
+        echo -e "${RED}════════════════════════════════════════════════════════════════════════════════${NC}"
+        echo -e "${RED}ERROR: TODO/FIXME MARKERS HIDING INCOMPLETE CODE${NC}"
+        echo -e "${RED}════════════════════════════════════════════════════════════════════════════════${NC}"
+        echo ""
+        echo -e "${YELLOW}The following TODO markers indicate incomplete implementation:${NC}"
+        echo "$todo_comments"
+        found_issues=1
+    fi
+    
+    if [[ $found_issues -eq 1 ]]; then
+        echo ""
+        echo -e "${YELLOW}COMPASS RULE: COMMENTING OUT CODE IS JUST DELETION WITH EXTRA STEPS${NC}"
+        echo ""
+        echo "Commenting out code instead of implementing it is FORBIDDEN because:"
+        echo "  1. It hides incompleteness instead of completing the work"
+        echo "  2. Future AI agents won't know the code was intentional"
+        echo "  3. The next person will delete the 'dead' comments"
+        echo "  4. It creates technical debt that compounds"
+        echo ""
+        echo "The ONLY acceptable responses to 'unused' warnings:"
+        echo "  1. IMPLEMENT the missing functionality that uses the import/function"
+        echo "  2. If truly not needed, discuss with the team first"
+        echo ""
+        echo -e "${RED}════════════════════════════════════════════════════════════════════════════════${NC}"
+        return 1
+    fi
+    
+    return 0
+}
+
+# ════════════════════════════════════════════════════════════════════════════════
+# Check 7: Detect underscore-prefixed parameters (lazy unused suppression)
+# ════════════════════════════════════════════════════════════════════════════════
+
+check_underscore_params() {
+    local underscore_params
+    # Check for newly added underscore-prefixed parameters that silence unused warnings
+    # Pattern: adding _param or _unused or _ignored etc.
+    underscore_params=$(git diff --cached -- '*.hs' | grep -E '^\+.*\(_[a-z][a-zA-Z0-9_]*\s|^\+.*\\s_[a-z][a-zA-Z0-9_]*\s' | grep -v '^+++' | grep -v '_capNo\|_capURing\|_capBatch' || true)
+    
+    if [[ -n "$underscore_params" ]]; then
+        echo -e "${YELLOW}════════════════════════════════════════════════════════════════════════════════${NC}"
+        echo -e "${YELLOW}WARNING: UNDERSCORE-PREFIXED PARAMETERS DETECTED${NC}"
+        echo -e "${YELLOW}════════════════════════════════════════════════════════════════════════════════${NC}"
+        echo ""
+        echo -e "${YELLOW}The following underscore-prefixed parameters were added:${NC}"
+        echo "$underscore_params"
+        echo ""
+        echo "Prefixing unused parameters with _ silences warnings but doesn't fix the issue."
+        echo "If a parameter is unused, the function may be incomplete."
+        echo ""
+        echo "Exceptions: Record field prefixes like _capNo are acceptable (internal fields)."
+        echo ""
+        echo -e "${YELLOW}════════════════════════════════════════════════════════════════════════════════${NC}"
+        # Warning only, not a blocker (some uses are legitimate)
+    fi
+    return 0
+}
+
+# ════════════════════════════════════════════════════════════════════════════════
+# Run all checks
+# ════════════════════════════════════════════════════════════════════════════════
+
+failed=0
+
+check_removed_imports || failed=1
+check_removed_ps_imports || failed=1
+check_warning_suppressions || failed=1
+check_suspicious_deletions || true  # Warning only
+check_forbidden_patterns || failed=1
+check_commented_out_code || failed=1
+check_underscore_params || true  # Warning only
+
+if [[ $failed -eq 1 ]]; then
+    echo ""
+    echo -e "${RED}Pre-commit checks FAILED. Please fix the issues above.${NC}"
+    exit 1
+fi
+
+echo -e "${GREEN}All pre-commit checks passed!${NC}"
+exit 0
