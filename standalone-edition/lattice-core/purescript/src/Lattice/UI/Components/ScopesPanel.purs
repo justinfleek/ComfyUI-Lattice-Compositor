@@ -18,14 +18,24 @@ module Lattice.UI.Components.ScopesPanel
 
 import Prelude
 
+import Data.Array as Array
+import Data.Foldable (for_)
 import Data.Maybe (Maybe(..))
 import Effect.Aff.Class (class MonadAff)
+import Effect.Class (liftEffect)
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
+import Halogen.HTML.Properties.ARIA as ARIA
+import Web.Event.Event as Event
+import Web.HTML as HTML
+import Web.HTML.HTMLElement as HTMLElement
+import Web.HTML.Window as Window
+import Web.UIEvent.KeyboardEvent as KE
 
 import Lattice.UI.Core (cls, textMuted)
+import Lattice.UI.Utils (getElementById)
 
 -- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 --                                                                     // types
@@ -102,6 +112,7 @@ type State =
   , activeScope :: ScopeType
   , settings :: ScopeSettings
   , isAnalyzing :: Boolean
+  , baseId :: String
   }
 
 data Action
@@ -112,6 +123,7 @@ data Action
   | ToggleGuides
   | TogglePeaks
   | SetWaveformMode WaveformMode
+  | HandleKeyDown Int KE.KeyboardEvent  -- Index of focused tab
 
 type Slots = ()
 
@@ -141,6 +153,7 @@ initialState input =
       , waveformMode: WaveformLuma
       }
   , isAnalyzing: false
+  , baseId: "lattice-scopes"
   }
 
 -- ════════════════════════════════════════════════════════════════════════════
@@ -171,35 +184,61 @@ renderHeader _state =
         [ HH.text "Scopes" ]
     ]
 
+-- | All available scope types for keyboard navigation
+allScopeTypes :: Array ScopeType
+allScopeTypes = [ ScopeWaveform, ScopeVectorscope, ScopeHistogram, ScopeRGBParade ]
+
 renderScopeSelector :: forall m. State -> H.ComponentHTML Action Slots m
 renderScopeSelector state =
   HH.div
     [ cls [ "scope-selector" ]
     , HP.attr (HH.AttrName "style") selectorStyle
+    , HP.attr (HH.AttrName "role") "tablist"
+    , HP.attr (HH.AttrName "aria-label") "Scope type selector"
+    , HP.attr (HH.AttrName "aria-orientation") "horizontal"
     ]
-    [ scopeButton ScopeWaveform state.activeScope
-    , scopeButton ScopeVectorscope state.activeScope
-    , scopeButton ScopeHistogram state.activeScope
-    , scopeButton ScopeRGBParade state.activeScope
-    ]
+    (Array.mapWithIndex (scopeButton state) allScopeTypes)
 
-scopeButton :: forall m. ScopeType -> ScopeType -> H.ComponentHTML Action Slots m
-scopeButton scopeType activeScope =
+scopeButton :: forall m. State -> Int -> ScopeType -> H.ComponentHTML Action Slots m
+scopeButton state idx scopeType =
+  let
+    isSelected = scopeType == state.activeScope
+    tabId = state.baseId <> "-tab-" <> show scopeType
+    panelId = state.baseId <> "-panel-" <> show scopeType
+  in
   HH.button
     [ cls [ "scope-btn" ]
-    , HP.attr (HH.AttrName "style") (scopeButtonStyle (scopeType == activeScope))
+    , HP.type_ HP.ButtonButton
+    , HP.id tabId
+    , HP.tabIndex (if isSelected then 0 else (-1))
+    , HP.attr (HH.AttrName "style") (scopeButtonStyle isSelected)
     , HP.attr (HH.AttrName "title") (scopeLabel scopeType)
+    , HP.attr (HH.AttrName "role") "tab"
+    , ARIA.selected (show isSelected)
+    , ARIA.controls panelId
+    , HP.attr (HH.AttrName "data-state") (if isSelected then "active" else "inactive")
     , HE.onClick \_ -> SetScopeType scopeType
+    , HE.onKeyDown (HandleKeyDown idx)
     ]
-    [ HH.span [ cls [ "scope-icon" ] ] [ HH.text (scopeIcon scopeType) ]
+    [ HH.span [ cls [ "scope-icon" ], HP.attr (HH.AttrName "aria-hidden") "true" ] 
+        [ HH.text (scopeIcon scopeType) ]
     , HH.span [ cls [ "scope-label" ] ] [ HH.text (scopeLabel scopeType) ]
     ]
 
 renderScopeDisplay :: forall m. State -> H.ComponentHTML Action Slots m
 renderScopeDisplay state =
+  let
+    tabId = state.baseId <> "-tab-" <> show state.activeScope
+    panelId = state.baseId <> "-panel-" <> show state.activeScope
+  in
   HH.div
     [ cls [ "scope-display" ]
+    , HP.id panelId
     , HP.attr (HH.AttrName "style") displayStyle
+    , HP.attr (HH.AttrName "role") "tabpanel"
+    , HP.tabIndex 0
+    , ARIA.labelledBy tabId
+    , HP.attr (HH.AttrName "data-state") "active"
     ]
     [ case state.imageData of
         Nothing -> renderNoImage
@@ -544,3 +583,33 @@ handleAction = case _ of
   
   SetWaveformMode mode -> do
     H.modify_ \s -> s { settings = s.settings { waveformMode = mode } }
+  
+  HandleKeyDown currentIdx ke -> do
+    state <- H.get
+    let
+      key = KE.key ke
+      scopeCount = Array.length allScopeTypes
+      
+      -- Navigate based on key
+      nextIdx = case key of
+        "ArrowRight" -> Just ((currentIdx + 1) `mod` scopeCount)
+        "ArrowLeft" -> Just ((currentIdx - 1 + scopeCount) `mod` scopeCount)
+        "Home" -> Just 0
+        "End" -> Just (scopeCount - 1)
+        _ -> Nothing
+
+    for_ nextIdx \idx -> do
+      liftEffect $ Event.preventDefault (KE.toEvent ke)
+      case Array.index allScopeTypes idx of
+        Just scopeType -> do
+          -- Focus the tab
+          doc <- liftEffect $ HTML.window >>= Window.document
+          let tabId = state.baseId <> "-tab-" <> show scopeType
+          mEl <- liftEffect $ getElementById tabId doc
+          for_ mEl \el -> liftEffect $ HTMLElement.focus el
+          
+          -- Automatically select on focus (automatic activation mode)
+          handleAction (SetScopeType scopeType)
+        Nothing -> pure unit
+
+

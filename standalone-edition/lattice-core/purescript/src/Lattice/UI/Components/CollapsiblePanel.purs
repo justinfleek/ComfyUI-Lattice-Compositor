@@ -21,6 +21,8 @@ import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
+import Halogen.HTML.Properties.ARIA as ARIA
+import Web.UIEvent.KeyboardEvent as KE
 
 import Lattice.UI.Core (cls)
 
@@ -55,13 +57,14 @@ type Slot id = H.Slot Query Output id
 type State =
   { config :: CollapsibleConfig
   , isExpanded :: Boolean
+  , instanceId :: String  -- Unique ID for ARIA associations
   }
 
 data Action
   = Initialize
   | Receive Input
   | ToggleExpand
-  | HandleKeyDown String
+  | HandleKeyDown KE.KeyboardEvent
 
 type Slots = ()
 
@@ -85,7 +88,12 @@ initialState :: Input -> State
 initialState input =
   { config: input.config
   , isExpanded: input.config.defaultExpanded
+  , instanceId: "collapsible-" <> sanitizeTitle input.config.title
   }
+
+-- | Convert title to a valid DOM ID
+sanitizeTitle :: String -> String
+sanitizeTitle = map \c -> if c == ' ' then '-' else c
 
 -- ════════════════════════════════════════════════════════════════════════════
 --                                                                    // render
@@ -104,15 +112,23 @@ render state =
 
 renderHeader :: forall m. State -> H.ComponentHTML Action Slots m
 renderHeader state =
+  let
+    headerId = state.instanceId <> "-header"
+    contentId = state.instanceId <> "-content"
+  in
   HH.div
     [ cls [ "lattice-collapsible-header" ]
+    , HP.id headerId
     , HP.attr (HH.AttrName "style") (headerStyle state.config.disabled)
     , HP.attr (HH.AttrName "role") "button"
-    , HP.attr (HH.AttrName "tabindex") "0"
-    , HP.attr (HH.AttrName "aria-expanded") (if state.isExpanded then "true" else "false")
-    , HP.attr (HH.AttrName "aria-controls") "collapsible-content"
-    , HP.attr (HH.AttrName "aria-disabled") (if state.config.disabled then "true" else "false")
+    , HP.tabIndex 0
+    , ARIA.expanded (show state.isExpanded)
+    , ARIA.controls contentId
+    , ARIA.disabled (show state.config.disabled)
+    , HP.attr (HH.AttrName "data-state") (if state.isExpanded then "open" else "closed")
+    , HP.attr (HH.AttrName "data-disabled") (if state.config.disabled then "true" else "false")
     , HE.onClick \_ -> ToggleExpand
+    , HE.onKeyDown HandleKeyDown
     ]
     [ -- Expand/collapse icon
       HH.span 
@@ -128,6 +144,7 @@ renderHeader state =
           HH.span 
             [ cls [ "lattice-collapsible-icon" ]
             , HP.attr (HH.AttrName "style") iconStyle
+            , HP.attr (HH.AttrName "aria-hidden") "true"
             ] 
             [ HH.text iconText ]
         Nothing -> HH.text ""
@@ -152,13 +169,19 @@ renderHeader state =
 
 renderContent :: forall m. State -> H.ComponentHTML Action Slots m
 renderContent state =
+  let
+    headerId = state.instanceId <> "-header"
+    contentId = state.instanceId <> "-content"
+  in
   if state.isExpanded
     then
       HH.div
         [ cls [ "lattice-collapsible-content" ]
         , HP.attr (HH.AttrName "style") contentStyle
-        , HP.id "collapsible-content"
+        , HP.id contentId
         , HP.attr (HH.AttrName "role") "region"
+        , ARIA.labelledBy headerId
+        , HP.attr (HH.AttrName "data-state") "open"
         ]
         [ HH.div [ cls [ "lattice-collapsible-inner" ], HP.attr (HH.AttrName "style") innerStyle ]
             [ -- Content is passed via slot/children pattern
@@ -246,8 +269,9 @@ handleAction = case _ of
         H.modify_ _ { isExpanded = newExpanded }
         H.raise (if newExpanded then Expanded else Collapsed)
   
-  HandleKeyDown key ->
-    case key of
+  HandleKeyDown ke ->
+    let key = KE.key ke
+    in case key of
       "Enter" -> handleAction ToggleExpand
       " " -> handleAction ToggleExpand  -- Space
       _ -> pure unit

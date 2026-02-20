@@ -21,8 +21,10 @@ import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
+import Halogen.HTML.Properties.ARIA as ARIA
 
 import Lattice.UI.Core (cls, textMuted)
+import Lattice.UI.Utils as Utils
 
 -- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 --                                                                     // types
@@ -306,9 +308,18 @@ renderSourceSection state =
     [ cls [ "section" ]
     , HP.attr (HH.AttrName "style") sectionStyle
     ]
-    [ HH.div [ cls [ "section-header" ], HP.attr (HH.AttrName "style") sectionHeaderStyle ] 
+    [ HH.div 
+        [ cls [ "section-header" ]
+        , HP.attr (HH.AttrName "style") sectionHeaderStyle
+        , HP.id "source-label"
+        ] 
         [ HH.text "Source" ]
-    , HH.div [ cls [ "source-options" ], HP.attr (HH.AttrName "style") buttonGroupStyle ]
+    , HH.div 
+        [ cls [ "source-options" ]
+        , HP.attr (HH.AttrName "style") buttonGroupStyle
+        , HP.attr (HH.AttrName "role") "group"
+        , ARIA.labelledBy "source-label"
+        ]
         [ sourceButton "Selected Layer" SourceLayer state.sourceType
         , sourceButton "Canvas Frame" SourceCanvas state.sourceType
         , sourceButton "Upload File" SourceFile state.sourceType
@@ -318,9 +329,14 @@ renderSourceSection state =
 
 sourceButton :: forall m. String -> SourceType -> SourceType -> H.ComponentHTML Action Slots m
 sourceButton labelText sourceType activeSource =
+  let isSelected = sourceType == activeSource
+  in
   HH.button
     [ cls [ "source-btn" ]
-    , HP.attr (HH.AttrName "style") (optionButtonStyle (sourceType == activeSource))
+    , HP.type_ HP.ButtonButton
+    , HP.attr (HH.AttrName "style") (optionButtonStyle isSelected)
+    , ARIA.pressed (show isSelected)
+    , HP.attr (HH.AttrName "data-state") (if isSelected then "active" else "inactive")
     , HE.onClick \_ -> SetSourceType sourceType
     ]
     [ HH.text labelText ]
@@ -356,9 +372,18 @@ renderGenerationTypeSection state =
     [ cls [ "section" ]
     , HP.attr (HH.AttrName "style") sectionStyle
     ]
-    [ HH.div [ cls [ "section-header" ], HP.attr (HH.AttrName "style") sectionHeaderStyle ] 
+    [ HH.div 
+        [ cls [ "section-header" ]
+        , HP.attr (HH.AttrName "style") sectionHeaderStyle
+        , HP.id "gen-type-label"
+        ] 
         [ HH.text "Generation Type" ]
-    , HH.div [ cls [ "generation-types" ], HP.attr (HH.AttrName "style") buttonGroupStyle ]
+    , HH.div 
+        [ cls [ "generation-types" ]
+        , HP.attr (HH.AttrName "style") buttonGroupStyle
+        , HP.attr (HH.AttrName "role") "group"
+        , ARIA.labelledBy "gen-type-label"
+        ]
         [ genTypeButton "⬛" "Depth" "Estimate depth from image" GenDepth state.generationType
         , genTypeButton "🔮" "Normal" "Generate normal map" GenNormal state.generationType
         , genTypeButton "✂" "Segment" "Segment objects" GenSegment state.generationType
@@ -367,13 +392,18 @@ renderGenerationTypeSection state =
 
 genTypeButton :: forall m. String -> String -> String -> GenerationType -> GenerationType -> H.ComponentHTML Action Slots m
 genTypeButton iconText labelText description genType activeType =
+  let isSelected = genType == activeType
+  in
   HH.button
     [ cls [ "gen-type-btn" ]
-    , HP.attr (HH.AttrName "style") (genTypeButtonStyle (genType == activeType))
+    , HP.type_ HP.ButtonButton
+    , HP.attr (HH.AttrName "style") (genTypeButtonStyle isSelected)
     , HP.attr (HH.AttrName "title") description
+    , ARIA.pressed (show isSelected)
+    , HP.attr (HH.AttrName "data-state") (if isSelected then "active" else "inactive")
     , HE.onClick \_ -> SetGenerationType genType
     ]
-    [ HH.span [ cls [ "type-icon" ], HP.attr (HH.AttrName "style") typeIconStyle ] 
+    [ HH.span [ cls [ "type-icon" ], HP.attr (HH.AttrName "style") typeIconStyle, HP.attr (HH.AttrName "aria-hidden") "true" ] 
         [ HH.text iconText ]
     , HH.span [ cls [ "type-label" ], HP.attr (HH.AttrName "style") typeLabelStyle ] 
         [ HH.text labelText ]
@@ -842,47 +872,16 @@ handleAction = case _ of
 -- ════════════════════════════════════════════════════════════════════════════
 
 -- | Round a number to the nearest integer
--- | Uses JavaScript Math.round via Data.Int.round
+-- | Uses Data.Int.round from standard library
 round :: Number -> Int
-round n = 
-  let 
-    -- Add 0.5 and floor to get rounding behavior
-    floored = floorNum (n + 0.5)
-  in
-    floored
+round = Utils.round
 
 -- | Floor a number to an integer (toward negative infinity)
+-- | Uses Data.Int.floor from standard library
 floorNum :: Number -> Int
-floorNum n = 
-  -- Safe floor implementation using JS Math.floor
-  case compare n 0.0 of
-    LT -> negate (ceilPositive (negate n))
-    EQ -> 0
-    GT -> floorPositive n
-  where
-    -- For positive numbers, truncation is floor
-    floorPositive :: Number -> Int
-    floorPositive x = 
-      let intPart = toIntSafe x
-      in intPart
-    
-    -- For converting to int, we need ceiling for negative numbers
-    ceilPositive :: Number -> Int
-    ceilPositive x =
-      let intPart = toIntSafe x
-          diff = x - toNumber intPart
-      in if diff > 0.0 then intPart + 1 else intPart
-    
-    toIntSafe :: Number -> Int
-    toIntSafe x = 
-      -- Clamp to safe integer range
-      if x >= 2147483647.0 then 2147483647
-      else if x <= (-2147483648.0) then (-2147483648)
-      else unsafeFloor x
+floorNum = Utils.floor
 
 -- | Convert Int to Number
+-- | Uses Data.Int.toNumber from standard library
 toNumber :: Int -> Number
-toNumber = toNumberImpl
-
-foreign import toNumberImpl :: Int -> Number
-foreign import unsafeFloor :: Number -> Int
+toNumber = Utils.toNumber

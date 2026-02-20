@@ -15,16 +15,25 @@ module Lattice.UI.Components.EffectsPanel
 import Prelude
 
 import Data.Array (concat, elem, filter, length, snoc)
-import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Array as Array
+import Data.Foldable (for_)
+import Data.Maybe (Maybe(..))
 import Data.String (Pattern(..), contains, toLower)
-import Data.Tuple (Tuple(..))
 import Effect.Aff.Class (class MonadAff)
+import Effect.Class (liftEffect)
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
+import Halogen.HTML.Properties.ARIA as ARIA
+import Web.Event.Event as Event
+import Web.HTML as HTML
+import Web.HTML.HTMLElement as HTMLElement
+import Web.HTML.Window as Window
+import Web.UIEvent.KeyboardEvent as KE
 
 import Lattice.UI.Core (cls, textMuted)
+import Lattice.UI.Utils (getElementById)
 
 -- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 --                                                                     // types
@@ -124,6 +133,7 @@ type State =
   , expandedCategories :: Array EffectCategory
   , expandedPresetCategories :: Array String
   , favorites :: Array String
+  , baseId :: String
   }
 
 data Tab
@@ -132,6 +142,16 @@ data Tab
   | TabFavorites
 
 derive instance eqTab :: Eq Tab
+
+instance showTab :: Show Tab where
+  show = case _ of
+    TabEffects -> "effects"
+    TabPresets -> "presets"
+    TabFavorites -> "favorites"
+
+-- | All available tabs for keyboard navigation
+allTabs :: Array Tab
+allTabs = [ TabEffects, TabPresets, TabFavorites ]
 
 data Action
   = Initialize
@@ -143,6 +163,7 @@ data Action
   | ToggleFavorite String
   | ApplyEffect String
   | ApplyPreset AnimationPreset
+  | HandleTabKeyDown Int KE.KeyboardEvent
 
 type Slots = ()
 
@@ -169,6 +190,7 @@ initialState input =
   , expandedCategories: [ BlurSharpen, ColorCorrection ]
   , expandedPresetCategories: [ "Fade", "Scale" ]
   , favorites: []
+  , baseId: "lattice-effects"
   }
 
 -- ════════════════════════════════════════════════════════════════════════════
@@ -226,29 +248,51 @@ renderTabs state =
     [ cls [ "lattice-tabs" ]
     , HP.attr (HH.AttrName "role") "tablist"
     , HP.attr (HH.AttrName "aria-label") "Effects panel tabs"
+    , HP.attr (HH.AttrName "aria-orientation") "horizontal"
     , HP.attr (HH.AttrName "style") tabsStyle
     ]
-    [ renderTabButton "Effects" TabEffects state.activeTab
-    , renderTabButton "Presets" TabPresets state.activeTab
-    , renderTabButton "Favorites" TabFavorites state.activeTab
-    ]
+    (Array.mapWithIndex (renderTabButton state) allTabs)
 
-renderTabButton :: forall m. String -> Tab -> Tab -> H.ComponentHTML Action Slots m
-renderTabButton labelText tab activeTab =
+renderTabButton :: forall m. State -> Int -> Tab -> H.ComponentHTML Action Slots m
+renderTabButton state idx tab =
+  let
+    isSelected = tab == state.activeTab
+    tabId = state.baseId <> "-tab-" <> show tab
+    panelId = state.baseId <> "-panel-" <> show tab
+    labelText = case tab of
+      TabEffects -> "Effects"
+      TabPresets -> "Presets"
+      TabFavorites -> "Favorites"
+  in
   HH.button
     [ cls [ "lattice-tab" ]
-    , HP.attr (HH.AttrName "style") (tabButtonStyle (tab == activeTab))
+    , HP.type_ HP.ButtonButton
+    , HP.id tabId
+    , HP.tabIndex (if isSelected then 0 else (-1))
+    , HP.attr (HH.AttrName "style") (tabButtonStyle isSelected)
     , HP.attr (HH.AttrName "role") "tab"
-    , HP.attr (HH.AttrName "aria-selected") (if tab == activeTab then "true" else "false")
+    , ARIA.selected (show isSelected)
+    , ARIA.controls panelId
+    , HP.attr (HH.AttrName "data-state") (if isSelected then "active" else "inactive")
     , HE.onClick \_ -> SetTab tab
+    , HE.onKeyDown (HandleTabKeyDown idx)
     ]
     [ HH.text labelText ]
 
 renderTabContent :: forall m. State -> H.ComponentHTML Action Slots m
 renderTabContent state =
+  let
+    tabId = state.baseId <> "-tab-" <> show state.activeTab
+    panelId = state.baseId <> "-panel-" <> show state.activeTab
+  in
   HH.div
     [ cls [ "lattice-tab-content" ]
+    , HP.id panelId
     , HP.attr (HH.AttrName "style") tabContentStyle
+    , HP.attr (HH.AttrName "role") "tabpanel"
+    , HP.tabIndex 0
+    , ARIA.labelledBy tabId
+    , HP.attr (HH.AttrName "data-state") "active"
     ]
     [ case state.activeTab of
         TabEffects -> renderEffectsList state
@@ -776,3 +820,33 @@ handleAction = case _ of
     case state.selectedLayerId of
       Just layerId -> H.raise (PresetApplied layerId preset.id)
       Nothing -> pure unit
+  
+  HandleTabKeyDown currentIdx ke -> do
+    state <- H.get
+    let
+      key = KE.key ke
+      tabCount = Array.length allTabs
+      
+      -- Navigate based on key
+      nextIdx = case key of
+        "ArrowRight" -> Just ((currentIdx + 1) `mod` tabCount)
+        "ArrowLeft" -> Just ((currentIdx - 1 + tabCount) `mod` tabCount)
+        "Home" -> Just 0
+        "End" -> Just (tabCount - 1)
+        _ -> Nothing
+
+    for_ nextIdx \idx -> do
+      liftEffect $ Event.preventDefault (KE.toEvent ke)
+      case Array.index allTabs idx of
+        Just tab -> do
+          -- Focus the tab
+          doc <- liftEffect $ HTML.window >>= Window.document
+          let tabId = state.baseId <> "-tab-" <> show tab
+          mEl <- liftEffect $ getElementById tabId doc
+          for_ mEl \el -> liftEffect $ HTMLElement.focus el
+          
+          -- Automatically select on focus (automatic activation mode)
+          handleAction (SetTab tab)
+        Nothing -> pure unit
+
+
