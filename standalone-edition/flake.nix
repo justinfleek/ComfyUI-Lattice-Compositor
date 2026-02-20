@@ -4,9 +4,26 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-parts.url = "github:hercules-ci/flake-parts";
+    purs-nix = {
+      url = "github:purs-nix/purs-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     purescript-overlay = {
       url = "github:thomashoneyman/purescript-overlay";
       inputs.nixpkgs.follows = "nixpkgs";
+    };
+    haskemathesis = {
+      url = "github:weyl-ai/haskemathesis";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    # PureScript frontend libraries (non-flake sources for purs-nix)
+    hydrogen = {
+      url = "github:straylight-software/hydrogen";
+      flake = false;
+    };
+    halogen-html-renderer = {
+      url = "github:straylight-software/halogen-html-renderer";
+      flake = false;
     };
   };
 
@@ -14,7 +31,11 @@
     inputs@{
       flake-parts,
       nixpkgs,
+      purs-nix,
       purescript-overlay,
+      haskemathesis,
+      hydrogen,
+      halogen-html-renderer,
       ...
     }:
     flake-parts.lib.mkFlake { inherit inputs; } {
@@ -44,8 +65,94 @@
             ps.scipy
           ]);
 
-          # UI static files for serving
-          uiStatic = ./lattice-core/purescript/public;
+          # purs-nix setup
+          ps = purs-nix {
+            inherit system;
+            pkgs = nixpkgs.legacyPackages.${system};
+          };
+
+          # PureScript package definition using purs-nix
+          lattice-ps = ps.purs {
+            dir = ./lattice-core/purescript;
+            srcs = [ "src" ];
+            dependencies = with ps.ps-pkgs; [
+              aff
+              aff-promise
+              arraybuffer-types
+              argonaut-codecs
+              argonaut-core
+              argonaut-generic
+              arrays
+              canvas
+              console
+              datetime
+              effect
+              either
+              enums
+              exceptions
+              foldable-traversable
+              foreign
+              foreign-object
+              gen
+              halogen
+              halogen-subscriptions
+              halogen-vdom
+              integers
+              js-timers
+              lists
+              maybe
+              media-types
+              newtype
+              now
+              nullable
+              numbers
+              ordered-collections
+              partial
+              prelude
+              quickcheck
+              random
+              refs
+              safe-coerce
+              spec
+              spec-discovery
+              spec-quickcheck
+              string-parsers
+              strings
+              transformers
+              tuples
+              typelevel-prelude
+              uuid
+              web-dom
+              web-events
+              web-file
+              web-html
+              web-socket
+              web-storage
+              web-uievents
+            ];
+          };
+
+          # Custom Haskell package set with fixes for broken packages
+          hsPkgs = pkgs.haskellPackages.override {
+            overrides = hself: hsuper: {
+              # http2-tls is marked broken in nixpkgs, but works fine
+              http2-tls = pkgs.haskell.lib.markUnbroken hsuper.http2-tls;
+              # Use haskemathesis from flake input
+              haskemathesis = haskemathesis.packages.${system}.default;
+            };
+          };
+
+          # PureScript UI bundle - purs-nix handles compilation + esbuild bundling
+          lattice-bundle = lattice-ps.bundle {
+            esbuild = {
+              format = "iife";
+              minify = true;
+              outfile = "main.js";
+            };
+            main = true;
+            module = "Lattice.UI.Main";
+          };
+
         in
         {
           devShells.default = pkgs.mkShell {
@@ -82,18 +189,64 @@
           };
 
           # Haskell packages built with cabal
-          packages.lattice = pkgs.haskellPackages.callCabal2nix "lattice" ./. { };
+          packages.lattice = hsPkgs.callCabal2nix "lattice" ./. { };
 
           # Armitage build system CLI
-          packages.armitage = pkgs.haskellPackages.callCabal2nix "lattice" ./. { };
+          packages.armitage = hsPkgs.callCabal2nix "lattice" ./. { };
 
-          packages.ui = pkgs.buildNpmPackage {
+          # PureScript UI - built from source using purs-nix
+          packages.ui = pkgs.stdenvNoCC.mkDerivation {
             pname = "lattice-compositor-ui";
             version = "0.1.0";
-            src = ./ui;
-            npmDepsHash = "";
-            buildPhase = "npm run build";
-            installPhase = "cp -r dist $out";
+            src = ./lattice-core/purescript;
+
+            # No build phase needed - purs-nix already bundled the JS
+            dontBuild = true;
+
+            installPhase = ''
+                            runHook preInstall
+                            mkdir -p $out
+
+                            # Copy the bundled JS from purs-nix (bundle is a single file)
+                            cp ${lattice-bundle} $out/main.js
+
+                            # Copy static assets from public/
+                            if [ -d public ]; then
+                              cp public/index.html $out/ 2>/dev/null || true
+                              cp public/styles.css $out/ 2>/dev/null || true
+                            fi
+
+                            # Create index.html if not present
+                            if [ ! -f $out/index.html ]; then
+                              cat > $out/index.html << 'EOF'
+              <!DOCTYPE html>
+              <html lang="en">
+              <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Lattice Compositor</title>
+                <link rel="stylesheet" href="styles.css">
+              </head>
+              <body>
+                <div id="app"></div>
+                <script src="main.js"></script>
+              </body>
+              </html>
+              EOF
+                            fi
+
+                            # Create empty styles.css if not present
+                            if [ ! -f $out/styles.css ]; then
+                              touch $out/styles.css
+                            fi
+
+                            runHook postInstall
+            '';
+
+            meta = {
+              description = "Lattice Compositor UI - PureScript/Halogen";
+              license = pkgs.lib.licenses.mit;
+            };
           };
 
           # Default package
@@ -121,7 +274,7 @@
                         port = 8080;
                       }
                     ];
-                    root = "${uiStatic}";
+                    root = "${config.packages.ui}";
                     locations."/" = {
                       tryFiles = "$uri $uri/ /index.html";
                     };

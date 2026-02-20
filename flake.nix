@@ -70,14 +70,8 @@
             ];
           };
 
-          packages.ui = pkgs.buildNpmPackage {
-            pname = "lattice-compositor-ui";
-            version = "0.1.0";
-            src = ./ui;
-            npmDepsHash = "";
-            buildPhase = "npm run build";
-            installPhase = "cp -r dist $out";
-          };
+          # Note: Main packages are in standalone-edition/flake.nix
+          # This flake provides the dev shell for the monorepo root
         };
     };
 }

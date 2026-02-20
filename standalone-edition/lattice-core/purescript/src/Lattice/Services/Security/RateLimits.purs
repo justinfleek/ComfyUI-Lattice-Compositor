@@ -35,7 +35,7 @@ import Effect (Effect)
 import Effect.Ref (Ref)
 import Effect.Ref as Ref
 import Effect.Console (log, warn)
-import Effect.Now (nowDate)
+import Effect.Now (nowDate, nowDateTime)
 import Effect.Aff (launchAff_)
 import Data.Array (filter, mapMaybe)
 import Data.Array as Array
@@ -43,9 +43,11 @@ import Data.Argonaut.Core (Json, stringify, jsonEmptyObject)
 import Data.Argonaut.Decode (decodeJson)
 import Data.Argonaut.Encode (encodeJson)
 import Data.Argonaut.Parser (jsonParser)
-import Data.DateTime (DateTime, date, time, Date, Time, hour, minute, second)
+import Data.Date (Date, year, month, day, adjust)
+import Data.DateTime (DateTime, date, time, Time, hour, minute, second)
 import Data.DateTime.Instant (toDateTime, fromDateTime)
 import Data.Enum (fromEnum)
+import Data.Time.Duration (Days(..))
 import Data.Either (Either(..), hush)
 import Data.Foldable (for_)
 import Data.Int (toNumber, floor)
@@ -54,7 +56,8 @@ import Data.Map as Map
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Set (Set)
 import Data.Set as Set
-import Data.String (joinWith)
+import Data.String (joinWith, Pattern(..), indexOf, drop, take)
+import Data.String.CodeUnits (toCharArray)
 import Data.Tuple (Tuple(..))
 import Data.Generic.Rep (class Generic)
 import Data.Show.Generic (genericShow)
@@ -110,23 +113,61 @@ type StoredRateLimits =
 --                                                           // date/time helpers
 -- ────────────────────────────────────────────────────────────────────────────
 
+-- | Pad a number to 2 digits with leading zero
+padTwo :: Int -> String
+padTwo n = if n < 10 then "0" <> show n else show n
+
+-- | Pad a number to 4 digits with leading zeros (for year)
+padFour :: Int -> String
+padFour n
+  | n < 10 = "000" <> show n
+  | n < 100 = "00" <> show n
+  | n < 1000 = "0" <> show n
+  | otherwise = show n
+
+-- | Format a Date as YYYY-MM-DD
+formatDateYYYYMMDD :: Date -> String
+formatDateYYYYMMDD d =
+  padFour (fromEnum (year d)) <> "-" <>
+  padTwo (fromEnum (month d)) <> "-" <>
+  padTwo (fromEnum (day d))
+
+-- | Format a DateTime as ISO 8601 string
+formatDateTimeISO :: DateTime -> String
+formatDateTimeISO dt =
+  let d = date dt
+      t = time dt
+  in formatDateYYYYMMDD d <> "T" <>
+     padTwo (fromEnum (hour t)) <> ":" <>
+     padTwo (fromEnum (minute t)) <> ":" <>
+     padTwo (fromEnum (second t)) <> "Z"
+
 -- | Current UTC date string (YYYY-MM-DD)
 getCurrentDateUTC :: Effect String
 getCurrentDateUTC = do
-  -- Simple date string - in real app would use proper date formatting
-  pure "2026-02-19"  -- TODO: implement with Effect.Now
+  d <- nowDate
+  pure (formatDateYYYYMMDD d)
 
 -- | Tomorrow midnight UTC as ISO string
 getTomorrowMidnightUTC :: Effect String  
-getTomorrowMidnightUTC = pure "2026-02-20T00:00:00Z"
+getTomorrowMidnightUTC = do
+  today <- nowDate
+  let tomorrow = fromMaybe today (adjust (Days 1.0) today)
+  pure (formatDateYYYYMMDD tomorrow <> "T00:00:00Z")
 
--- | Human-readable time until reset
+-- | Human-readable time until reset (approximate hours until midnight)
 getTimeUntilReset :: Effect String
-getTimeUntilReset = pure "~24 hours"
+getTimeUntilReset = do
+  dt <- nowDateTime
+  let t = time dt
+      hoursLeft = 24 - fromEnum (hour t)
+  pure ("~" <> show hoursLeft <> " hours")
 
 -- | Current ISO timestamp
 getCurrentISOTimestamp :: Effect String
-getCurrentISOTimestamp = pure "2026-02-19T12:00:00Z"
+getCurrentISOTimestamp = do
+  dt <- nowDateTime
+  pure (formatDateTimeISO dt)
 
 -- | Parse JSON to Map String Int (for counts)
 parseCountsJson :: String -> Maybe (Map String Int)
@@ -245,12 +286,30 @@ parseStoredLimits json = do
        , lastReset: extractLastResetFromJson json
        }
 
--- | Extract date field from JSON (simple string extraction)
-extractDateFromJson :: String -> String
-extractDateFromJson _ = "2026-02-19"  -- Simplified - real impl would parse JSON
+-- | Extract a string field value from JSON
+-- | Handles pattern "fieldName":"value"
+extractField :: String -> String -> Maybe String
+extractField fieldName json =
+  let pattern = "\"" <> fieldName <> "\":\""
+      patternLen = Array.length (toCharArray pattern)
+  in case indexOf (Pattern pattern) json of
+    Nothing -> Nothing
+    Just startIdx ->
+      let valueStart = startIdx + patternLen
+          remaining = drop valueStart json
+      in case indexOf (Pattern "\"") remaining of
+        Nothing -> Nothing
+        Just endIdx -> Just (take endIdx remaining)
 
+-- | Extract date field from JSON
+extractDateFromJson :: String -> String
+extractDateFromJson json =
+  fromMaybe "" (extractField "date" json)
+
+-- | Extract lastReset field from JSON
 extractLastResetFromJson :: String -> String
-extractLastResetFromJson _ = "2026-02-19T00:00:00Z"
+extractLastResetFromJson json =
+  fromMaybe "" (extractField "lastReset" json)
 
 -- | Save rate limits to localStorage
 saveStoredLimits :: StoredRateLimits -> Effect Unit
