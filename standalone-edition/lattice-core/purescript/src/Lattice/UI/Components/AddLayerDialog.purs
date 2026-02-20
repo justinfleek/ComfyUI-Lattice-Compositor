@@ -240,7 +240,15 @@ getLayerTypesForCategory = case _ of
     , { layerType: LTAdjustment, label: "Adjustment", icon: "⚙" }
     ]
   CatGenerated ->
-    [ { layerType: LTPreComp, label: "Precomp", icon: "📦" }
+    [ { layerType: LTTextToImage, label: "T2I", icon: "🖼" }
+    , { layerType: LTImageToVideo, label: "I2V", icon: "🎬" }
+    , { layerType: LTTextToVideo, label: "T2V", icon: "🎥" }
+    , { layerType: LTImageToImage, label: "I2I", icon: "🔄" }
+    , { layerType: LTInpaint, label: "Inpaint", icon: "✏️" }
+    , { layerType: LTOutpaint, label: "Outpaint", icon: "↔️" }
+    , { layerType: LTUpscale, label: "Upscale", icon: "⬆️" }
+    , { layerType: LTRemoveBackground, label: "RMBG", icon: "🎭" }
+    , { layerType: LTPreComp, label: "Precomp", icon: "📦" }
     ]
 
 -- Styles

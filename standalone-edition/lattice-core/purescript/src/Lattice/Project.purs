@@ -69,6 +69,15 @@ data LayerType
   | LTModel
   | LTPointCloud
   | LTDepthflow
+  -- Generation layer types (RES4LYF-powered)
+  | LTTextToImage      -- T2I - Generate still image from prompt
+  | LTImageToVideo     -- I2V - Generate video from image + prompt
+  | LTTextToVideo      -- T2V - Generate video from prompt
+  | LTImageToImage     -- I2I - Generate image from image + prompt
+  | LTInpaint          -- Inpaint existing content
+  | LTOutpaint         -- Extend image beyond boundaries
+  | LTUpscale          -- Upscale with AI
+  | LTRemoveBackground -- Rm background with AI
 
 derive instance Eq LayerType
 derive instance Generic LayerType _
