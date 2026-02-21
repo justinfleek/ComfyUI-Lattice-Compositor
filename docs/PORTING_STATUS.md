@@ -54,7 +54,7 @@ Port Vue UI components from `ComfyUI-Lattice-Compositor/ui/src/components/` to P
 
 7. **COMPASS context**: Parent project is an AI-native CMO platform with 64 specialized agents, voice-first interface, real-time analytics. Lattice provides the content creation engine. All 14 Haskell packages build successfully.
 
-## Components Ported (39 total)
+## Components Ported (53 total)
 
 ### Panels (12)
 1. **AIChatPanel** - AI assistant chat interface
@@ -88,8 +88,15 @@ Port Vue UI components from `ComfyUI-Lattice-Compositor/ui/src/components/` to P
 7. **PositionXY** - 2D position input
 8. **SliderInput** - Range slider
 
-### Timeline (1)
+### Timeline (7) ✅ COMPLETE
 1. **Timeline** - Basic timeline component
+2. **Playhead** (~165 lines) - Draggable playhead indicator for timeline scrubbing
+3. **LayerTrack** (~330 lines) - Single layer track with visibility, lock, duration bar, keyframes
+4. **AudioTrack** (~450 lines) - Waveform visualization with BPM, beat markers, peak markers
+5. **CompositionTabs** (~520 lines) - Tab bar with breadcrumbs for nested compositions
+6. **PropertyTrack** (~750 lines) - Animated property editor with keyframe navigator, context menu
+7. **EnhancedLayerTrack** (~1100 lines) - Full AV features, switches, property groups, color picker, drag-drop
+8. **TimelinePanel** (~1000 lines) - Main orchestrating timeline with layer creation menu, work area, ruler
 
 ### AI/Generative (3)
 1. **LayerDecompositionPanel** (~780 lines) - AI layer decomposition with model status, depth estimation, z-space positioning, progress visualization
@@ -102,7 +109,17 @@ Port Vue UI components from `ComfyUI-Lattice-Compositor/ui/src/components/` to P
 ### Effects (1)
 1. **EffectControlsPanel** (~1050 lines) - Effect parameter editor with sliders, color pickers, angles, positions, enums, keyframe toggles, drag-drop reordering
 
-### Other (7)
+### Dialogs (8 - new this session)
+1. **Modal** (~250 lines) - Reusable modal wrapper with overlay, ARIA, keyboard navigation
+2. **KeyboardShortcutsModal** (~500 lines) - Searchable shortcuts reference organized by category
+3. **FpsSelectDialog** (~400 lines) - FPS selection when video fps cannot be detected
+4. **TimeStretchDialog** (~600 lines) - Time stretch with factor, hold-in-place, reverse options
+5. **PrecomposeDialog** (~280 lines) - Pre-compose selected layers into new composition
+6. **KeyframeInterpolationDialog** (~650 lines) - Interpolation type, easing presets, SVG curve preview
+7. **FpsMismatchDialog** (~420 lines) - Handle fps mismatch between imported content and composition
+8. **FontPicker** (~550 lines) - Font selection with categories, search, live preview
+
+### Other (6)
 1. **AddLayerDialog** - New layer creation dialog
 2. **LayerList** - Layer stack display
 3. **PropertyLink** - Property linking UI
@@ -110,12 +127,12 @@ Port Vue UI components from `ComfyUI-Lattice-Compositor/ui/src/components/` to P
 5. **WebGLCanvas** - WebGL rendering surface
 6. **CommentControl** (~230 lines) - Expandable/collapsible comment section for template builders
 
-## Remaining Vue Components to Port (~130)
+## Remaining Vue Components to Port (~115)
 
 ### High Priority
-- **timeline/** (9 files) - TimelinePanel, LayerTrack, Playhead, AudioTrack, EnhancedLayerTrack, PropertyTrack, CompositionTabs, NodeConnection, AudioMappingCurve
-- **controls/** (remaining) - ScrubableNumber, etc.
-- **dialogs/** (21 files) - Various modal dialogs
+- ~~**timeline/** (9 files)~~ ✅ COMPLETE - All timeline components ported with enhanced versions
+- **dialogs/** (13 remaining) - 8 ported: Modal, KeyboardShortcutsModal, FpsSelectDialog, TimeStretchDialog, PrecomposeDialog, KeyframeInterpolationDialog, FpsMismatchDialog, FontPicker
+- **controls/** (1 remaining) - ScrubableNumber
 
 ### Medium Priority  
 - **properties/** (~17 remaining) - Various property editors
@@ -168,3 +185,8 @@ Port Vue UI components from `ComfyUI-Lattice-Compositor/ui/src/components/` to P
 3. `67c1384c1` - feat(ui): port GenerativeFlowPanel for Wan-Move trajectory generation
 4. `3029cfd8f` - feat(ui): port AudioValuePreview and DriverList components
 5. `08f119f5e` - feat(ui): port CommentControl, CameraProperties, Model3DProperties, ExposedPropertyControl
+6. `b468f753f` - feat(ui): port timeline components - Playhead, LayerTrack, AudioTrack, CompositionTabs, PropertyTrack
+7. `08eb36f66` - feat(ui): port EnhancedLayerTrack and TimelinePanel - complete timeline category
+8. `e43d8f08a` - feat(ui): port Modal, KeyboardShortcutsModal, FpsSelectDialog, TimeStretchDialog
+9. `6b562d088` - feat(ui): port PrecomposeDialog and KeyframeInterpolationDialog with easing curves
+10. `c21c61760` - feat(ui): port FpsMismatchDialog and FontPicker dialogs
