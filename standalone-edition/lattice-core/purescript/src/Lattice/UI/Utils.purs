@@ -9,6 +9,7 @@ module Lattice.UI.Utils
     module Hydrogen.Data.Format
     -- Lattice-specific formatting
   , formatFixed
+  , formatNumber
     -- Number operations (re-exports from Data.Int/Data.Number)
   , floor
   , ceil
@@ -19,6 +20,12 @@ module Lattice.UI.Utils
     -- String operations
   , padStart
   , padEnd
+    -- Hex conversion
+  , intToHex
+  , hexToInt
+    -- Array operations
+  , arrayLength
+  , arrayIndex
     -- Parsing (safe, with defaults)
   , parseIntOr
   , parseFloatOr
@@ -34,8 +41,9 @@ module Lattice.UI.Utils
 
 import Prelude
 
-import Data.Array (replicate, index)
+import Data.Array (replicate, index, length) as Array
 import Data.Int as Int
+import Data.Int (hexadecimal, toStringAs, fromStringAs) as IntRadix
 import Data.Maybe (Maybe, fromMaybe)
 import Data.Nullable (Nullable, toMaybe)
 import Data.Number as Number
@@ -54,6 +62,11 @@ import Web.HTML.HTMLElement as HTMLElement
 -- | formatFixed 2 3.14159 == "3.14"
 formatFixed :: Int -> Number -> String
 formatFixed decimals n = toStringWith (fixed decimals) n
+
+-- | Format a Number with specified decimal places (alias for formatFixed)
+-- | formatNumber 2 3.14159 == "3.14"
+formatNumber :: Int -> Number -> String
+formatNumber = formatFixed
 
 -- =============================================================================
 --                                                       // number // operations
@@ -96,25 +109,36 @@ pow = Number.pow
 -- | Pad a string at the start to reach target length
 -- | padStart 5 '0' "42" == "00042"
 -- | padStart 3 '0' "12345" == "12345"
-padStart :: Int -> Char -> String -> String
-padStart targetLength padChar str =
+padStart :: Int -> String -> String -> String
+padStart targetLength padStr str =
   let
     currentLength = SCU.length str
     padding = max 0 (targetLength - currentLength)
-    padStr = SCU.fromCharArray (replicate padding padChar)
+    -- Repeat padStr enough times and take first padding characters
+    paddingStr = SCU.take padding (repeatStr padding padStr)
   in
-    padStr <> str
+    paddingStr <> str
+  where
+    repeatStr :: Int -> String -> String
+    repeatStr n s
+      | n <= 0 = ""
+      | otherwise = s <> repeatStr (n - 1) s
 
 -- | Pad a string at the end to reach target length
--- | padEnd 5 ' ' "Hi" == "Hi   "
-padEnd :: Int -> Char -> String -> String
-padEnd targetLength padChar str =
+-- | padEnd 5 " " "Hi" == "Hi   "
+padEnd :: Int -> String -> String -> String
+padEnd targetLength padStr str =
   let
     currentLength = SCU.length str
     padding = max 0 (targetLength - currentLength)
-    padStr = SCU.fromCharArray (replicate padding padChar)
+    paddingStr = SCU.take padding (repeatStr padding padStr)
   in
-    str <> padStr
+    str <> paddingStr
+  where
+    repeatStr :: Int -> String -> String
+    repeatStr n s
+      | n <= 0 = ""
+      | otherwise = s <> repeatStr (n - 1) s
 
 -- =============================================================================
 --                                                              // safe // parsing
@@ -134,6 +158,38 @@ parseFloatOr :: Number -> String -> Number
 parseFloatOr defaultVal str = fromMaybe defaultVal (Number.fromString str)
 
 -- =============================================================================
+--                                                              // hex // conversion
+-- =============================================================================
+
+-- | Convert an Int to a hexadecimal String (lowercase)
+-- | intToHex 255 == "ff"
+-- | intToHex 16 == "10"
+intToHex :: Int -> String
+intToHex n = IntRadix.toStringAs IntRadix.hexadecimal n
+
+-- | Parse an Int from a hexadecimal String
+-- | hexToInt "ff" == 255
+-- | hexToInt "10" == 16
+-- | hexToInt "invalid" == 0
+hexToInt :: String -> Int
+hexToInt str = fromMaybe 0 (IntRadix.fromStringAs IntRadix.hexadecimal str)
+
+-- =============================================================================
+--                                                            // array // operations
+-- =============================================================================
+
+-- | Get the length of an array
+-- | arrayLength [1, 2, 3] == 3
+arrayLength :: forall a. Array a -> Int
+arrayLength = Array.length
+
+-- | Get element at index (returns Maybe)
+-- | arrayIndex 0 [1, 2, 3] == Just 1
+-- | arrayIndex 5 [1, 2, 3] == Nothing
+arrayIndex :: forall a. Int -> Array a -> Maybe a
+arrayIndex = flip Array.index
+
+-- =============================================================================
 --                                                             // midi // utilities
 -- =============================================================================
 
@@ -145,7 +201,7 @@ midiNoteToName :: Int -> String
 midiNoteToName noteNum =
   let
     noteNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
-    noteName = fromMaybe "?" (index noteNames (noteNum `mod` 12))
+    noteName = fromMaybe "?" (Array.index noteNames (noteNum `mod` 12))
     octave = (noteNum / 12) - 1
   in
     noteName <> show octave
@@ -166,10 +222,10 @@ formatTimecode fps frame =
     minutes = (totalSeconds `mod` 3600) / 60
     seconds = totalSeconds `mod` 60
   in
-    padStart 2 '0' (show hours) <> ":" <>
-    padStart 2 '0' (show minutes) <> ":" <>
-    padStart 2 '0' (show seconds) <> ":" <>
-    padStart 2 '0' (show remainingFrames)
+    padStart 2 "0" (show hours) <> ":" <>
+    padStart 2 "0" (show minutes) <> ":" <>
+    padStart 2 "0" (show seconds) <> ":" <>
+    padStart 2 "0" (show remainingFrames)
 
 -- | Format frame count with frame number and total
 -- | formatFrameCount 150 300 == "150 / 300"
