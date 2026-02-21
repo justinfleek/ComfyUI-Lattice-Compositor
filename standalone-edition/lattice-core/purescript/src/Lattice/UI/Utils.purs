@@ -1,13 +1,14 @@
 -- | Lattice UI Utilities
 -- |
--- | Pure PureScript utility functions for number formatting, string manipulation,
--- | and DOM operations. NO JavaScript FFI except for getElementById (DOM necessity).
+-- | Re-exports Hydrogen formatting utilities plus Lattice-specific helpers.
+-- | NO JavaScript FFI except for getElementById (DOM necessity).
 -- |
 -- | STRAYLIGHT PROTOCOL: Full type safety, no escape hatches.
 module Lattice.UI.Utils
-  ( -- Number formatting
-    formatFixed
-  , formatPercent
+  ( -- Re-exports from Hydrogen.Data.Format
+    module Hydrogen.Data.Format
+    -- Lattice-specific formatting
+  , formatFixed
     -- Number operations (re-exports from Data.Int/Data.Number)
   , floor
   , ceil
@@ -23,6 +24,9 @@ module Lattice.UI.Utils
   , parseFloatOr
     -- MIDI utilities
   , midiNoteToName
+    -- Timecode utilities
+  , formatTimecode
+  , formatFrameCount
     -- DOM operations (minimal FFI)
   , getElementById
   , getElementByIdImpl
@@ -38,6 +42,7 @@ import Data.Number as Number
 import Data.Number.Format (toStringWith, fixed)
 import Data.String.CodeUnits as SCU
 import Effect (Effect)
+import Hydrogen.Data.Format (formatBytes, formatBytesCompact, parseBytes, kb, mb, gb, tb, formatNum, formatNumCompact, formatPercent, formatCount, formatDuration, formatDurationCompact, formatDurationMs, percentage, rate, ratio)
 import Web.HTML.HTMLDocument as HTMLDocument
 import Web.HTML.HTMLElement as HTMLElement
 
@@ -49,11 +54,6 @@ import Web.HTML.HTMLElement as HTMLElement
 -- | formatFixed 2 3.14159 == "3.14"
 formatFixed :: Int -> Number -> String
 formatFixed decimals n = toStringWith (fixed decimals) n
-
--- | Format a number as a percentage with fixed decimal places
--- | formatPercent 1 0.756 == "75.6%"
-formatPercent :: Int -> Number -> String
-formatPercent decimals n = formatFixed decimals (n * 100.0) <> "%"
 
 -- =============================================================================
 --                                                       // number // operations
@@ -149,6 +149,32 @@ midiNoteToName noteNum =
     octave = (noteNum / 12) - 1
   in
     noteName <> show octave
+
+-- =============================================================================
+--                                                         // timecode // utilities
+-- =============================================================================
+
+-- | Format frame number as SMPTE timecode (HH:MM:SS:FF)
+-- | formatTimecode 30 1800 == "00:01:00:00"
+-- | formatTimecode 24 72 == "00:00:03:00"
+formatTimecode :: Int -> Int -> String
+formatTimecode fps frame =
+  let
+    totalSeconds = frame / fps
+    remainingFrames = frame `mod` fps
+    hours = totalSeconds / 3600
+    minutes = (totalSeconds `mod` 3600) / 60
+    seconds = totalSeconds `mod` 60
+  in
+    padStart 2 '0' (show hours) <> ":" <>
+    padStart 2 '0' (show minutes) <> ":" <>
+    padStart 2 '0' (show seconds) <> ":" <>
+    padStart 2 '0' (show remainingFrames)
+
+-- | Format frame count with frame number and total
+-- | formatFrameCount 150 300 == "150 / 300"
+formatFrameCount :: Int -> Int -> String
+formatFrameCount current total = show current <> " / " <> show total
 
 -- =============================================================================
 --                                                              // dom // operations

@@ -5,6 +5,9 @@ package:
   dependencies:
     - aff
     - aff-promise
+    - affjax
+    - affjax-web
+    - argonaut
     - arraybuffer-types
     - argonaut-codecs
     - argonaut-core
@@ -24,6 +27,8 @@ package:
     - halogen
     - halogen-subscriptions
     - halogen-vdom
+    - http-methods
+    - hydrogen
     - integers
     - js-timers
     - lists
@@ -62,4 +67,6 @@ package:
 workspace:
   packageSet:
     registry: 73.2.0
-  extraPackages: {}
+  extraPackages:
+    hydrogen:
+      path: ../../../../COMPASS/IMPLEMENTATION/hydrogen-main

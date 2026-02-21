@@ -3,12 +3,20 @@
 -- | Core UI helper functions and component primitives that match
 -- | the Lattice Compositor visual design system.
 -- |
--- | IMPORTANT: This module does NOT use Tailwind. It uses CSS classes
--- | that correspond to design-tokens.css. Components should use the
--- | `lattice-*` class naming convention.
+-- | Re-exports Hydrogen.UI.* for loading states, error states, and layout.
+-- |
+-- | IMPORTANT: This module uses CSS classes that correspond to design-tokens.css.
+-- | Components should use the `lattice-*` class naming convention.
 module Lattice.UI.Core
-  ( cls
+  ( -- Re-exports from Hydrogen
+    module Hydrogen.UI.Loading
+  , module Hydrogen.UI.Error
+  , module Hydrogen.Data.RemoteData
+    -- Class utilities
+  , cls
   , classes
+  , svgCls
+    -- Lattice layout primitives
   , panel
   , surface
   , btn
@@ -32,6 +40,7 @@ module Lattice.UI.Core
   , textSecondary
   , label
   , heading
+    -- Theming
   , Theme(..)
   , setTheme
   ) where
@@ -43,6 +52,9 @@ import Data.Maybe (Maybe(..))
 import Effect (Effect)
 import Halogen.HTML as HH
 import Halogen.HTML.Properties as HP
+import Hydrogen.Data.RemoteData (RemoteData(..), fromEither, fromMaybe, toEither, toMaybe, fold, withDefault, isNotAsked, isLoading, isFailure, isSuccess, mapError, map2, map3, map4, sequence, traverse)
+import Hydrogen.UI.Error (errorState, errorCard, errorBadge, errorInline, emptyState)
+import Hydrogen.UI.Loading (spinner, spinnerSm, spinnerMd, spinnerLg, loadingState, loadingInline, loadingCard, loadingCardLarge, skeletonText, skeletonRow)
 import Web.DOM.Element as Element
 import Web.HTML as HTML
 import Web.HTML.HTMLDocument as HTMLDocument
@@ -60,6 +72,12 @@ classes = intercalate " " <<< filter (_ /= "")
 -- | Create HP.class_ from array of class strings
 cls :: forall r i. Array String -> HH.IProp (class :: String | r) i
 cls = HP.class_ <<< HH.ClassName <<< classes
+
+-- | Create class attribute for SVG elements
+-- | SVG elements have `className` as a read-only SVGAnimatedString, so we must
+-- | use the `class` attribute instead of the `className` property.
+svgCls :: forall r i. Array String -> HH.IProp r i
+svgCls arr = HP.attr (HH.AttrName "class") (classes arr)
 
 -- ════════════════════════════════════════════════════════════════════════════
 --                                                      // layout // primitives
@@ -166,9 +184,9 @@ menu = HH.div [ cls [ "lattice-menu" ] ]
 
 -- | Menu item with optional shortcut
 menuItem :: forall w i. String -> String -> HH.HTML w i
-menuItem label shortcut =
+menuItem labelText shortcut =
   HH.div [ cls [ "lattice-menu-item" ] ]
-    [ HH.span_ [ HH.text label ]
+    [ HH.span_ [ HH.text labelText ]
     , if shortcut == "" 
         then HH.text ""
         else HH.span [ cls [ "lattice-menu-shortcut" ] ] [ HH.text shortcut ]
