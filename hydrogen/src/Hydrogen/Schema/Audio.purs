@@ -1,0 +1,106 @@
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                // hydrogen // schema // audio
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+-- | Audio pillar (Pillar 10b) - synthesis, processing, analysis, and voice.
+-- |
+-- | Leader module documenting all audio sub-modules.
+-- |
+-- | ## Core Audio
+-- | - **Level**: Amplitude atoms (Decibel, LinearGain, dBFS)
+-- | - **Frequency**: Pitch atoms (Hertz, MidiNote, Cent, Semitone, Octave)
+-- | - **Time**: Temporal atoms (BeatTime, BarTime, SampleCount)
+-- | - **Spatial**: Stereo/3D positioning (Pan, Balance, Azimuth, Elevation)
+-- |
+-- | ## Synthesis
+-- | - **Synthesis**: Filter/oscillator params (Cutoff, Resonance, Drive)
+-- | - **Oscillator**: Waveform types and configuration
+-- | - **Envelope**: ADSR atoms (Attack, Decay, Sustain, Release)
+-- | - **Filter**: Filter types and configurations
+-- | - **Modulation**: LFO params (ModDepth, ModRate, LFOPhase)
+-- |
+-- | ## Effects
+-- | - **Effects**: Reverb, Delay, Compressor, EQ, Distortion, Gate, Limiter
+-- |
+-- | ## Analysis
+-- | - **Analysis**: Metering atoms (RMS, Peak, FFT)
+-- |
+-- | ## Voice & Speech
+-- | - **Voice**: Voice synthesis atoms (pitch, rate, breathiness, expression)
+-- | - **Formant**: Vocal tract modeling (F1-F5, vowel shapes, vocoder)
+-- | - **Speech**: Speech recognition output (phonemes, words, speakers)
+-- | - **VoiceCompounds**: Higher-level voice compositions (VoiceCharacter, Dialogue)
+-- |
+-- | ## Accessibility
+-- | - **Accessibility**: Screen readers, audio descriptions, sonification, earcons
+-- |
+-- | ## Triggers
+-- | - **Trigger**: Event-based audio playback for UI feedback
+-- |
+-- | ## Design Philosophy
+-- | Audio primitives model synthesis concepts, not Web Audio API methods.
+-- | Voice primitives describe WHAT a voice sounds like, not specific TTS APIs.
+-- | Conversion to Web Audio, MIDI, or other backends happens at boundaries.
+-- |
+-- | ## Agent Voice at Billion-Scale
+-- | These primitives enable deterministic voice synthesis:
+-- | - Same VoiceCharacter = same voice identity across all agents
+-- | - Emotional shifts modify voice without losing identity
+-- | - Multi-turn dialogues with speaker attribution
+-- | - Accessibility-first design for inclusive interfaces
+-- |
+-- | ## Usage
+-- | ```purescript
+-- | import Hydrogen.Schema.Audio.Level as Level
+-- | import Hydrogen.Schema.Audio.Frequency as Freq
+-- | import Hydrogen.Schema.Audio.Voice as Voice
+-- | import Hydrogen.Schema.Audio.VoiceCompounds as VC
+-- |
+-- | -- Define an agent voice
+-- | agentVoice = VC.voiceCharacter
+-- |   "Assistant"
+-- |   VC.PersonaFriendly
+-- |   Voice.voiceProfileDefault
+-- |   (Formant.formantSetFromVowel Formant.VowelSchwa)
+-- |
+-- | -- Apply emotional shift
+-- | excitedVoice = VC.applyShiftToCharacter
+-- |   (VC.emotionalShift Voice.expressionJoyful 1.2 VC.TransitionSmooth)
+-- |   agentVoice
+-- | ```
+
+module Hydrogen.Schema.Audio where
+
+-- Note: This module exists for documentation. Submodules have distinct
+-- names but related concepts. Use qualified imports:
+--
+-- ## Core Audio
+--   import Hydrogen.Schema.Audio.Level as Level
+--   import Hydrogen.Schema.Audio.Frequency as Freq
+--   import Hydrogen.Schema.Audio.Time as AudioTime
+--   import Hydrogen.Schema.Audio.Spatial as Spatial
+--
+-- ## Synthesis
+--   import Hydrogen.Schema.Audio.Synthesis as Synth
+--   import Hydrogen.Schema.Audio.Oscillator as Osc
+--   import Hydrogen.Schema.Audio.Envelope as Env
+--   import Hydrogen.Schema.Audio.Filter as Filter
+--   import Hydrogen.Schema.Audio.Modulation as Mod
+--
+-- ## Effects
+--   import Hydrogen.Schema.Audio.Effects as FX
+--
+-- ## Analysis
+--   import Hydrogen.Schema.Audio.Analysis as Analysis
+--
+-- ## Voice & Speech
+--   import Hydrogen.Schema.Audio.Voice as Voice
+--   import Hydrogen.Schema.Audio.Formant as Formant
+--   import Hydrogen.Schema.Audio.Speech as Speech
+--   import Hydrogen.Schema.Audio.VoiceCompounds as VC
+--
+-- ## Accessibility
+--   import Hydrogen.Schema.Audio.Accessibility as A11y
+--
+-- ## Triggers
+--   import Hydrogen.Schema.Audio.Trigger as Trigger

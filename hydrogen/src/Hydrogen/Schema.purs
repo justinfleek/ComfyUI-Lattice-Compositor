@@ -1,0 +1,174 @@
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                                         // hydrogen // schema
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+-- | # Hydrogen Design System Schema
+-- |
+-- | A comprehensive ontology for digital design, built for:
+-- | - **Human designers** who need precise, professional terminology
+-- | - **AI agents** (COMPASS, Devin, etc.) who need machine-readable schemas
+-- | - **Visual tools** that export brand configurations as PureScript code
+-- |
+-- | ## The 12 Pillars
+-- |
+-- | The schema is organized into 12 top-level domains (pillars), each covering
+-- | a fundamental aspect of digital design. Pillars are designed to be:
+-- | - **Composable** - combine types from multiple pillars
+-- | - **Serializable** - JSON encode/decode for agent consumption
+-- | - **Semantically precise** - professional terminology matters
+-- |
+-- | ### 1. Color
+-- | Color science, theory, and application.
+-- |
+-- | - **Spaces**: sRGB, Linear RGB, Display P3, Adobe RGB, ACES, CMYK, LAB, OKLAB, HSL, HSV, HSB, LCH, OKLCH
+-- | - **Theory**: Harmony (complementary, triadic, analogous), temperature (warm/cool), value, chroma, hue
+-- | - **Grading**: LUTs (1D, 3D), curves (RGB, luminance), lift/gamma/gain, ASC-CDL
+-- | - **3D/PBR**: Albedo, specular, metallic, roughness, emissive, subsurface
+-- | - **Maps**: Diffuse, normal, ambient occlusion, displacement, mask, alpha
+-- | - **Blending**: Porter-Duff compositing, Photoshop blend modes, mix/lerp
+-- |
+-- | ### 2. Dimension
+-- | Measurement, spacing, and layout.
+-- |
+-- | - **Units**: Pixels, rem, em, viewport units, percentages, fr, ch
+-- | - **Scale**: Spacing scale (none/xs/sm/md/lg/xl/2xl/...), sizing scale
+-- | - **Layout**: Grid (columns, rows, gap, areas), flexbox, flow
+-- | - **Responsive**: Breakpoints, container queries, media queries
+-- | - **Zones**: Regions, heatmaps, attention mapping, safe areas
+-- |
+-- | ### 3. Geometry
+-- | Shape, form, and spatial transformation.
+-- |
+-- | - **Primitives**: Rectangle, circle, ellipse, polygon, line
+-- | - **Radius**: Corner radius (uniform, per-corner), squircle/superellipse
+-- | - **Paths**: Bezier curves, SVG path data, splines
+-- | - **Clipping**: Clip paths, masks, insets, polygon masks
+-- | - **Transforms**: Translate, rotate, scale, skew, matrix, transform-origin
+-- |
+-- | ### 4. Typography
+-- | Text rendering and typographic hierarchy.
+-- |
+-- | - **Families**: System stacks, web fonts, variable fonts, font fallbacks
+-- | - **Scale**: Type scale (xs/sm/base/lg/xl/2xl/...), modular scales
+-- | - **Weight**: Hairline to black (100-900), variable weight
+-- | - **Style**: Italic, oblique, small-caps, font-features
+-- | - **Case**: Uppercase, lowercase, capitalize, small-caps
+-- | - **Decoration**: Underline, strikethrough, emphasis marks
+-- | - **Hierarchy**: Display, heading, body, caption, overline, code
+-- | - **Rhythm**: Line height, letter spacing, word spacing, optical sizing
+-- |
+-- | ### 5. Material
+-- | Surface appearance and texture.
+-- |
+-- | - **Fill**: Solid, linear gradient, radial gradient, conic gradient, pattern
+-- | - **Texture**: Noise (perlin, simplex, worley), procedural, image-based
+-- | - **Effects**: Glassmorphism, neumorphism, frosted glass, blur
+-- | - **Borders**: Width, style (solid, dashed, dotted), image borders
+-- | - **Finish**: Matte, glossy, metallic, satin, textured
+-- |
+-- | ### 6. Elevation
+-- | Depth, shadow, and visual hierarchy.
+-- |
+-- | - **Shadows**: Box shadow (offset, blur, spread, color), drop shadow, inner shadow
+-- | - **Scale**: Elevation levels (0-24 or semantic: flat/raised/floating/modal)
+-- | - **Perspective**: Vanishing point, FOV, depth of field
+-- | - **Parallax**: Scroll-linked depth, layer velocity
+-- | - **Stacking**: Z-index management, isolation, stacking contexts
+-- |
+-- | ### 7. Temporal
+-- | Time, motion, and animation.
+-- |
+-- | - **Duration**: Instant, fast, normal, slow, glacial (semantic scale)
+-- | - **Easing**: Linear, ease, cubic-bezier, spring physics, custom curves
+-- | - **Transitions**: Property transitions, enter/exit, cross-fade
+-- | - **Keyframes**: Animation sequences, percentage-based, named
+-- | - **Orchestration**: Stagger, sequence, parallel, timeline
+-- | - **External**: Lottie, Rive, GSAP, Framer Motion integration points
+-- |
+-- | ### 8. Reactive
+-- | State and feedback.
+-- |
+-- | - **Interactive**: Default, hover, focus, focus-visible, active, visited, disabled
+-- | - **Semantic**: Loading, success, error, warning, info, pending
+-- | - **Data**: Empty, populated, partial, stale, refreshing
+-- | - **Validation**: Valid, invalid, pristine, dirty, touched
+-- | - **Feedback**: Toast, notification, inline, modal
+-- |
+-- | ### 9. Gestural
+-- | User input and interaction patterns.
+-- |
+-- | - **Pointer**: Click, double-click, right-click, hover, drag
+-- | - **Touch**: Tap, double-tap, long-press, swipe, pinch, rotate
+-- | - **Scroll**: Scroll, overscroll, scroll-snap, infinite scroll
+-- | - **Drag**: Drag-and-drop, reorder, resize handles
+-- | - **Keyboard**: Focus management, shortcuts, key sequences
+-- |
+-- | ### 10. Haptic
+-- | Tactile and sensory feedback.
+-- |
+-- | - **Vibration**: Impact (light/medium/heavy), notification, selection
+-- | - **Force**: 3D Touch, pressure sensitivity, force feedback
+-- | - **Audio**: Click sounds, notification sounds, ambient
+-- | - **Tactile**: Surface texture simulation, resistance
+-- |
+-- | ### 11. Spatial
+-- | 3D and extended reality.
+-- |
+-- | - **Scene**: Camera, lighting, environment maps, skybox
+-- | - **Objects**: Mesh, material, geometry, instancing
+-- | - **AR**: Surface detection, anchors, occlusion, lighting estimation
+-- | - **VR**: Head tracking, hand tracking, room-scale, teleportation
+-- | - **Mixed**: Pass-through, spatial UI, world-locked content
+-- |
+-- | ### 12. Brand
+-- | Identity and theming.
+-- |
+-- | - **Tokens**: Design tokens (primitive, semantic, component)
+-- | - **Themes**: Light, dark, high-contrast, color-blind modes
+-- | - **Voice**: Tone, personality, microcopy style
+-- | - **Assets**: Logos, icons, illustrations, photography style
+-- | - **Composition**: How pillars combine into a cohesive system
+-- |
+-- | ## Usage
+-- |
+-- | Pillars may have overlapping semantic names (e.g., `lg`, `md`, `sm` appear in
+-- | multiple pillars). Always use qualified imports:
+-- |
+-- | ```purescript
+-- | import Hydrogen.Schema.Color as Color
+-- | import Hydrogen.Schema.Dimension as Dimension
+-- | import Hydrogen.Schema.Typography as Type
+-- |
+-- | myColor :: Color.Value
+-- | myColor = Color.hex "#3b82f6"
+-- |
+-- | mySpacing :: Dimension.Length
+-- | mySpacing = Dimension.rem 1.5
+-- | ```
+-- |
+-- | ## For AI Agents
+-- |
+-- | This schema is designed to be consumed by AI agents for:
+-- | - **Code generation**: Generate type-safe PureScript from natural language
+-- | - **Design validation**: Check designs against brand guidelines
+-- | - **Theme creation**: Build complete themes from partial specifications
+-- | - **Component styling**: Apply consistent styling to UI components
+-- |
+-- | All types are serializable to JSON for agent consumption.
+-- |
+-- | ## Import Pattern
+-- |
+-- | Do NOT import this module directly. Import pillars with qualification:
+-- |
+-- | ```purescript
+-- | import Hydrogen.Schema.Color as Color
+-- | import Hydrogen.Schema.Color.Hue as Hue
+-- | import Hydrogen.Schema.Color.Saturation as Saturation
+-- | import Hydrogen.Schema.Dimension as Dimension
+-- | ```
+-- |
+-- | This module exists for documentation only.
+module Hydrogen.Schema where
+
+-- This module is documentation only.
+-- Import pillars directly with qualified imports.

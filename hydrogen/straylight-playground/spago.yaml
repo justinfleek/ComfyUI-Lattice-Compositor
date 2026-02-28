@@ -1,0 +1,27 @@
+package:
+  name: straylight-playground
+  description: "Pure Hydrogen showcase - Schema atoms interactive playground"
+  dependencies:
+    # Core
+    - prelude
+    - effect
+    - aff
+    - console
+    - maybe
+    - either
+    - arrays
+    - strings
+    - integers
+    - numbers
+    - foldable-traversable
+    - tuples
+    - newtype
+    # Hydrogen (parent package)
+    - hydrogen
+
+workspace:
+  package_set:
+    registry: 73.2.0
+  extra_packages:
+    hydrogen:
+      path: ../

@@ -1,0 +1,90 @@
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                           // hydrogen // schema // typography
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+-- | Typography pillar - type systems for autonomous brand generation.
+-- |
+-- | A comprehensive system for working with:
+-- |
+-- | ## Atoms (Primitives)
+-- | - **FontWeight**: Stroke thickness (1-1000, CSS font-weight scale)
+-- | - **FontSize**: Em-square height in CSS pixels
+-- | - **LineHeight**: Vertical rhythm as unitless ratio
+-- | - **LetterSpacing**: Tracking in per mille (thousandths of em)
+-- | - **TextTransform**: Case transformation (uppercase, lowercase, etc.)
+-- | - **FontFamily**: Typeface identification (string, not enumerable)
+-- |
+-- | ## Font Sources
+-- | - **SystemFont**: Pre-installed fonts (enumerable, no loading)
+-- | - **CustomFont**: Requires import (Google Fonts, Adobe, self-hosted)
+-- |
+-- | ## Molecules (Compounds)
+-- | - **TypeStyle**: Complete style = family + weight + size + line-height + tracking + transform
+-- | - **FontStack**: Ordered fallback list of font families
+-- |
+-- | ## Compounds (Systems)
+-- | - **TypeScale**: Base size + ratio for mathematical hierarchy
+-- | - **TypeHierarchy**: Semantic levels (H1-H6, body, etc.) mapped to styles
+-- |
+-- | ## Usage
+-- |
+-- | ```purescript
+-- | import Hydrogen.Schema.Typography.FontFamily as FF
+-- | import Hydrogen.Schema.Typography.FontWeight as FW
+-- | import Hydrogen.Schema.Typography.TypeStyle as TS
+-- | import Hydrogen.Schema.Typography.TypeScale as Scale
+-- | import Hydrogen.Schema.Typography.TypeHierarchy as TH
+-- |
+-- | -- Create a type style
+-- | heading = TS.typeStyle 
+-- |   (FF.fontFamily "Archivo")
+-- |   FW.extraBold
+-- |   (FontSize.fontSize 32.0)
+-- |   LineHeight.tight
+-- |   LetterSpacing.uppercase
+-- |   TextTransform.Uppercase
+-- |
+-- | -- Generate a hierarchy from a scale
+-- | hierarchy = TH.generate
+-- |   { scale: Scale.defaultScale
+-- |   , headingStack: TS.singleFont (FF.fontFamily "Archivo")
+-- |   , bodyStack: TS.singleFont (FF.fontFamily "Poppins")
+-- |   , headingWeight: FW.extraBold
+-- |   , bodyWeight: FW.normal
+-- |   , headingLineHeight: LineHeight.tight
+-- |   , bodyLineHeight: LineHeight.relaxed
+-- |   , headingLetterSpacing: LetterSpacing.none
+-- |   , bodyLetterSpacing: LetterSpacing.normal
+-- |   , useUppercaseHeadings: true
+-- |   }
+-- | ```
+-- |
+-- | ## Type Safety
+-- |
+-- | Each atom is a distinct newtype. You cannot accidentally use a FontWeight
+-- | where a FontSize is expected. Conversions to CSS are explicit.
+-- |
+-- | ## Design Philosophy
+-- |
+-- | Typography primitives model typographic concepts, not CSS properties.
+-- | The CSS conversion happens at the boundary. This allows the same types
+-- | to target different rendering backends (web, native, PDF, etc.).
+
+module Hydrogen.Schema.Typography where
+
+-- Note: This module exists for documentation. Submodules have some overlapping
+-- names by design (e.g., `normal` in FontWeight, LineHeight, LetterSpacing).
+-- Always use qualified imports:
+--
+--   import Hydrogen.Schema.Typography.FontWeight as FW
+--   import Hydrogen.Schema.Typography.FontSize as FS
+--   import Hydrogen.Schema.Typography.LineHeight as LH
+--   import Hydrogen.Schema.Typography.LetterSpacing as LS
+--   import Hydrogen.Schema.Typography.TextTransform as TT
+--   import Hydrogen.Schema.Typography.FontFamily as FF
+--   import Hydrogen.Schema.Typography.FontSource as Source
+--   import Hydrogen.Schema.Typography.TypeStyle as TS
+--   import Hydrogen.Schema.Typography.TypeScale as Scale
+--   import Hydrogen.Schema.Typography.TypeHierarchy as TH
+--
+-- See module documentation above for the full submodule list.

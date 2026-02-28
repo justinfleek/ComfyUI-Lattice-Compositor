@@ -1,0 +1,18 @@
+
+  HYDROGEN // dev shell
+
+(node:607535) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+Reading Spago workspace configuration...
+‼ Your "spago.yaml" is using an outdated format. Run Spago with the --migrate flag to update it to the latest version.
+
+✓ Selecting package to build: hydrogen
+
+Downloading dependencies...
+Building...
+           Src   Lib   All
+Warnings     0     0     0
+Errors       0     0     0
+
+✓ Build succeeded.
+

@@ -1,0 +1,81 @@
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                             // hydrogen // schema // geometry
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+-- | Geometry pillar — shapes, paths, and spatial primitives.
+-- |
+-- | ## Import Pattern
+-- |
+-- | Import submodules directly with qualified names:
+-- |
+-- | ```purescript
+-- | import Hydrogen.Schema.Geometry.Angle as Angle
+-- | import Hydrogen.Schema.Geometry.Radius as Radius
+-- | import Hydrogen.Schema.Geometry.Point (Point2D, point2D)
+-- |
+-- | -- No conflicts: Angle.full vs Radius.full
+-- | rotation :: Angle.Degrees
+-- | rotation = Angle.quarter
+-- |
+-- | corners :: Radius.Corners
+-- | corners = Radius.cornersAll Radius.md
+-- | ```
+-- |
+-- | ## Submodules
+-- |
+-- | ### Foundation
+-- | - `Hydrogen.Schema.Geometry.Angle` — Angular units (Degrees, Radians, Turns)
+-- | - `Hydrogen.Schema.Geometry.Point` — 2D and 3D points
+-- | - `Hydrogen.Schema.Geometry.Vector` — 2D and 3D vectors
+-- | - `Hydrogen.Schema.Geometry.Position` — Position primitives
+-- |
+-- | ### 2D Shapes
+-- | - `Hydrogen.Schema.Geometry.Arc` — Circular arcs
+-- | - `Hydrogen.Schema.Geometry.Bezier` — Cubic and quadratic Bezier curves
+-- | - `Hydrogen.Schema.Geometry.Circle` — Circle primitives
+-- | - `Hydrogen.Schema.Geometry.Ellipse` — Ellipse primitives
+-- | - `Hydrogen.Schema.Geometry.Path` — SVG-style path commands
+-- | - `Hydrogen.Schema.Geometry.Polygon` — N-sided polygons
+-- | - `Hydrogen.Schema.Geometry.Shape` — Shape union type
+-- | - `Hydrogen.Schema.Geometry.Triangle` — Triangle primitives
+-- |
+-- | ### 3D Shapes
+-- | - `Hydrogen.Schema.Geometry.Box3` — 3D bounding boxes
+-- | - `Hydrogen.Schema.Geometry.Frustum` — View frustums
+-- | - `Hydrogen.Schema.Geometry.Mesh2D` — 2D mesh tessellation
+-- | - `Hydrogen.Schema.Geometry.Plane` — Infinite planes
+-- | - `Hydrogen.Schema.Geometry.Ray` — Ray primitives for casting
+-- | - `Hydrogen.Schema.Geometry.Sphere` — Sphere primitives
+-- |
+-- | ### Coordinate Systems
+-- | - `Hydrogen.Schema.Geometry.Polar` — 2D polar coordinates (r, θ)
+-- | - `Hydrogen.Schema.Geometry.Cylindrical` — 3D cylindrical coordinates (r, θ, z)
+-- | - `Hydrogen.Schema.Geometry.Spherical` — 3D spherical coordinates (r, θ, φ)
+-- |
+-- | ### Advanced Curves
+-- | - `Hydrogen.Schema.Geometry.Spline` — Catmull-Rom and B-Spline curves
+-- | - `Hydrogen.Schema.Geometry.Nurbs` — Non-Uniform Rational B-Splines (NURBS)
+-- |
+-- | ### Transforms
+-- | - `Hydrogen.Schema.Geometry.Transform` — 2D affine transforms
+-- | - `Hydrogen.Schema.Geometry.Transform3D` — 3D transforms
+-- | - `Hydrogen.Schema.Geometry.Quaternion` — Rotation quaternions
+-- | - `Hydrogen.Schema.Geometry.Symmetry` — Symmetry operations
+-- |
+-- | ### Styling
+-- | - `Hydrogen.Schema.Geometry.Border` — Border definitions
+-- | - `Hydrogen.Schema.Geometry.AnimatedBorder` — Animated border transitions
+-- | - `Hydrogen.Schema.Geometry.CornerRadii` — Per-corner radius values
+-- | - `Hydrogen.Schema.Geometry.Radius` — Border radius scale
+-- | - `Hydrogen.Schema.Geometry.Spacing` — Margin and padding
+-- | - `Hydrogen.Schema.Geometry.Stroke` — Stroke styling
+-- |
+-- | This module exists as documentation. Import submodules directly.
+
+module Hydrogen.Schema.Geometry
+  ( module Hydrogen.Schema.Geometry
+  ) where
+
+-- | Geometry pillar version for compatibility checks.
+geometryVersion :: String
+geometryVersion = "0.1.0"

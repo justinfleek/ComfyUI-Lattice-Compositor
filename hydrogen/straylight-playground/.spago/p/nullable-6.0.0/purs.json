@@ -1,0 +1,16 @@
+{
+  "name": "nullable",
+  "version": "6.0.0",
+  "license": "MIT",
+  "description": "A library for dealing with nulls",
+  "location": {
+    "githubOwner": "purescript-contrib",
+    "githubRepo": "purescript-nullable"
+  },
+  "ref": "v6.0.0",
+  "dependencies": {
+    "functions": ">=6.0.0 <7.0.0",
+    "maybe": ">=6.0.0 <7.0.0",
+    "prelude": ">=6.0.0 <7.0.0"
+  }
+}

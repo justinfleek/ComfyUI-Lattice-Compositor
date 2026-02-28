@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Hydrogen Runtime Test</title>
+    <style>
+        body {
+            margin: 0;
+            background: #111;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: system-ui, sans-serif;
+            color: #fff;
+        }
+        canvas {
+            border: 1px solid #333;
+        }
+        .error {
+            color: #f44;
+            padding: 20px;
+            max-width: 600px;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas" width="800" height="600"></canvas>
+
+    <script type="module">
+        import init, { Runtime } from './hydrogen_runtime.js';
+
+        async function run() {
+            try {
+                // Initialize WASM
+                await init();
+                console.log('WASM initialized');
+
+                // Get canvas
+                const canvas = document.getElementById('canvas');
+                
+                // Create runtime
+                const runtime = await Runtime.new(canvas);
+                console.log('Runtime created');
+
+                // Create a simple command buffer with one red rectangle
+                // This matches the Hydrogen binary format:
+                // Header (16 bytes) + DrawRect command (60 bytes)
+                const buffer = new Uint8Array([
+                    // Header
+                    0x47, 0x44, 0x59, 0x48,  // magic: "HYDG"
+                    0x01, 0x00, 0x00, 0x00,  // version: 1
+                    0x01, 0x00, 0x00, 0x00,  // count: 1
+                    0x00, 0x00, 0x00, 0x00,  // flags: 0
+
+                    // DrawRect command
+                    0x01, 0x00, 0x00, 0x00,  // type: DrawRect (0x01) + padding
+
+                    // x: 100.0 (IEEE 754 little-endian)
+                    0x00, 0x00, 0xC8, 0x42,
+                    // y: 50.0
+                    0x00, 0x00, 0x48, 0x42,
+                    // width: 200.0
+                    0x00, 0x00, 0x48, 0x43,
+                    // height: 100.0
+                    0x00, 0x00, 0xC8, 0x42,
+
+                    // color r: 1.0
+                    0x00, 0x00, 0x80, 0x3F,
+                    // color g: 0.2
+                    0xCD, 0xCC, 0x4C, 0x3E,
+                    // color b: 0.2
+                    0xCD, 0xCC, 0x4C, 0x3E,
+                    // color a: 1.0
+                    0x00, 0x00, 0x80, 0x3F,
+
+                    // radii: all 16.0
+                    0x00, 0x00, 0x80, 0x41,
+                    0x00, 0x00, 0x80, 0x41,
+                    0x00, 0x00, 0x80, 0x41,
+                    0x00, 0x00, 0x80, 0x41,
+
+                    // depth: 0.0
+                    0x00, 0x00, 0x00, 0x00,
+                    // pickId: 1
+                    0x01, 0x00, 0x00, 0x00,
+                ]);
+
+                // Render
+                runtime.render(buffer);
+                console.log('Rendered!');
+
+            } catch (e) {
+                console.error('Error:', e);
+                document.body.innerHTML = `<div class="error">
+                    <h2>WebGPU Error</h2>
+                    <p>${e}</p>
+                    <p>Make sure you're using a browser with WebGPU support (Chrome 113+, Edge 113+, or Firefox Nightly with flags).</p>
+                </div>`;
+            }
+        }
+
+        run();
+    </script>
+</body>
+</html>

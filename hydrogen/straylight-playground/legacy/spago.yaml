@@ -1,0 +1,19 @@
+package:
+  name: hydrogen-showcase
+  description: "Interactive component showcase for Hydrogen"
+  dependencies:
+    - hydrogen
+    - prelude
+    - effect
+    - aff
+    - halogen
+    - halogen-vdom
+    - maybe
+    - arrays
+
+workspace:
+  package_set:
+    registry: 73.2.0
+  extra_packages:
+    hydrogen:
+      path: ../

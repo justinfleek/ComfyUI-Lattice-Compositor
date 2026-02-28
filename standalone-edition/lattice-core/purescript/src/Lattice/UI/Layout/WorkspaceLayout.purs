@@ -1,28 +1,28 @@
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                       // lattice // ui // workspace-layout
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+-- |
 -- | Workspace Layout Component
 -- |
 -- | The main workspace layout for the Lattice Compositor.
+-- | Composes child components: MenuBar, Toolbar, LeftSidebar, CenterViewport, RightSidebar.
 -- |
 -- | ┌─────────────────────────────────────────────────────────────────────────┐
 -- | │ MenuBar (28px)                                                          │
 -- | ├─────────────────────────────────────────────────────────────────────────┤
 -- | │ Toolbar (54px)                                                          │
 -- | ├────────┬────────────────────────────────────────────────┬───────────────┤
--- | │        │  ┌─────────────────┬─────────────────┐         │               │
--- | │  Left  │  │  3D Scene View  │  Render Preview │         │    Right      │
--- | │ Sidebar│  │  (Working)      │  (Final Output) │         │   Sidebar     │
--- | │ (14%)  │  │  Shadowbox      │  Black → Render │         │    (20%)      │
--- | │        │  └─────────────────┴─────────────────┘         │               │
--- | │ Tabs:  │  ┌───────────────────────────────────┐         │  Properties   │
--- | │ -Project│ │           Timeline                │         │  + AI Panel   │
--- | │ -Assets │ │                                   │         │               │
--- | │ -Draw  │  └───────────────────────────────────┘         │               │
+-- | │        │  ┌─────────────────────────────────────────┐   │               │
+-- | │  Left  │  │         Center Viewport                 │   │    Right      │
+-- | │ Sidebar│  │  (Canvas + Grid + Rulers + Timeline)    │   │   Sidebar     │
+-- | │ (14%)  │  │                                         │   │    (20%)      │
+-- | │        │  └─────────────────────────────────────────┘   │               │
+-- | │ Tabs:  │                                                │  Properties   │
+-- | │-Project│                                                │  + AI Panel   │
+-- | │-Effects│                                                │               │
+-- | │-Assets │                                                │               │
 -- | └────────┴────────────────────────────────────────────────┴───────────────┘
 -- |
--- | ## Viewports:
--- | - **3D Scene View**: Interactive editing, camera rotation, z-space navigation
--- | - **Render Preview**: Displays backend-rendered output, starts black
--- | - **Drawing Canvas**: Tab in left panel for ControlNet brush painting
--- | - **Asset Browser**: Tab in left panel for imported files
 module Lattice.UI.Layout.WorkspaceLayout
   ( component
   , Input
@@ -33,27 +33,23 @@ module Lattice.UI.Layout.WorkspaceLayout
 
 import Prelude
 
-import Data.Array (uncons) as Array
-import Data.Const (Const)
-import Data.Either (Either(..))
-import Data.Int (floor, toNumber)
+import Data.Array (length, filter)
 import Data.Maybe (Maybe(..))
 import Type.Proxy (Proxy(..))
-import Effect.Aff.Class (class MonadAff, liftAff)
-import Effect.Class (liftEffect)
+import Effect.Aff.Class (class MonadAff)
 import Halogen as H
 import Halogen.HTML as HH
-import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 
 import Lattice.UI.Core (cls)
-import Lattice.UI.Components.LayerList as LayerList
-import Lattice.UI.Components.Timeline as Timeline
-import Lattice.UI.Components.PropertiesPanel as PropertiesPanel
-import Lattice.Project (LayerBase)
+import Lattice.UI.Layout.MenuBar as MenuBar
+import Lattice.UI.Layout.Toolbar as Toolbar
+import Lattice.UI.Layout.LeftSidebar as LeftSidebar
+import Lattice.UI.Layout.RightSidebar as RightSidebar
+import Lattice.UI.Layout.CenterViewport as CenterViewport
 import Lattice.Services.Bridge.Client as Bridge
 
--- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+-- ════════════════════════════════════════════════════════════════════════════
 --                                                                     // types
 -- ════════════════════════════════════════════════════════════════════════════
 
@@ -67,110 +63,64 @@ data Query a
 
 type Slot id = H.Slot Query Output id
 
-type CompositionDimensions =
-  { width :: Int
-  , height :: Int
-  }
-
 type State =
   { -- Layout
     leftSidebarWidth :: Number  -- Percentage (default 14%)
   , rightSidebarWidth :: Number -- Percentage (default 20%)
-  , timelineHeight :: Number    -- Percentage (default 35%)
-  , viewportSplit :: Number     -- Left/Right viewport split (default 50%)
     -- Project
-  , layers :: Array LayerBase
-  , selectedLayerIds :: Array String
+  , projectName :: String
+  , hasUnsavedChanges :: Boolean
   , currentFrame :: Int
   , totalFrames :: Int
   , fps :: Number
   , isPlaying :: Boolean
+  , canUndo :: Boolean
+  , canRedo :: Boolean
+  , hasSelection :: Boolean
+  , selectedLayerId :: Maybe String
     -- Composition
-  , compositionDimensions :: CompositionDimensions
-    -- Tabs
-  , activeLeftTab :: LeftTab
-    -- Render state
-  , renderPreviewUrl :: Maybe String  -- Base64 or URL of rendered frame
-  , isRendering :: Boolean
-  , renderError :: Maybe String       -- Error message if render failed
-    -- Generation progress
-  , generationProgress :: Number      -- 0.0 to 100.0
-  , generationStage :: String         -- "idle" | "encoding" | "sampling" | "decoding"
-  , generationEta :: Maybe Number     -- Estimated seconds remaining
-    -- 3D Scene state
-  , sceneCameraRotation :: { x :: Number, y :: Number, z :: Number }
-  , sceneCameraPosition :: { x :: Number, y :: Number, z :: Number }
-  , sceneCameraZoom :: Number
+  , compWidth :: Int
+  , compHeight :: Int
+    -- Tool state
+  , currentTool :: Toolbar.Tool
+  , gpuTier :: String
+    -- Left sidebar
+  , leftTab :: LeftSidebar.LeftTab
+  , compositionCount :: Int
+  , assetCount :: Int
+    -- Right sidebar
+  , aiTab :: RightSidebar.AITab
+  , expandedPanels :: RightSidebar.ExpandedPanels
+    -- Center viewport
+  , viewportTab :: CenterViewport.ViewportTab
+  , viewOptions :: CenterViewport.ViewOptions
+  , showCurveEditor :: Boolean
+  , guides :: Array CenterViewport.Guide
+  , snapEnabled :: Boolean
+  , snapIndicatorX :: Maybe Number
+  , snapIndicatorY :: Maybe Number
     -- Bridge
   , bridgeClient :: Maybe Bridge.BridgeClient
-    -- AI generation
-  , promptText :: String
-  , negativePrompt :: String
-  , generationMode :: GenerationMode
-  , selectedModel :: String
-  , sourceImageUrl :: Maybe String  -- For i2v/edit mode
-  , maskImageUrl :: Maybe String    -- For edit mode (white = edit, black = keep)
-  , numFrames :: Int
-  , cfgScale :: Number
-  , steps :: Int
-  , seed :: Maybe Int               -- Random seed (Nothing = auto)
+    -- Generation
+  , isRendering :: Boolean
+  , renderError :: Maybe String
   }
-
-data LeftTab 
-  = TabProject   -- Layer list
-  | TabAssets    -- Imported files browser
-  | TabDraw      -- Drawing canvas for ControlNet
-derive instance eqLeftTab :: Eq LeftTab
-
--- | Generation mode - determines which models are available
-data GenerationMode
-  = TextToImage   -- T2I - Generate still image from prompt
-  | ImageEdit     -- Edit - Inpaint/outpaint with mask
-  | ImageToVideo  -- I2V - Animate an image with prompt
-  | TextToVideo   -- T2V - Generate video from prompt
-  | TextTo3D      -- 3D  - Generate 3D model from prompt/image
-derive instance eqGenerationMode :: Eq GenerationMode
 
 data Action
   = Initialize
   | Receive Input
-  | SetLeftTab LeftTab
-  | HandleLayerList LayerList.Output
-  | HandleTimeline Timeline.Output
-  | HandleProperties PropertiesPanel.Output
-    -- Viewport actions
-  | RotateSceneCamera Number Number
-  | PanSceneCamera Number Number
-  | ZoomSceneCamera Number
-  | ResetSceneCamera
-    -- Drawing canvas actions
-  | SetBrushSize Number
-  | SetBrushColor String
-  | SetBrushOpacity Number
-  | ClearDrawingCanvas
-    -- AI generation actions
-  | SetPromptText String
-  | SetNegativePrompt String
-  | SetGenerationMode GenerationMode
-  | SetModel String
-  | SetNumFrames Int
-  | SetCfgScale Number
-  | SetSteps Int
-  | SetSourceImage String
-  | GenerateFromPrompt
-  | ReceiveGenerateProgress Number String  -- percentage, stage
-  | ReceiveGenerateResult (Either String Bridge.GenerateResult)
+  | HandleMenuBar MenuBar.Output
+  | HandleToolbar Toolbar.Output
+  | HandleLeftSidebar LeftSidebar.Output
+  | HandleRightSidebar RightSidebar.Output
+  | HandleCenterViewport CenterViewport.Output
 
 type Slots =
-  ( menuBar :: H.Slot (Const Void) Void Unit
-  , toolbar :: H.Slot (Const Void) Void Unit
-  , leftSidebar :: H.Slot (Const Void) Void Unit
-  , sceneViewport :: H.Slot (Const Void) Void Unit
-  , renderViewport :: H.Slot (Const Void) Void Unit
-  , timeline :: Timeline.Slot Unit
-  , rightSidebar :: H.Slot (Const Void) Void Unit
-  , layerList :: LayerList.Slot Unit
-  , properties :: PropertiesPanel.Slot Unit
+  ( menuBar :: MenuBar.Slot Unit
+  , toolbar :: Toolbar.Slot Unit
+  , leftSidebar :: LeftSidebar.Slot Unit
+  , rightSidebar :: RightSidebar.Slot Unit
+  , centerViewport :: CenterViewport.Slot Unit
   )
 
 _menuBar :: Proxy "menuBar"
@@ -182,23 +132,11 @@ _toolbar = Proxy
 _leftSidebar :: Proxy "leftSidebar"
 _leftSidebar = Proxy
 
-_sceneViewport :: Proxy "sceneViewport"
-_sceneViewport = Proxy
-
-_renderViewport :: Proxy "renderViewport"
-_renderViewport = Proxy
-
-_timeline :: Proxy "timeline"
-_timeline = Proxy
-
 _rightSidebar :: Proxy "rightSidebar"
 _rightSidebar = Proxy
 
-_layerList :: Proxy "layerList"
-_layerList = Proxy
-
-_properties :: Proxy "properties"
-_properties = Proxy
+_centerViewport :: Proxy "centerViewport"
+_centerViewport = Proxy
 
 -- ════════════════════════════════════════════════════════════════════════════
 --                                                                 // component
@@ -219,36 +157,62 @@ initialState :: Input -> State
 initialState input =
   { leftSidebarWidth: 14.0
   , rightSidebarWidth: 20.0
-  , timelineHeight: 35.0
-  , viewportSplit: 50.0
-  , layers: []
-  , selectedLayerIds: []
+  , projectName: "Untitled Project"
+  , hasUnsavedChanges: false
   , currentFrame: 0
   , totalFrames: 81
   , fps: 16.0
   , isPlaying: false
-  , compositionDimensions: { width: 1920, height: 1080 }
-  , activeLeftTab: TabProject
-  , renderPreviewUrl: Nothing
+  , canUndo: false
+  , canRedo: false
+  , hasSelection: false
+  , selectedLayerId: Nothing
+  , compWidth: 1920
+  , compHeight: 1080
+  , currentTool: Toolbar.ToolSelect
+  , gpuTier: "webgpu"
+  , leftTab: LeftSidebar.TabProject
+  , compositionCount: 1
+  , assetCount: 0
+  , aiTab: RightSidebar.AIChat
+  , expandedPanels: defaultExpandedPanels
+  , viewportTab: CenterViewport.TabComposition
+  , viewOptions: defaultViewOptions
+  , showCurveEditor: false
+  , guides: []
+  , snapEnabled: true
+  , snapIndicatorX: Nothing
+  , snapIndicatorY: Nothing
+  , bridgeClient: input.bridgeClient
   , isRendering: false
   , renderError: Nothing
-  , generationProgress: 0.0
-  , generationStage: "idle"
-  , generationEta: Nothing
-  , sceneCameraRotation: { x: 0.0, y: 0.0, z: 0.0 }
-  , sceneCameraPosition: { x: 0.0, y: 0.0, z: 0.0 }
-  , sceneCameraZoom: 1.0
-  , bridgeClient: input.bridgeClient
-  , promptText: ""
-  , negativePrompt: ""
-  , generationMode: TextToVideo
-  , selectedModel: "wan-2.1"
-  , sourceImageUrl: Nothing
-  , maskImageUrl: Nothing
-  , numFrames: 81
-  , cfgScale: 7.0
-  , steps: 30
-  , seed: Nothing
+  }
+
+defaultExpandedPanels :: RightSidebar.ExpandedPanels
+defaultExpandedPanels =
+  { properties: true
+  , effects: false
+  , drivers: false
+  , scopes: false
+  , camera: false
+  , audio: false
+  , align: false
+  , preview: false
+  }
+
+defaultViewOptions :: CenterViewport.ViewOptions
+defaultViewOptions =
+  { showGrid: false
+  , showRulers: false
+  , showAxes: false
+  , showCameraFrustum: false
+  , showCompositionBounds: true
+  , showFocalPlane: false
+  , showLayerOutlines: true
+  , showSafeZones: false
+  , showGuides: true
+  , gridSize: 50
+  , gridDivisions: 5
   }
 
 -- ════════════════════════════════════════════════════════════════════════════
@@ -262,10 +226,27 @@ render state =
     , HP.attr (HH.AttrName "style") workspaceStyle
     ]
     [ -- Menu Bar
-      renderMenuBar
+      HH.slot _menuBar unit MenuBar.component
+        { projectName: state.projectName
+        , hasUnsavedChanges: state.hasUnsavedChanges
+        , canUndo: state.canUndo
+        , canRedo: state.canRedo
+        , hasSelection: state.hasSelection
+        }
+        HandleMenuBar
     
       -- Toolbar
-    , renderToolbar
+    , HH.slot _toolbar unit Toolbar.component
+        { currentTool: state.currentTool
+        , isPlaying: state.isPlaying
+        , currentFrame: state.currentFrame
+        , totalFrames: state.totalFrames
+        , fps: state.fps
+        , canUndo: state.canUndo
+        , canRedo: state.canRedo
+        , gpuTier: state.gpuTier
+        }
+        HandleToolbar
     
       -- Main content area (3-column split)
     , HH.div
@@ -274,735 +255,90 @@ render state =
         ]
         [ -- Left Sidebar
           HH.div
-            [ cls [ "lattice-sidebar lattice-sidebar-left" ]
+            [ cls [ "lattice-sidebar", "lattice-sidebar-left" ]
             , HP.attr (HH.AttrName "style") (sidebarStyle state.leftSidebarWidth "right")
             ]
-            [ renderLeftSidebar state ]
+            [ HH.slot _leftSidebar unit LeftSidebar.component
+                { activeTab: state.leftTab
+                , projectName: state.projectName
+                , compositionCount: state.compositionCount
+                , assetCount: state.assetCount
+                }
+                HandleLeftSidebar
+            ]
         
-          -- Center (Dual Viewports + Timeline)
+          -- Center (Viewport + Timeline)
         , HH.div
             [ cls [ "lattice-center" ]
             , HP.attr (HH.AttrName "style") centerStyle
             ]
-            [ -- Dual Viewport Container
-              HH.div
-                [ cls [ "lattice-viewport-container" ]
-                , HP.attr (HH.AttrName "style") viewportContainerStyle
-                ]
-                [ -- Left: 3D Scene View (Working)
-                  renderSceneViewport state
-                  -- Right: Render Preview (Final Output)
-                , renderRenderViewport state
-                ]
-            
-              -- Timeline
-            , HH.div
-                [ cls [ "lattice-timeline-container" ]
-                , HP.attr (HH.AttrName "style") (timelineStyle state.timelineHeight)
-                ]
-                [ renderTimeline state ]
+            [ HH.slot _centerViewport unit CenterViewport.component
+                { viewportTab: state.viewportTab
+                , viewOptions: state.viewOptions
+                , showCurveEditor: state.showCurveEditor
+                , guides: state.guides
+                , snapEnabled: state.snapEnabled
+                , snapIndicatorX: state.snapIndicatorX
+                , snapIndicatorY: state.snapIndicatorY
+                , compWidth: state.compWidth
+                , compHeight: state.compHeight
+                , currentFrame: state.currentFrame
+                , totalFrames: state.totalFrames
+                , fps: state.fps
+                }
+                HandleCenterViewport
             ]
         
           -- Right Sidebar
         , HH.div
-            [ cls [ "lattice-sidebar lattice-sidebar-right" ]
+            [ cls [ "lattice-sidebar", "lattice-sidebar-right" ]
             , HP.attr (HH.AttrName "style") (sidebarStyle state.rightSidebarWidth "left")
             ]
-            [ renderRightSidebar state ]
+            [ HH.slot _rightSidebar unit RightSidebar.component
+                { aiTab: state.aiTab
+                , expandedPanels: state.expandedPanels
+                , selectedLayerId: state.selectedLayerId
+                , hasSelection: state.hasSelection
+                }
+                HandleRightSidebar
+            ]
         ]
+    
+      -- Connection status footer
+    , renderConnectionStatus state
     ]
 
--- ════════════════════════════════════════════════════════════════════════════
---                                                            // dual viewports
--- ════════════════════════════════════════════════════════════════════════════
-
--- | 3D Scene View - Interactive editing viewport
--- | Shows composition with shadowbox for dimensions
--- | User can rotate/pan/zoom camera in z-space
-renderSceneViewport :: forall m. State -> H.ComponentHTML Action Slots m
-renderSceneViewport state =
+renderConnectionStatus :: forall m. State -> H.ComponentHTML Action Slots m
+renderConnectionStatus state =
   HH.div
-    [ cls [ "lattice-scene-viewport" ]
-    , HP.attr (HH.AttrName "style") sceneViewportStyle
+    [ cls [ "lattice-status-bar" ]
+    , HP.attr (HH.AttrName "style") statusBarStyle
     ]
-    [ -- Header
-      HH.div [ cls [ "lattice-viewport-header" ] ]
-        [ HH.span [ cls [ "lattice-viewport-title" ] ] 
-            [ HH.text "Scene" ]
-        , HH.div [ cls [ "lattice-viewport-controls" ] ]
-            [ HH.button 
-                [ cls [ "lattice-viewport-btn" ]
-                , HP.title "Reset Camera"
-                , HE.onClick \_ -> ResetSceneCamera
-                ]
-                [ HH.text "⟲" ]
-            ]
-        ]
-    
-      -- Scene canvas with shadowbox
-    , HH.div 
-        [ cls [ "lattice-scene-canvas" ]
-        , HP.attr (HH.AttrName "style") sceneCanvasStyle
-        ]
-        [ -- Shadowbox overlay showing composition bounds
-          HH.div 
-            [ cls [ "lattice-shadowbox" ]
-            , HP.attr (HH.AttrName "style") (shadowboxStyle state.compositionDimensions)
-            ]
-            []
-        
-          -- Scene content area (layers, keyframes, paths)
-        , HH.div [ cls [ "lattice-scene-content" ] ]
-            [ -- Placeholder for 3D scene rendering
-              HH.div [ cls [ "lattice-scene-placeholder" ] ]
-                [ HH.text "3D Scene View"
-                , HH.br_
-                , HH.span [ cls [ "lattice-text-muted" ] ]
-                    [ HH.text (show state.compositionDimensions.width <> " × " <> show state.compositionDimensions.height) ]
-                ]
-            ]
-        ]
-    
-      -- Camera info
-    , HH.div [ cls [ "lattice-viewport-footer" ] ]
-        [ HH.span_ 
-            [ HH.text ("Zoom: " <> show (state.sceneCameraZoom * 100.0) <> "%") ]
-        ]
-    ]
-
--- | Render Preview - Final output display
--- | Shows rendered frames from backend
--- | Starts black, updates when render completes
-renderRenderViewport :: forall m. State -> H.ComponentHTML Action Slots m
-renderRenderViewport state =
-  HH.div
-    [ cls [ "lattice-render-viewport" ]
-    , HP.attr (HH.AttrName "style") renderViewportStyle
-    ]
-    [ -- Header
-      HH.div [ cls [ "lattice-viewport-header" ] ]
-        [ HH.span [ cls [ "lattice-viewport-title" ] ] 
-            [ HH.text "Preview" ]
-        , if state.isRendering
-            then HH.span [ cls [ "lattice-rendering-indicator" ] ]
-                [ HH.text "Rendering..." ]
-            else HH.text ""
-        ]
-    
-      -- Render output area
-    , HH.div 
-        [ cls [ "lattice-render-canvas" ]
-        , HP.attr (HH.AttrName "style") renderCanvasStyle
-        ]
-        [ case state.renderPreviewUrl of
-            Nothing ->
-              -- Black placeholder when no render
-              HH.div 
-                [ cls [ "lattice-render-placeholder" ]
-                , HP.attr (HH.AttrName "style") renderPlaceholderStyle
-                ]
-                [ HH.div [ cls [ "lattice-placeholder-content" ] ]
-                    [ HH.span [ cls [ "lattice-text-muted" ] ]
-                        [ HH.text "No render" ]
-                    , HH.br_
-                    , HH.span [ cls [ "lattice-text-xs" ] ]
-                        [ HH.text "Generate or import a layer" ]
-                    ]
-                ]
-            Just url ->
-              -- Display rendered frame
-              HH.img
-                [ cls [ "lattice-render-output" ]
-                , HP.src url
-                , HP.alt "Rendered frame"
-                , HP.attr (HH.AttrName "style") renderOutputStyle
-                ]
-        ]
-    
-      -- Frame info
-    , HH.div [ cls [ "lattice-viewport-footer" ] ]
-        [ HH.span_ 
-            [ HH.text ("Frame " <> show state.currentFrame <> " / " <> show state.totalFrames) ]
-        ]
-    ]
-
--- ════════════════════════════════════════════════════════════════════════════
---                                                                       // sub
--- ════════════════════════════════════════════════════════════════════════════
-
-renderMenuBar :: forall m. H.ComponentHTML Action Slots m
-renderMenuBar =
-  HH.div
-    [ cls [ "lattice-menubar" ]
-    , HP.attr (HH.AttrName "style") menuBarStyle
-    ]
-    [ HH.div [ cls [ "lattice-menubar-left" ] ]
-        [ menuItem "File"
-        , menuItem "Edit"
-        , menuItem "View"
-        , menuItem "Insert"
-        , menuItem "Layer"
-        , menuItem "Animation"
-        , menuItem "Effects"
-        , menuItem "Window"
-        , menuItem "Help"
-        ]
-    , HH.div [ cls [ "lattice-menubar-right" ] ]
-        [ HH.span [ cls [ "lattice-project-name" ] ] 
-            [ HH.text "Untitled Project" ]
-        ]
-    ]
-
-menuItem :: forall m. String -> H.ComponentHTML Action Slots m
-menuItem label =
-  HH.button
-    [ cls [ "lattice-menu-trigger" ] ]
-    [ HH.text label ]
-
-renderToolbar :: forall m. H.ComponentHTML Action Slots m
-renderToolbar =
-  HH.div
-    [ cls [ "lattice-toolbar" ]
-    , HP.attr (HH.AttrName "style") toolbarStyle
-    ]
-    [ -- Tool group: Selection
-      HH.div [ cls [ "lattice-tool-group" ] ]
-        [ toolButton "select" "Selection Tool" true
-        , toolButton "hand" "Pan Tool" false
-        , toolButton "zoom" "Zoom Tool" false
-        ]
-    
-      -- Tool group: Transform
-    , HH.div [ cls [ "lattice-tool-group" ] ]
-        [ toolButton "move" "Move" false
-        , toolButton "rotate" "Rotate" false
-        , toolButton "scale" "Scale" false
-        ]
-    
-      -- Tool group: Create
-    , HH.div [ cls [ "lattice-tool-group" ] ]
-        [ toolButton "pen" "Pen Tool" false
-        , toolButton "rectangle" "Rectangle" false
-        , toolButton "ellipse" "Ellipse" false
-        , toolButton "text" "Text Tool" false
-        ]
-    
-      -- Spacer
-    , HH.div [ cls [ "lattice-toolbar-spacer" ] ] []
-    
-      -- Playback controls
-    , HH.div [ cls [ "lattice-tool-group lattice-playback" ] ]
-        [ toolButton "skip-back" "Go to Start" false
-        , toolButton "step-back" "Previous Frame" false
-        , toolButton "play" "Play/Pause" false
-        , toolButton "step-forward" "Next Frame" false
-        , toolButton "skip-forward" "Go to End" false
-        ]
-    
-      -- Time display
-    , HH.div [ cls [ "lattice-time-display" ] ]
-        [ HH.span_ [ HH.text "00:00:00:00" ] ]
-    ]
-
-toolButton :: forall m. String -> String -> Boolean -> H.ComponentHTML Action Slots m
-toolButton iconName tooltip active =
-  HH.button
-    [ cls [ "lattice-tool-btn" ]
-    , HP.title tooltip
-    , HP.attr (HH.AttrName "data-state") (if active then "active" else "inactive")
-    ]
-    [ HH.span 
-        [ cls [ "lattice-icon" ]
-        , HP.attr (HH.AttrName "data-icon") iconName
-        ] 
-        [] -- Icon rendered via CSS data-icon attribute
-    ]
-
-renderLeftSidebar :: forall m. MonadAff m => State -> H.ComponentHTML Action Slots m
-renderLeftSidebar state =
-  HH.div [ cls [ "lattice-sidebar-content" ] ]
-    [ -- Tabs: Project / Assets / Draw
-      HH.div [ cls [ "lattice-sidebar-tabs" ] ]
-        [ HH.button 
-            [ cls [ "lattice-tabs-trigger" ]
-            , HP.attr (HH.AttrName "data-state") (if state.activeLeftTab == TabProject then "active" else "inactive")
-            , HE.onClick \_ -> SetLeftTab TabProject
-            ]
-            [ HH.text "Project" ]
-        , HH.button 
-            [ cls [ "lattice-tabs-trigger" ]
-            , HP.attr (HH.AttrName "data-state") (if state.activeLeftTab == TabAssets then "active" else "inactive")
-            , HE.onClick \_ -> SetLeftTab TabAssets
-            ]
-            [ HH.text "Assets" ]
-        , HH.button 
-            [ cls [ "lattice-tabs-trigger" ]
-            , HP.attr (HH.AttrName "data-state") (if state.activeLeftTab == TabDraw then "active" else "inactive")
-            , HE.onClick \_ -> SetLeftTab TabDraw
-            ]
-            [ HH.text "Draw" ]
-        ]
-    
-      -- Tab content
-    , case state.activeLeftTab of
-        TabProject -> renderProjectTab state
-        TabAssets -> renderAssetsTab
-        TabDraw -> renderDrawingTab state
-    ]
-
-renderProjectTab :: forall m. MonadAff m => State -> H.ComponentHTML Action Slots m
-renderProjectTab state =
-  HH.div [ cls [ "lattice-sidebar-panel" ] ]
-    [ HH.div [ cls [ "lattice-panel-header" ] ]
-        [ HH.text "Layers" ]
-    , HH.slot _layerList unit LayerList.component
-        { layers: state.layers
-        , selectedIds: state.selectedLayerIds
-        }
-        HandleLayerList
-    ]
-
-renderAssetsTab :: forall m. H.ComponentHTML Action Slots m
-renderAssetsTab =
-  HH.div [ cls [ "lattice-sidebar-panel" ] ]
-    [ HH.div [ cls [ "lattice-panel-header" ] ]
-        [ HH.text "Assets" ]
-    , HH.div [ cls [ "lattice-panel-content" ] ]
-        [ HH.p [ cls [ "lattice-text-muted" ] ] 
-            [ HH.text "No assets imported" ]
-        , HH.button [ cls [ "lattice-btn lattice-btn-primary" ] ]
-            [ HH.text "+ Import" ]
-        ]
-    ]
-
--- | Drawing Canvas Tab - For ControlNet mask painting
-renderDrawingTab :: forall m. State -> H.ComponentHTML Action Slots m
-renderDrawingTab state =
-  HH.div [ cls [ "lattice-sidebar-panel lattice-draw-panel" ] ]
-    [ HH.div [ cls [ "lattice-panel-header" ] ]
-        [ HH.text "Drawing Canvas" ]
-    
-      -- Brush tools
-    , HH.div [ cls [ "lattice-brush-tools" ] ]
-        [ HH.div [ cls [ "lattice-brush-control" ] ]
-            [ HH.label_ [ HH.text "Size" ]
-            , HH.input
-                [ HP.type_ HP.InputRange
-                , HP.attr (HH.AttrName "min") "1"
-                , HP.attr (HH.AttrName "max") "100"
-                , HP.attr (HH.AttrName "value") "10"
-                ]
-            ]
-        , HH.div [ cls [ "lattice-brush-control" ] ]
-            [ HH.label_ [ HH.text "Opacity" ]
-            , HH.input
-                [ HP.type_ HP.InputRange
-                , HP.attr (HH.AttrName "min") "0"
-                , HP.attr (HH.AttrName "max") "100"
-                , HP.attr (HH.AttrName "value") "100"
-                ]
-            ]
-        , HH.div [ cls [ "lattice-brush-control" ] ]
-            [ HH.label_ [ HH.text "Color" ]
-            , HH.input
-                [ HP.type_ HP.InputColor
-                , HP.attr (HH.AttrName "value") "#FFFFFF"
-                ]
-            ]
-        ]
-    
-      -- Drawing canvas (scaled to fit sidebar)
-    , HH.div 
-        [ cls [ "lattice-draw-canvas-container" ]
-        , HP.attr (HH.AttrName "style") drawCanvasContainerStyle
-        ]
-        [ HH.canvas
-            [ cls [ "lattice-draw-canvas" ]
-            , HP.id "lattice-draw-canvas"
-            , HP.width state.compositionDimensions.width
-            , HP.height state.compositionDimensions.height
-            , HP.attr (HH.AttrName "style") drawCanvasStyle
-            ]
-        ]
-    
-      -- Actions
-    , HH.div [ cls [ "lattice-draw-actions" ] ]
-        [ HH.button 
-            [ cls [ "lattice-btn lattice-btn-ghost" ]
-            , HE.onClick \_ -> ClearDrawingCanvas
-            ]
-            [ HH.text "Clear" ]
-        , HH.button 
-            [ cls [ "lattice-btn lattice-btn-primary" ] ]
-            [ HH.text "Use as ControlNet Layer" ]
-        ]
-    ]
-
-renderTimeline :: forall m. MonadAff m => State -> H.ComponentHTML Action Slots m
-renderTimeline state =
-  HH.slot _timeline unit Timeline.component
-    { layers: state.layers
-    , currentFrame: state.currentFrame
-    , totalFrames: state.totalFrames
-    , fps: state.fps
-    , selectedLayerIds: state.selectedLayerIds
-    , isPlaying: state.isPlaying
-    }
-    HandleTimeline
-
-renderRightSidebar :: forall m. MonadAff m => State -> H.ComponentHTML Action Slots m
-renderRightSidebar state =
-  HH.div [ cls [ "lattice-sidebar-content" ] ]
-    [ -- Properties panel
-      HH.slot _properties unit PropertiesPanel.component
-        { selectedLayer: getSelectedLayer state }
-        HandleProperties
-    
-      -- AI section
-    , HH.div [ cls [ "lattice-ai-section" ] ]
-        [ HH.div [ cls [ "lattice-sidebar-tabs" ] ]
-            [ tabButton "Generate" true
-            , tabButton "Chat" false
-            , tabButton "Flow" false
-            ]
-        , HH.div [ cls [ "lattice-ai-content" ] ]
-            [               -- Generation mode toggle buttons
-              HH.div [ cls [ "lattice-mode-toggle" ] ]
-                [ modeButton state TextToImage "T2I" "Text to Image"
-                , modeButton state ImageEdit "Edit" "Image Edit (Inpaint/Outpaint)"
-                , modeButton state ImageToVideo "I2V" "Image to Video"
-                , modeButton state TextToVideo "T2V" "Text to Video"
-                , modeButton state TextTo3D "3D" "Text/Image to 3D Model"
-                ]
-            
-              -- Model selector (changes based on mode)
-            , HH.div [ cls [ "lattice-model-selector" ] ]
-                [ HH.label [ HP.for "lattice-model-select" ] [ HH.text "Model" ]
-                , HH.select 
-                    [ cls [ "lattice-select" ]
-                    , HP.id "lattice-model-select"
-                    , HP.value state.selectedModel
-                    , HE.onValueChange SetModel
-                    ]
-                    (modelsForMode state.generationMode)
-                ]
-            
-              -- Source image selector (for I2V, Edit, and 3D modes)
-            , case state.generationMode of
-                ImageToVideo -> renderSourceImageSelector state
-                ImageEdit -> renderSourceImageSelector state
-                TextTo3D -> renderSourceImageSelector state  -- Optional reference image
-                _ -> HH.text ""
-            
-              -- Mask controls (only for ImageEdit mode)
-            , case state.generationMode of
-                ImageEdit ->
-                  HH.div [ cls [ "lattice-mask-controls" ] ]
-                    [ HH.label_ [ HH.text "Mask" ]
-                    , HH.div [ cls [ "lattice-mask-options" ] ]
-                        [ HH.button 
-                            [ cls [ "lattice-btn lattice-btn-ghost" ]
-                            , HP.title "Draw mask in Draw tab"
-                            , HE.onClick \_ -> SetLeftTab TabDraw
-                            ]
-                            [ HH.text "Draw Mask" ]
-                        , HH.button 
-                            [ cls [ "lattice-btn lattice-btn-ghost" ]
-                            , HP.title "Auto-generate mask from selection"
-                            ]
-                            [ HH.text "Auto Mask" ]
-                        ]
-                    , HH.div [ cls [ "lattice-mask-info lattice-text-muted" ] ]
-                        [ HH.text "White = edit, Black = keep" ]
-                    ]
-                _ -> HH.text ""
-            
-              -- Prompt input
-            , HH.div [ cls [ "lattice-prompt-container" ] ]
-                [ HH.label [ HP.for "lattice-prompt" ] [ HH.text "Prompt" ]
-                , HH.textarea
-                    [ cls [ "lattice-prompt-input" ]
-                    , HP.id "lattice-prompt"
-                    , HP.placeholder "Describe what you want to generate..."
-                    , HP.attr (HH.AttrName "rows") "3"
-                    , HP.value state.promptText
-                    , HE.onValueInput SetPromptText
-                    ]
-                ]
-            
-              -- Negative prompt (collapsible)
-            , HH.div [ cls [ "lattice-prompt-container" ] ]
-                [ HH.label [ HP.for "lattice-negative-prompt" ] [ HH.text "Negative Prompt" ]
-                , HH.textarea
-                    [ cls [ "lattice-prompt-input lattice-prompt-negative" ]
-                    , HP.id "lattice-negative-prompt"
-                    , HP.placeholder "What to avoid..."
-                    , HP.attr (HH.AttrName "rows") "2"
-                    , HP.value state.negativePrompt
-                    , HE.onValueInput SetNegativePrompt
-                    ]
-                ]
-            
-              -- Generation parameters
-            , HH.div [ cls [ "lattice-gen-params" ] ]
-                [ -- Frames (only for video modes)
-                  case state.generationMode of
-                    TextToImage -> HH.text ""
-                    _ -> 
-                      HH.div [ cls [ "lattice-param" ] ]
-                        [ HH.label [ HP.for "lattice-frames" ] [ HH.text "Frames" ]
-                        , HH.input
-                            [ HP.type_ HP.InputNumber
-                            , HP.id "lattice-frames"
-                            , HP.value (show state.numFrames)
-                            , HP.attr (HH.AttrName "min") "1"
-                            , HP.attr (HH.AttrName "max") "300"
-                            ]
-                        ]
-                , HH.div [ cls [ "lattice-param" ] ]
-                    [ HH.label [ HP.for "lattice-cfg-scale" ] [ HH.text "CFG Scale" ]
-                    , HH.input
-                        [ HP.type_ HP.InputNumber
-                        , HP.id "lattice-cfg-scale"
-                        , HP.value (show state.cfgScale)
-                        , HP.attr (HH.AttrName "min") "1"
-                        , HP.attr (HH.AttrName "max") "20"
-                        , HP.attr (HH.AttrName "step") "0.5"
-                        ]
-                    ]
-                , HH.div [ cls [ "lattice-param" ] ]
-                    [ HH.label [ HP.for "lattice-steps" ] [ HH.text "Steps" ]
-                    , HH.input
-                        [ HP.type_ HP.InputNumber
-                        , HP.id "lattice-steps"
-                        , HP.value (show state.steps)
-                        , HP.attr (HH.AttrName "min") "1"
-                        , HP.attr (HH.AttrName "max") "100"
-                        ]
-                    ]
-                ]
-            
-              -- Error display
-            , case state.renderError of
-                Just err -> 
-                  HH.div [ cls [ "lattice-error" ] ] 
-                    [ HH.text err ]
-                Nothing -> HH.text ""
-            
-              -- Progress bar (shown during generation)
-            , if state.isRendering
-                then renderProgressBar state
-                else HH.text ""
-            
-              -- Generate button
-            , HH.div [ cls [ "lattice-generate-actions" ] ]
-                [ HH.button 
-                    [ cls [ "lattice-btn lattice-btn-primary lattice-btn-lg" ]
-                    , HP.disabled (state.isRendering || state.promptText == "")
-                    , HE.onClick \_ -> GenerateFromPrompt
-                    ]
-                    [ HH.text (if state.isRendering then "Generating..." else "Generate") ]
-                ]
-            
-              -- Connection status
-            , case state.bridgeClient of
-                Nothing -> 
-                  HH.div [ cls [ "lattice-connection-status lattice-disconnected" ] ]
-                    [ HH.text "Backend disconnected" ]
-                Just _ ->
-                  HH.div [ cls [ "lattice-connection-status lattice-connected" ] ]
-                    [ HH.text "Connected" ]
-            ]
-        ]
-    ]
-
--- | Progress bar for generation
-renderProgressBar :: forall m. State -> H.ComponentHTML Action Slots m
-renderProgressBar state =
-  HH.div [ cls [ "lattice-progress-container" ] ]
-    [ -- Stage label
-      HH.div [ cls [ "lattice-progress-header" ] ]
-        [ HH.span [ cls [ "lattice-progress-stage" ] ]
-            [ HH.text (stageLabel state.generationStage) ]
-        , HH.span [ cls [ "lattice-progress-percentage" ] ]
-            [ HH.text (show (floor state.generationProgress) <> "%") ]
-        ]
-    
-      -- Progress bar track
-    , HH.div 
-        [ cls [ "lattice-progress-track" ]
-        , HP.attr (HH.AttrName "style") progressTrackStyle
-        ]
-        [ -- Progress bar fill
-          HH.div 
-            [ cls [ "lattice-progress-fill" ]
-            , HP.attr (HH.AttrName "style") (progressFillStyle state.generationProgress)
-            ]
-            []
-        ]
-    
-      -- ETA display
-    , case state.generationEta of
-        Just eta -> 
-          HH.div [ cls [ "lattice-progress-eta lattice-text-muted" ] ]
-            [ HH.text ("~" <> formatEta eta <> " remaining") ]
+    [ case state.bridgeClient of
+        Nothing -> 
+          HH.span 
+            [ cls [ "lattice-status", "lattice-status-disconnected" ] ]
+            [ HH.text "Backend disconnected" ]
+        Just _ ->
+          HH.span 
+            [ cls [ "lattice-status", "lattice-status-connected" ] ]
+            [ HH.text "Connected" ]
+    , case state.renderError of
+        Just err -> 
+          HH.span [ cls [ "lattice-error-status" ] ] [ HH.text err ]
         Nothing -> HH.text ""
+    , HH.span [ cls [ "lattice-frame-status" ] ]
+        [ HH.text (show state.compWidth <> " × " <> show state.compHeight <> " @ " <> show state.fps <> " fps") ]
     ]
-  where
-    stageLabel :: String -> String
-    stageLabel = case _ of
-      "encoding" -> "Encoding prompt..."
-      "sampling" -> "Sampling..."
-      "decoding" -> "Decoding frames..."
-      "idle" -> "Preparing..."
-      other -> other
-    
-    formatEta :: Number -> String
-    formatEta seconds =
-      if seconds < 60.0
-        then show (floor seconds) <> "s"
-        else 
-          let mins = floor (seconds / 60.0)
-              secs = floor (seconds - (toNumber mins * 60.0))
-          in show mins <> "m " <> show secs <> "s"
-
-progressTrackStyle :: String
-progressTrackStyle =
-  "width: 100%; height: 8px; background: var(--lattice-surface-2); " <>
-  "border-radius: 4px; overflow: hidden; margin: 8px 0;"
-
-progressFillStyle :: Number -> String
-progressFillStyle percentage =
-  "width: " <> show percentage <> "%; height: 100%; " <>
-  "background: linear-gradient(90deg, var(--lattice-accent), var(--lattice-accent-bright)); " <>
-  "border-radius: 4px; transition: width 0.3s ease-out;"
-
--- | Mode toggle button helper
-modeButton :: forall m. State -> GenerationMode -> String -> String -> H.ComponentHTML Action Slots m
-modeButton state mode label title =
-  HH.button
-    [ cls [ "lattice-mode-btn" ]
-    , HP.attr (HH.AttrName "data-state") (if state.generationMode == mode then "active" else "inactive")
-    , HE.onClick \_ -> SetGenerationMode mode
-    , HP.title title
-    ]
-    [ HH.text label ]
-
--- | Source image selector for I2V, Edit, and 3D modes
-renderSourceImageSelector :: forall m. State -> H.ComponentHTML Action Slots m
-renderSourceImageSelector state =
-  HH.div [ cls [ "lattice-source-image" ] ]
-    [ HH.label_ [ HH.text "Source Image" ]
-    , case state.sourceImageUrl of
-        Nothing ->
-          HH.div [ cls [ "lattice-source-options" ] ]
-            [ HH.button 
-                [ cls [ "lattice-btn lattice-btn-ghost" ]
-                , HP.title "Select from imported assets"
-                ]
-                [ HH.text "From Assets" ]
-            , HH.button 
-                [ cls [ "lattice-btn lattice-btn-ghost" ]
-                , HP.title "Use current render preview"
-                ]
-                [ HH.text "From Preview" ]
-            , HH.button 
-                [ cls [ "lattice-btn lattice-btn-ghost" ]
-                , HP.title "Capture current scene view"
-                ]
-                [ HH.text "From Scene" ]
-            ]
-        Just url ->
-          HH.div [ cls [ "lattice-source-preview" ] ]
-            [ HH.img 
-                [ HP.src url
-                , HP.alt "Source"
-                , HP.attr (HH.AttrName "style") "max-width: 100%; max-height: 80px; object-fit: contain;"
-                ]
-            , HH.button 
-                [ cls [ "lattice-btn-icon" ]
-                , HP.title "Clear source image"
-                , HE.onClick \_ -> SetSourceImage ""
-                ]
-                [ HH.text "x" ]
-            ]
-    ]
-
--- | Get available models for a generation mode
--- | Models specified by user:
--- | - T2I: flux-1-dev, flux-schnell, flux-2-dev, qwen-image, z-image
--- | - Edit: flux-2-dev, z-image-edit, qwen-image-edit
--- | - I2V: ati, wan-move, ltx-2, hunyuan-video (plus existing exports)
--- | - T2V: wan-2.1, hunyuan-video, ltx-2, mochi
--- | - 3D: trellis-2, hunyuan-3d
-modelsForMode :: forall m. GenerationMode -> Array (H.ComponentHTML Action Slots m)
-modelsForMode = case _ of
-  TextToImage ->
-    [ HH.option [ HP.value "flux-1-dev" ] [ HH.text "Flux 1 Dev" ]
-    , HH.option [ HP.value "flux-schnell" ] [ HH.text "Flux Schnell" ]
-    , HH.option [ HP.value "flux-2-dev" ] [ HH.text "Flux 2 Dev" ]
-    , HH.option [ HP.value "qwen-image" ] [ HH.text "Qwen Image" ]
-    , HH.option [ HP.value "z-image" ] [ HH.text "Z-Image" ]
-    ]
-  ImageEdit ->
-    [ HH.option [ HP.value "flux-2-dev" ] [ HH.text "Flux 2 Dev" ]
-    , HH.option [ HP.value "z-image-edit" ] [ HH.text "Z-Image Edit" ]
-    , HH.option [ HP.value "qwen-image-edit" ] [ HH.text "Qwen Image Edit" ]
-    ]
-  ImageToVideo ->
-    [ HH.option [ HP.value "ati" ] [ HH.text "ATI" ]
-    , HH.option [ HP.value "wan-move" ] [ HH.text "Wan Move" ]
-    , HH.option [ HP.value "ltx-2" ] [ HH.text "LTX 2" ]
-    , HH.option [ HP.value "hunyuan-video" ] [ HH.text "Hunyuan Video" ]
-    ]
-  TextToVideo ->
-    [ HH.option [ HP.value "wan-2.1" ] [ HH.text "Wan 2.1" ]
-    , HH.option [ HP.value "hunyuan-video" ] [ HH.text "Hunyuan Video" ]
-    , HH.option [ HP.value "ltx-2" ] [ HH.text "LTX 2" ]
-    , HH.option [ HP.value "mochi" ] [ HH.text "Mochi" ]
-    ]
-  TextTo3D ->
-    [ HH.option [ HP.value "trellis-2" ] [ HH.text "Trellis 2" ]
-    , HH.option [ HP.value "hunyuan-3d" ] [ HH.text "Hunyuan 3D" ]
-    ]
-
-getSelectedLayer :: State -> Maybe LayerBase
-getSelectedLayer state =
-  case state.selectedLayerIds of
-    [layerId] -> findLayer layerId state.layers
-    _ -> Nothing
-
-findLayer :: String -> Array LayerBase -> Maybe LayerBase
-findLayer _layerId _layers = Nothing  -- Simplified for now
-
-tabButton :: forall m. String -> Boolean -> H.ComponentHTML Action Slots m
-tabButton label active =
-  HH.button
-    [ cls [ "lattice-tabs-trigger" ]
-    , HP.attr (HH.AttrName "data-state") (if active then "active" else "inactive")
-    ]
-    [ HH.text label ]
 
 -- ════════════════════════════════════════════════════════════════════════════
---                                                          // inline // styles
+--                                                                    // styles
 -- ════════════════════════════════════════════════════════════════════════════
 
 workspaceStyle :: String
 workspaceStyle = 
   "display: flex; flex-direction: column; height: 100vh; " <>
-  "background: var(--lattice-void); overflow: hidden;"
-
-menuBarStyle :: String
-menuBarStyle =
-  "height: 28px; min-height: 28px; display: flex; align-items: center; " <>
-  "justify-content: space-between; padding: 0 12px; " <>
-  "background: var(--lattice-surface-0); border-bottom: 1px solid var(--lattice-border-subtle);"
-
-toolbarStyle :: String
-toolbarStyle =
-  "min-height: 54px; display: flex; align-items: center; gap: 8px; " <>
-  "padding: 8px 12px; background: var(--lattice-surface-1); " <>
-  "border-bottom: 1px solid var(--lattice-border-subtle);"
+  "background: var(--lattice-void, #050505); overflow: hidden;"
 
 contentStyle :: String
 contentStyle =
@@ -1011,73 +347,22 @@ contentStyle =
 sidebarStyle :: Number -> String -> String
 sidebarStyle width borderSide =
   "width: " <> show width <> "%; min-width: 200px; max-width: 400px; " <>
-  "background: var(--lattice-surface-1); " <>
-  "border-" <> borderSide <> ": 1px solid var(--lattice-border-subtle); " <>
-  "overflow-y: auto;"
+  "background: var(--lattice-surface-1, #121212); " <>
+  "border-" <> borderSide <> ": 1px solid var(--lattice-border-subtle, #2a2a2a); " <>
+  "overflow: hidden; display: flex; flex-direction: column;"
 
 centerStyle :: String
 centerStyle =
-  "flex: 1; display: flex; flex-direction: column; overflow: hidden;"
+  "flex: 1; display: flex; flex-direction: column; overflow: hidden; " <>
+  "min-width: 400px;"
 
-viewportContainerStyle :: String
-viewportContainerStyle =
-  "flex: 1; display: flex; gap: 2px; min-height: 0; " <>
-  "background: var(--lattice-border-subtle);"
-
-sceneViewportStyle :: String
-sceneViewportStyle =
-  "flex: 1; display: flex; flex-direction: column; " <>
-  "background: var(--lattice-surface-0);"
-
-renderViewportStyle :: String
-renderViewportStyle =
-  "flex: 1; display: flex; flex-direction: column; " <>
-  "background: var(--lattice-surface-0);"
-
-sceneCanvasStyle :: String
-sceneCanvasStyle =
-  "flex: 1; position: relative; display: flex; " <>
-  "align-items: center; justify-content: center; " <>
-  "background: var(--lattice-void); overflow: hidden;"
-
-renderCanvasStyle :: String
-renderCanvasStyle =
-  "flex: 1; position: relative; display: flex; " <>
-  "align-items: center; justify-content: center; " <>
-  "background: #000000; overflow: hidden;"
-
-renderPlaceholderStyle :: String
-renderPlaceholderStyle =
-  "display: flex; align-items: center; justify-content: center; " <>
-  "width: 100%; height: 100%; color: var(--lattice-text-muted);"
-
-renderOutputStyle :: String
-renderOutputStyle =
-  "max-width: 100%; max-height: 100%; object-fit: contain;"
-
-shadowboxStyle :: CompositionDimensions -> String
-shadowboxStyle dims =
-  "position: absolute; " <>
-  "aspect-ratio: " <> show dims.width <> " / " <> show dims.height <> "; " <>
-  "max-width: 90%; max-height: 90%; " <>
-  "border: 2px dashed var(--lattice-border-strong); " <>
-  "box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5); " <>
-  "pointer-events: none;"
-
-timelineStyle :: Number -> String
-timelineStyle height =
-  "height: " <> show height <> "%; min-height: 150px; " <>
-  "background: var(--lattice-surface-1); border-top: 1px solid var(--lattice-border-subtle);"
-
-drawCanvasContainerStyle :: String
-drawCanvasContainerStyle =
-  "flex: 1; display: flex; align-items: center; justify-content: center; " <>
-  "padding: 8px; background: var(--lattice-void); overflow: hidden;"
-
-drawCanvasStyle :: String
-drawCanvasStyle =
-  "max-width: 100%; max-height: 100%; object-fit: contain; " <>
-  "background: #000000; cursor: crosshair;"
+statusBarStyle :: String
+statusBarStyle =
+  "height: 22px; display: flex; align-items: center; justify-content: space-between; " <>
+  "padding: 0 12px; gap: 16px; " <>
+  "background: var(--lattice-surface-0, #0a0a0a); " <>
+  "border-top: 1px solid var(--lattice-border-subtle, #2a2a2a); " <>
+  "font-size: 10px; color: var(--lattice-text-secondary, #888);"
 
 -- ════════════════════════════════════════════════════════════════════════════
 --                                                                   // actions
@@ -1087,198 +372,155 @@ handleAction :: forall o m. MonadAff m => Action -> H.HalogenM State Action Slot
 handleAction = case _ of
   Initialize -> pure unit
   
-  SetLeftTab tab -> H.modify_ _ { activeLeftTab = tab }
-  
-  HandleLayerList output -> case output of
-    LayerList.SelectLayer layerId -> 
-      H.modify_ _ { selectedLayerIds = [layerId] }
-    LayerList.ToggleVisibility _layerId -> pure unit
-    LayerList.ToggleLock _layerId -> pure unit
-    LayerList.ReorderLayer _layerId _index -> pure unit
-  
-  HandleTimeline output -> case output of
-    Timeline.SeekToFrame frame -> 
-      H.modify_ _ { currentFrame = frame }
-    Timeline.TogglePlayback -> 
-      H.modify_ \s -> s { isPlaying = not s.isPlaying }
-    Timeline.SelectLayer layerId -> 
-      H.modify_ _ { selectedLayerIds = [layerId] }
-    Timeline.ToggleLayerExpanded _layerId -> pure unit
-  
-  HandleProperties _output -> pure unit
-  
-  -- Scene camera controls
-  RotateSceneCamera dx dy ->
-    H.modify_ \s -> s 
-      { sceneCameraRotation = s.sceneCameraRotation 
-          { x = s.sceneCameraRotation.x + dx
-          , y = s.sceneCameraRotation.y + dy
-          }
-      }
-  
-  PanSceneCamera dx dy ->
-    H.modify_ \s -> s 
-      { sceneCameraPosition = s.sceneCameraPosition 
-          { x = s.sceneCameraPosition.x + dx
-          , y = s.sceneCameraPosition.y + dy
-          }
-      }
-  
-  ZoomSceneCamera delta ->
-    H.modify_ \s -> s 
-      { sceneCameraZoom = clamp 0.1 10.0 (s.sceneCameraZoom + delta) }
-  
-  ResetSceneCamera ->
-    H.modify_ _ 
-      { sceneCameraRotation = { x: 0.0, y: 0.0, z: 0.0 }
-      , sceneCameraPosition = { x: 0.0, y: 0.0, z: 0.0 }
-      , sceneCameraZoom = 1.0
-      }
-  
-  -- Drawing canvas
-  SetBrushSize _size -> pure unit  -- Will wire up to canvas
-  SetBrushColor _color -> pure unit
-  SetBrushOpacity _opacity -> pure unit
-  ClearDrawingCanvas -> pure unit  -- Will clear the canvas
-  
-  -- AI generation
-  SetPromptText text -> 
-    H.modify_ _ { promptText = text }
-  
-  SetNegativePrompt text -> 
-    H.modify_ _ { negativePrompt = text }
-  
-  SetGenerationMode mode -> do
-    -- When mode changes, select a default model for that mode
-    let defaultModel = case mode of
-          TextToImage -> "flux-1-dev"
-          ImageEdit -> "flux-2-dev"
-          ImageToVideo -> "wan-move"
-          TextToVideo -> "wan-2.1"
-          TextTo3D -> "trellis-2"
-    H.modify_ _ { generationMode = mode, selectedModel = defaultModel }
-  
-  SetModel model -> 
-    H.modify_ _ { selectedModel = model }
-  
-  SetNumFrames n -> 
-    H.modify_ _ { numFrames = n }
-  
-  SetCfgScale scale -> 
-    H.modify_ _ { cfgScale = scale }
-  
-  SetSteps s -> 
-    H.modify_ _ { steps = s }
-  
-  SetSourceImage url -> 
-    H.modify_ _ { sourceImageUrl = if url == "" then Nothing else Just url }
-  
-  GenerateFromPrompt -> do
-    state <- H.get
-    case state.bridgeClient of
-      Nothing -> 
-        H.modify_ _ { renderError = Just "Backend not connected" }
-      Just client -> do
-        -- Reset progress and start rendering
-        H.modify_ _ 
-          { isRendering = true
-          , renderError = Nothing
-          , generationProgress = 0.0
-          , generationStage = "encoding"
-          , generationEta = Nothing
-          }
-        -- Build generation config
-        let config =
-              { prompt: state.promptText
-              , negativePrompt: if state.negativePrompt == "" then Nothing else Just state.negativePrompt
-              , width: state.compositionDimensions.width
-              , height: state.compositionDimensions.height
-              , numFrames: case state.generationMode of
-                  TextToImage -> Nothing
-                  _ -> Just state.numFrames
-              , fps: Just state.fps
-              , model: state.selectedModel
-              , seed: state.seed
-              , steps: Just state.steps
-              , cfgScale: Just state.cfgScale
-              , controlnetImage: state.maskImageUrl  -- Use mask as controlnet for edit mode
-              , controlnetType: case state.generationMode of
-                  ImageEdit -> Just "inpaint"
-                  _ -> Nothing
-              , controlnetStrength: Nothing
-              }
-        -- Call appropriate generation function based on mode
-        result <- liftAff $ case state.generationMode of
-          TextToImage -> Bridge.generateImage client config
-          ImageEdit -> Bridge.generateImage client config
-          TextTo3D -> Bridge.generateImage client config  -- 3D returns image for now
-          ImageToVideo -> Bridge.generateVideo client config
-          TextToVideo -> Bridge.generateVideo client config
-        handleAction (ReceiveGenerateResult result)
-  
-  ReceiveGenerateProgress percentage stage ->
-    H.modify_ _ 
-      { generationProgress = percentage
-      , generationStage = stage
-      }
-  
-  ReceiveGenerateResult result -> 
-    case result of
-      Left err -> 
-        H.modify_ _ 
-          { isRendering = false
-          , renderError = Just err
-          , generationProgress = 0.0
-          , generationStage = "idle"
-          , generationEta = Nothing
-          }
-      Right genResult -> 
-        if genResult.success
-          then case genResult.frames of
-            [] -> H.modify_ _ 
-              { isRendering = false
-              , renderError = Just "No frames generated"
-              , generationProgress = 0.0
-              , generationStage = "idle"
-              , generationEta = Nothing
-              }
-            frames -> do
-              -- Take first frame for preview (or last for video)
-              let previewFrame = case frames of
-                    [f] -> f
-                    fs -> lastOrFirst fs
-              H.modify_ _ 
-                { isRendering = false
-                , renderError = Nothing
-                , renderPreviewUrl = Just ("data:image/png;base64," <> previewFrame)
-                , generationProgress = 100.0
-                , generationStage = "idle"
-                , generationEta = Nothing
-                }
-          else 
-            H.modify_ _ 
-              { isRendering = false
-              , renderError = genResult.error
-              , generationProgress = 0.0
-              , generationStage = "idle"
-              , generationEta = Nothing
-              }
-  
   Receive input -> 
     H.modify_ _ { bridgeClient = input.bridgeClient }
+  
+  HandleMenuBar output -> case output of
+    MenuBar.MenuActionSelected action -> handleMenuAction action
+  
+  HandleToolbar output -> case output of
+    Toolbar.ToolbarActionSelected action -> handleToolbarAction action
+  
+  HandleLeftSidebar output -> case output of
+    LeftSidebar.SidebarActionSelected action -> handleLeftSidebarAction action
+  
+  HandleRightSidebar output -> case output of
+    RightSidebar.RightSidebarActionSelected action -> handleRightSidebarAction action
+  
+  HandleCenterViewport output -> case output of
+    CenterViewport.ViewportActionSelected action -> handleViewportAction action
 
--- | Get last element of array, or first if only one
-lastOrFirst :: Array String -> String
-lastOrFirst [] = ""
-lastOrFirst [x] = x
-lastOrFirst arr = case arr of
-  [] -> ""
-  _ -> go arr
-  where
-    go [x] = x
-    go xs = case Array.uncons xs of
-      Nothing -> ""
-      Just { head: _, tail: rest } -> go rest
+-- ════════════════════════════════════════════════════════════════════════════
+--                                                       // action handlers
+-- ════════════════════════════════════════════════════════════════════════════
 
-clamp :: Number -> Number -> Number -> Number
-clamp minVal maxVal val = max minVal (min maxVal val)
+handleMenuAction :: forall o m. MonadAff m => MenuBar.MenuAction -> H.HalogenM State Action Slots o m Unit
+handleMenuAction action = case action of
+  MenuBar.SaveProject -> H.modify_ _ { hasUnsavedChanges = false }
+  MenuBar.Undo -> H.modify_ _ { canUndo = false }
+  MenuBar.Redo -> H.modify_ _ { canRedo = false }
+  MenuBar.DeselectAll -> H.modify_ _ { hasSelection = false, selectedLayerId = Nothing }
+  MenuBar.ToggleGrid -> 
+    H.modify_ \s -> s { viewOptions = s.viewOptions { showGrid = not s.viewOptions.showGrid } }
+  MenuBar.ToggleRulers -> 
+    H.modify_ \s -> s { viewOptions = s.viewOptions { showRulers = not s.viewOptions.showRulers } }
+  MenuBar.ToggleGuides -> 
+    H.modify_ \s -> s { viewOptions = s.viewOptions { showGuides = not s.viewOptions.showGuides } }
+  MenuBar.ToggleSafeZones -> 
+    H.modify_ \s -> s { viewOptions = s.viewOptions { showSafeZones = not s.viewOptions.showSafeZones } }
+  MenuBar.ToggleCurveEditor -> 
+    H.modify_ \s -> s { showCurveEditor = not s.showCurveEditor }
+  MenuBar.ShowProperties -> 
+    H.modify_ \s -> s { expandedPanels = s.expandedPanels { properties = true } }
+  MenuBar.ShowEffects -> 
+    H.modify_ \s -> s { expandedPanels = s.expandedPanels { effects = true } }
+  MenuBar.ShowCamera -> 
+    H.modify_ \s -> s { expandedPanels = s.expandedPanels { camera = true } }
+  MenuBar.ShowAudio -> 
+    H.modify_ \s -> s { expandedPanels = s.expandedPanels { audio = true } }
+  MenuBar.ShowAlign -> 
+    H.modify_ \s -> s { expandedPanels = s.expandedPanels { align = true } }
+  MenuBar.ShowAIChat -> 
+    H.modify_ _ { aiTab = RightSidebar.AIChat }
+  MenuBar.ShowAIGenerate -> 
+    H.modify_ _ { aiTab = RightSidebar.AIGenerate }
+  MenuBar.ShowPreview -> 
+    H.modify_ \s -> s { expandedPanels = s.expandedPanels { preview = true } }
+  -- All other menu actions are not yet implemented
+  _ -> pure unit
+
+handleToolbarAction :: forall o m. MonadAff m => Toolbar.ToolbarAction -> H.HalogenM State Action Slots o m Unit
+handleToolbarAction = case _ of
+  Toolbar.SetTool tool -> 
+    H.modify_ _ { currentTool = tool }
+  Toolbar.GoToStart -> 
+    H.modify_ _ { currentFrame = 0 }
+  Toolbar.StepBackward -> 
+    H.modify_ \s -> s { currentFrame = max 0 (s.currentFrame - 1) }
+  Toolbar.TogglePlayback -> 
+    H.modify_ \s -> s { isPlaying = not s.isPlaying }
+  Toolbar.StepForward -> 
+    H.modify_ \s -> s { currentFrame = min s.totalFrames (s.currentFrame + 1) }
+  Toolbar.GoToEnd -> 
+    H.modify_ \s -> s { currentFrame = s.totalFrames }
+  Toolbar.UndoAction -> 
+    H.modify_ _ { canUndo = false }  -- Would call Bridge.undo
+  Toolbar.RedoAction -> 
+    H.modify_ _ { canRedo = false }
+  Toolbar.ImportAction -> pure unit
+  Toolbar.ShowPreview -> pure unit
+  Toolbar.ShowTemplateBuilder -> pure unit
+  Toolbar.ShowExport -> pure unit
+  Toolbar.ShowComfyUI -> pure unit
+
+handleLeftSidebarAction :: forall o m. MonadAff m => LeftSidebar.SidebarAction -> H.HalogenM State Action Slots o m Unit
+handleLeftSidebarAction = case _ of
+  LeftSidebar.TabChanged tab -> 
+    H.modify_ _ { leftTab = tab }
+  LeftSidebar.OpenCompositionSettings -> pure unit
+  LeftSidebar.CreateLayersFromSvg _svgId -> pure unit
+  LeftSidebar.UseMeshAsEmitter _meshId -> pure unit
+  LeftSidebar.EnvironmentUpdate _settings -> pure unit
+  LeftSidebar.EnvironmentLoad _settings -> pure unit
+  LeftSidebar.EnvironmentClear -> pure unit
+  LeftSidebar.SelectComposition _compId -> pure unit
+  LeftSidebar.SelectAsset _assetId -> pure unit
+  LeftSidebar.ApplyEffectFromLibrary _effectName -> pure unit
+
+handleRightSidebarAction :: forall o m. MonadAff m => RightSidebar.RightSidebarAction -> H.HalogenM State Action Slots o m Unit
+handleRightSidebarAction = case _ of
+  RightSidebar.AITabChanged tab -> 
+    H.modify_ _ { aiTab = tab }
+  RightSidebar.PanelToggled key expanded -> 
+    H.modify_ \s -> s { expandedPanels = updatePanel s.expandedPanels key expanded }
+  RightSidebar.CameraUpdated -> pure unit
+  RightSidebar.SendChatMessage _message -> pure unit  -- Would send to AI via Bridge
+  RightSidebar.GenerateDepthMap -> startGeneration "depth"
+  RightSidebar.GenerateNormalMap -> startGeneration "normal"
+  RightSidebar.GenerateSegmentation -> startGeneration "segment"
+  RightSidebar.StartFlowGeneration -> startGeneration "flow"
+  RightSidebar.StartDecomposition -> startGeneration "decompose"
+
+updatePanel :: RightSidebar.ExpandedPanels -> String -> Boolean -> RightSidebar.ExpandedPanels
+updatePanel panels key expanded = case key of
+  "properties" -> panels { properties = expanded }
+  "effects" -> panels { effects = expanded }
+  "drivers" -> panels { drivers = expanded }
+  "scopes" -> panels { scopes = expanded }
+  "camera" -> panels { camera = expanded }
+  "audio" -> panels { audio = expanded }
+  "align" -> panels { align = expanded }
+  "preview" -> panels { preview = expanded }
+  _ -> panels
+
+startGeneration :: forall o m. MonadAff m => String -> H.HalogenM State Action Slots o m Unit
+startGeneration _genType = do
+  state <- H.get
+  case state.bridgeClient of
+    Nothing -> 
+      H.modify_ _ { renderError = Just "Backend not connected" }
+    Just _client -> do
+      H.modify_ _ { isRendering = true, renderError = Nothing }
+      -- Would call appropriate Bridge.generate* function
+      pure unit
+
+handleViewportAction :: forall o m. MonadAff m => CenterViewport.ViewportAction -> H.HalogenM State Action Slots o m Unit
+handleViewportAction = case _ of
+  CenterViewport.ViewportTabChanged tab -> 
+    H.modify_ _ { viewportTab = tab }
+  CenterViewport.ViewOptionsChanged options -> 
+    H.modify_ _ { viewOptions = options }
+  CenterViewport.ToggleCurveEditor -> 
+    H.modify_ \s -> s { showCurveEditor = not s.showCurveEditor }
+  CenterViewport.GuideCreated orientation position -> 
+    H.modify_ \s -> s { guides = s.guides <> [{ id: "guide-" <> show (1 + length s.guides), orientation, position }] }
+  CenterViewport.GuideMoved guideId newPosition -> 
+    H.modify_ \s -> s { guides = map (\g -> if g.id == guideId then g { position = newPosition } else g) s.guides }
+  CenterViewport.GuideDeleted guideId -> 
+    H.modify_ \s -> s { guides = filter (\g -> g.id /= guideId) s.guides }
+  CenterViewport.AllGuidesCleared -> 
+    H.modify_ _ { guides = [] }
+  CenterViewport.OpenCompositionSettings -> pure unit
+  CenterViewport.OpenPathSuggestion -> pure unit
+  CenterViewport.CanvasClicked _x _y -> pure unit
+  CenterViewport.CanvasZoomed _delta -> pure unit

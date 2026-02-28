@@ -1,0 +1,54 @@
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--                                            // hydrogen // schema // dimension
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+-- | Dimension pillar - measurement, space, and spatial reasoning.
+-- |
+-- | A comprehensive system for working with:
+-- |
+-- | - **Physical**: Real-world units (meters, inches, points)
+-- | - **Device**: Display-dependent units (pixels, device pixels, dp, sp)
+-- | - **Angular**: Rotation and direction (radians, degrees, turns)
+-- | - **Temporal**: Time and duration (seconds, frames, frame rates)
+-- | - **Context**: Display properties for unit conversion (PPI, DPR)
+-- | - **Vector**: 2D, 3D, 4D, and N-dimensional coordinates
+-- | - **Camera**: Cinematography vocabulary (dolly, truck, pan, tilt)
+-- |
+-- | ## Type Safety
+-- |
+-- | Each unit is a distinct newtype. You cannot accidentally add meters
+-- | to pixels, or radians to degrees. Conversions require explicit context.
+-- |
+-- | ## Usage
+-- |
+-- | ```purescript
+-- | import Hydrogen.Schema.Dimension.Physical as Phys
+-- | import Hydrogen.Schema.Dimension.Device as Dev
+-- | import Hydrogen.Schema.Dimension.Context as Ctx
+-- |
+-- | -- Physical measurements
+-- | width :: Phys.Meter
+-- | width = Phys.meters 1.5
+-- |
+-- | -- Device measurements
+-- | buttonSize :: Dev.Pixel
+-- | buttonSize = Dev.px 48.0
+-- |
+-- | -- Convert between them
+-- | physicalSize :: Phys.Inch
+-- | physicalSize = Ctx.pixelsToInch myDisplayContext buttonSize
+-- | ```
+-- |
+-- | Re-exports all Dimension submodules.
+
+module Hydrogen.Schema.Dimension where
+
+-- Note: This module exists for documentation. Submodules have overlapping
+-- names (e.g., `normal` in Camera vs Temporal) by design - they represent
+-- different semantic concepts. Always use qualified imports:
+--
+--   import Hydrogen.Schema.Dimension.Physical as Phys
+--   import Hydrogen.Schema.Dimension.Camera as Camera
+--   import Hydrogen.Schema.Dimension.Temporal as Time
+--
+-- See module documentation above for the full submodule list.
