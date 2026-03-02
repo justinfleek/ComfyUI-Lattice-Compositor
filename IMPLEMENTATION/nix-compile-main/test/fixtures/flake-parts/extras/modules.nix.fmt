@@ -1,1 +1,0 @@
-Error: 14:5: infinite type: a occurs in {} | ... -> { _class : "generic", _file : String, imports : [a] }

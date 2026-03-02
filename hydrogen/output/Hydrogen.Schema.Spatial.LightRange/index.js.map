@@ -1,0 +1,1 @@
+{"file":"index.js","mappings":";;;;;;;AAiCA,iBAAA;WAAA;;AAiBA,uBAAA;IACkB,OAAlB;;AAJA,uBACmB;AAVnB,qBAAA;UAAA;QACQ,OAAgB,uBAAtB,KAAkD;;;AAsBpD,4EACwC,KAAI,SAAQ,cAAa;AApBjE,iBAAA;IACW,IAAX,IACQ;eAAM;;IADH;eAAX;;gIAAA;;AAWA,eACW;AApBX,mBAAA;;;;;;;AACA,oBAAA;;;;;;;;;;AA+BA,sBAAA;+CACoD,KAAI,SAAQ","names":[],"sources":["../../src/Hydrogen/Schema/Spatial/LightRange.purs"],"version":3}

@@ -1,2 +1,0 @@
-# bitvec includes documentation files
-extra_srcs = ["README.md", "doc/**"]

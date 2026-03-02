@@ -1,2 +1,0 @@
-# kvm-ioctls build script - skip, not needed for Linux
-buildscript.run = false

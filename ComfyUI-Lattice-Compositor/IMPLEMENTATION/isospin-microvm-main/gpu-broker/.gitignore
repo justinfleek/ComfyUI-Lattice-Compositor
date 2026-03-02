@@ -1,8 +1,0 @@
-target/
-*.swp
-*.swo
-.DS_Store
-
-# Tracer compiled output
-tracer/*.so
-tracer/*.o

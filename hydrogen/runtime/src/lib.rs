@@ -22,10 +22,10 @@
 //! ## Usage from JavaScript
 //!
 //! ```javascript
-//! import init, { Runtime } from 'hydrogen-runtime';
+//! import init, { createRuntime } from 'hydrogen-runtime';
 //!
 //! await init();
-//! const runtime = await Runtime.new(canvas);
+//! const runtime = await createRuntime(canvas);
 //! runtime.render(commandBytes);
 //! ```
 
@@ -62,18 +62,22 @@ pub struct Runtime {
     renderer: Renderer,
 }
 
+/// Create a new runtime attached to a canvas element.
+///
+/// This is a factory function instead of an async constructor to avoid
+/// deprecated wasm-bindgen patterns. The async initialization is handled
+/// here, returning a fully initialized Runtime.
+#[wasm_bindgen(js_name = "createRuntime")]
+pub async fn create_runtime(canvas: HtmlCanvasElement) -> Result<Runtime, JsValue> {
+    let renderer = Renderer::new(canvas)
+        .await
+        .map_err(|e| JsValue::from_str(&e))?;
+    
+    Ok(Runtime { renderer })
+}
+
 #[wasm_bindgen]
 impl Runtime {
-    /// Create a new runtime attached to a canvas element.
-    #[wasm_bindgen(constructor)]
-    pub async fn new(canvas: HtmlCanvasElement) -> Result<Runtime, JsValue> {
-        let renderer = Renderer::new(canvas)
-            .await
-            .map_err(|e| JsValue::from_str(&e))?;
-        
-        Ok(Runtime { renderer })
-    }
-    
     /// Render a command buffer.
     ///
     /// Takes raw bytes from Hydrogen's Binary.serialize output.

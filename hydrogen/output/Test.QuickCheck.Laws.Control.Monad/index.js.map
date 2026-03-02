@@ -1,0 +1,1 @@
+{"file":"index.js","mappings":";;;;;;;;;;;;;;AA0BA,oBAAA;;;WAAA;;eAAA;mBAAA;gBAmBE,oBAAA;mCACmB,UAAe;;gBAJlC,mBAAA;2BAAA;4CACyB,IAAM,IAAM,EAAE;;;uBATvC;uCAAI;qCACQ,UAAO,cAAiB;uCAEhC;6CACQ,UAAO,eAAkB;;;;;;AAxBvC,iBAAA;yBAQE;WARF;;;eAAA;;mBAAA","names":[],"sources":["../../.spago/p/quickcheck-laws-7.0.0/src/Test/QuickCheck/Laws/Control/Monad.purs"],"version":3}

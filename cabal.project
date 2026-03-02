@@ -1,0 +1,21 @@
+packages: .
+
+-- NOTE: haskemathesis dependency commented out - only needed for render-api-property tests
+-- To run property tests, clone haskemathesis to ../IMPLEMENTATION/haskemathesis-main
+-- packages: ../IMPLEMENTATION/haskemathesis-main
+
+-- Use current GHC from PATH or nix develop
+-- With Nix: add ghc to devShell and run cabal build
+-- Without Nix: install GHC (ghcup) and run cabal build
+
+-- Optional: pin compiler
+-- compiler: ghc-9.10.1
+
+-- Optional: enable -Wall for stricter builds (recommended for porting)
+package lattice
+  ghc-options: -Wall -Wcompat -Widentities
+
+-- Constrain to use consistent crypton ecosystem
+constraints:
+  tls >= 2.0 && < 2.2,
+  crypton-x509-store >= 1.6 && < 1.7

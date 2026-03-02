@@ -1,7 +1,7 @@
 # Property-Based API Tests
 
 This directory contains property-based tests for the Lattice APIs using
-[haskemathesis](../../../IMPLEMENTATION/haskemathesis-main/README.md).
+[haskemathesis](../../IMPLEMENTATION/haskemathesis-main/README.md).
 
 ## What is haskemathesis?
 

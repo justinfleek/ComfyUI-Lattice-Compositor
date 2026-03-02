@@ -1,8 +1,0 @@
-{
-  "mcpServers": {
-    "straylight": {
-      "command": "node",
-      "args": [".claude/straylight-mcp.js"]
-    }
-  }
-}

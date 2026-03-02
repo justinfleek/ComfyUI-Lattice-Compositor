@@ -1,1 +1,0 @@
-Error: 14:55: infinite type: a occurs in { _module : d, config : a, extendModules : c, options : b }

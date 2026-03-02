@@ -1,2 +1,0 @@
-# clap_builder includes README.md in its docs
-extra_srcs = ["README.md"]

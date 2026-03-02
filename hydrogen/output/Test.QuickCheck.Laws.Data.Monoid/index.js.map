@@ -1,0 +1,1 @@
+{"file":"index.js","mappings":";;;;;;;;;;;AAsBA,qBAAA;;;WAAA;;eAAA;YAkBE,oBAAA;iCACkB,YAAe;;YAJjC,mBAAA;yCAC2B,IAAK;;mBAThC;mCAAI;iCACQ,UAAO,cAAiB;mCAEhC;wCACQ,UAAO,eAAkB;;;;;AApBvC,kBAAA;0BAOgB;WAPhB;;eAAA;;mBAAA","names":[],"sources":["../../.spago/p/quickcheck-laws-7.0.0/src/Test/QuickCheck/Laws/Data/Monoid.purs"],"version":3}

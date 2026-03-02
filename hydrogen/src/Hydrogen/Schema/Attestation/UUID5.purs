@@ -75,6 +75,14 @@ module Hydrogen.Schema.Attestation.UUID5
   , nsBlurKernel
   , nsGlowKernel
   , nsParticleKernel
+  -- * WorldModel Namespaces
+  , nsTensor
+  , nsWorldState
+  , nsObservation
+  , nsWorldAction
+  , nsLatentCode
+  , nsMemory
+  , nsAnchor
   ) where
 
 import Prelude
@@ -475,6 +483,87 @@ nsParticleKernel :: UUID5
 nsParticleKernel = UUID5
   [ 0x70, 0x61, 0x72, 0x74, 0x69, 0x63, 0x6c, 0x65
   , 0x6b, 0x65, 0x72, 0x6e, 0x65, 0x6c, 0x5f, 0x68
+  ]
+
+-- ═════════════════════════════════════════════════════════════════════════════
+--                                                      // worldmodel namespaces
+-- ═════════════════════════════════════════════════════════════════════════════
+
+-- | Namespace for Hydrogen Tensor UUIDs
+-- |
+-- | Tensors with identical shape and data get identical UUIDs.
+-- | Enables deterministic tensor caching across billion-agent scale.
+-- | Derived from: uuid5(nil, "hydrogen.tensor")
+nsTensor :: UUID5
+nsTensor = UUID5
+  [ 0x74, 0x65, 0x6e, 0x73, 0x6f, 0x72, 0x5f, 0x68
+  , 0x79, 0x64, 0x72, 0x6f, 0x67, 0x65, 0x6e, 0x2e
+  ]
+
+-- | Namespace for Hydrogen WorldState UUIDs
+-- |
+-- | WorldStates with identical latent codes get identical UUIDs.
+-- | Used for world model state caching and comparison.
+-- | Derived from: uuid5(nil, "hydrogen.worldstate")
+nsWorldState :: UUID5
+nsWorldState = UUID5
+  [ 0x77, 0x6f, 0x72, 0x6c, 0x64, 0x73, 0x74, 0x61
+  , 0x74, 0x65, 0x5f, 0x68, 0x79, 0x64, 0x72, 0x6f
+  ]
+
+-- | Namespace for Hydrogen Observation UUIDs
+-- |
+-- | Observations with identical video frames get identical UUIDs.
+-- | Enables deterministic observation identity for world model training.
+-- | Derived from: uuid5(nil, "hydrogen.observation")
+nsObservation :: UUID5
+nsObservation = UUID5
+  [ 0x6f, 0x62, 0x73, 0x65, 0x72, 0x76, 0x61, 0x74
+  , 0x69, 0x6f, 0x6e, 0x5f, 0x68, 0x79, 0x64, 0x72
+  ]
+
+-- | Namespace for Hydrogen WorldAction UUIDs
+-- |
+-- | Actions with identical parameters get identical UUIDs.
+-- | Used for action caching in world model prediction.
+-- | Derived from: uuid5(nil, "hydrogen.worldaction")
+nsWorldAction :: UUID5
+nsWorldAction = UUID5
+  [ 0x77, 0x6f, 0x72, 0x6c, 0x64, 0x61, 0x63, 0x74
+  , 0x69, 0x6f, 0x6e, 0x5f, 0x68, 0x79, 0x64, 0x72
+  ]
+
+-- | Namespace for Hydrogen LatentCode UUIDs
+-- |
+-- | Latent codes with identical dimensions get identical UUIDs.
+-- | Enables reproducible latent space navigation.
+-- | Derived from: uuid5(nil, "hydrogen.latentcode")
+nsLatentCode :: UUID5
+nsLatentCode = UUID5
+  [ 0x6c, 0x61, 0x74, 0x65, 0x6e, 0x74, 0x63, 0x6f
+  , 0x64, 0x65, 0x5f, 0x68, 0x79, 0x64, 0x72, 0x6f
+  ]
+
+-- | Namespace for Hydrogen Memory UUIDs
+-- |
+-- | LocalMemory entries with identical frame index get identical UUIDs.
+-- | Used for memory bank deduplication and retrieval.
+-- | Derived from: uuid5(nil, "hydrogen.memory")
+nsMemory :: UUID5
+nsMemory = UUID5
+  [ 0x6d, 0x65, 0x6d, 0x6f, 0x72, 0x79, 0x5f, 0x68
+  , 0x79, 0x64, 0x72, 0x6f, 0x67, 0x65, 0x6e, 0x2e
+  ]
+
+-- | Namespace for Hydrogen Anchor UUIDs
+-- |
+-- | Anchors with identical memory and coverage get identical UUIDs.
+-- | Enables deterministic anchor selection in AnchorWeave.
+-- | Derived from: uuid5(nil, "hydrogen.anchor")
+nsAnchor :: UUID5
+nsAnchor = UUID5
+  [ 0x61, 0x6e, 0x63, 0x68, 0x6f, 0x72, 0x5f, 0x68
+  , 0x79, 0x64, 0x72, 0x6f, 0x67, 0x65, 0x6e, 0x2e
   ]
 
 -- ═════════════════════════════════════════════════════════════════════════════

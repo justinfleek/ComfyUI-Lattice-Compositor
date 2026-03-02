@@ -1,8 +1,0 @@
-# Literate Programming Violation: STRAYLIGHT-011-E001 - Missing annotations
-
-```cpp
-// Code block without @target, @name, @description
-int main() {
-  return 0;
-}
-```

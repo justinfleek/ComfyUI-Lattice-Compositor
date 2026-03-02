@@ -1,2 +1,0 @@
-# winnow includes example files in docs
-extra_srcs = ["examples/**/*.rs"]

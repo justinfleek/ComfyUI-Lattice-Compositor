@@ -1,0 +1,1 @@
+{"file":"index.js","mappings":";;;;;;;;;;;;;;;AA8BA,sBAAA;;;WAAA;;eAAA;mBAAA;gBAmBE,oBAAA;2BAAA;iDAC6B,GAAM,KAAM,EAAE;;;gBAJ3C,mBAAA;+CAC8B,IAAM;;uBATpC;uCAAI;qCACQ,UAAO,cAAiB;uCAEhC;4CACQ,YAAa,eAAc,OAAM;;;;;;AAzB/C,mBAAA;2BASE;WATF;;eAAA;;mBAAA;;uBAAA","names":[],"sources":["../../.spago/p/quickcheck-laws-7.0.0/src/Test/QuickCheck/Laws/Control/Comonad.purs"],"version":3}

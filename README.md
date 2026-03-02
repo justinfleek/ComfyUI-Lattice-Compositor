@@ -1,482 +1,192 @@
-# Lattice Compositor
+# Lattice
 
 <div align="center">
 
-**Professional Motion Graphics Engine for AI Video Workflows**
+**Motion Graphics Engine with Formally Verified Types**
 
-[![CI](https://github.com/justinfleek/ComfyUI-Lattice-Compositor/actions/workflows/ci.yml/badge.svg)](https://github.com/justinfleek/ComfyUI-Lattice-Compositor/actions/workflows/ci.yml)
+[![Nix](https://img.shields.io/badge/Nix-Flakes-blue.svg)](https://nixos.wiki/wiki/Flakes)
+[![Haskell](https://img.shields.io/badge/Haskell-GHC%209.6-purple.svg)](https://www.haskell.org/)
+[![PureScript](https://img.shields.io/badge/PureScript-0.15-yellow.svg)](https://www.purescript.org/)
+[![Lean4](https://img.shields.io/badge/Lean-4-green.svg)](https://leanprover.github.io/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![ComfyUI](https://img.shields.io/badge/ComfyUI-Extension-green.svg)](https://github.com/comfyanonymous/ComfyUI)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)](https://www.typescriptlang.org/)
-[![Vue 3](https://img.shields.io/badge/Vue-3.5-brightgreen.svg)](https://vuejs.org/)
-[![Three.js](https://img.shields.io/badge/Three.js-r170-black.svg)](https://threejs.org/)
-
-[Features](#features) | [Installation](#installation) | [Quick Start](#quick-start) | [Documentation](#documentation) | [Contributing](#contributing)
-
-<!-- TODO: Add hero screenshot or GIF here -->
-<!-- ![Lattice Compositor Interface](screenshots/hero-interface.png) -->
 
 </div>
 
----
+______________________________________________________________________
 
 ## Vision
 
-**Lattice bridges the gap between professional motion graphics and AI video generation.**
-
-The AI video generation community has powerful models (Wan 2.1, AnimateDiff, MotionCtrl, VACE) but creating the *conditioning data* these models need — depth maps, motion trajectories, attention masks — requires jumping between multiple tools. Lattice solves this by bringing industry-standard animation tools directly into ComfyUI.
-
-### Core Philosophy
-
-1. **Deterministic by Design** — Every frame is reproducible. Scrub to frame 50, scrub back to frame 10, scrub to frame 50 again — identical output, guaranteed. This is critical for AI video workflows.
-
-2. **AI-Native Export** — One-click export to formats AI models actually consume: matte sequences for IP Adapter, camera trajectories for MotionCtrl, point paths for Wan Move.
-
-3. **Professional Tools, Zero Cost** — Keyframe animation, bezier curves, particle systems, expressions, 3D cameras — the full professional toolkit, open source.
-
----
-
-## What is Lattice?
-
-Lattice is a **professional-grade motion graphics compositor** built for the **ComfyUI ecosystem**. It brings industry-standard animation tools to AI video workflows, enabling you to create stunning motion graphics, animated text, particle systems, and 3D camera animations — then export directly to AI video models like Wan 2.1, AnimateDiff, and MotionCtrl.
-
-<!-- TODO: Add comparison GIF showing workflow -->
-<!-- ![Before/After Workflow](screenshots/workflow-comparison.gif) -->
-
-### Why Lattice?
-
-| Traditional Workflow | With Lattice |
-|---------------------|-----------|
-| Export video, re-import to AI model | Direct ComfyUI integration |
-| Manual keyframe animation | AI agent creates animations from prompts |
-| Static depth maps | Real-time depth-based parallax |
-| Separate mask creation tools | AI segmentation (SAM) built-in |
-| Complex export workflows | One-click matte/trajectory export |
-
-**Perfect for:** AI video creators, motion designers, VFX artists, and content creators using Stable Diffusion video workflows.
-
----
-
-## Screenshots
-
-<!-- TODO: Add actual screenshots. Recommended captures:
-     1. Main interface overview (hero shot)
-     2. Timeline with keyframes and layers
-     3. Particle system in action
-     4. AI Agent chat panel
-     5. Export dialog with format options
-     6. Curve editor with bezier handles
--->
-
-<div align="center">
-
-| Main Interface | Timeline & Keyframes |
-|:---:|:---:|
-| *Full compositor workspace* | *Multi-track animation timeline* |
-
-| Particle System | AI Agent |
-|:---:|:---:|
-| *24 built-in presets* | *Natural language animation* |
-
-</div>
-
----
-
-## Project Status
-
-| Metric | Value |
-|--------|-------|
-| **Lines of Code** | 290,000+ |
-| **Tests Passing** | 4,275+ |
-| **TypeScript Errors** | 0 |
-| **Build Warnings** | 0 |
-| **Layer Types** | 17 |
-| **Effects** | 22 categories |
-| **Easing Functions** | 35 |
-| **Camera Presets** | 22 |
-| **Particle Presets** | 24 |
-
-See [PROJECT_STATUS.md](PROJECT_STATUS.md) for detailed status and [PRD.md](PRD.md) for product requirements.
-
----
-
-## Features
-
-### Layer System (17 Types)
-
-| Layer | Description |
-|-------|-------------|
-| **Image** | Static images (PNG, JPG, WebP, GIF) |
-| **Video** | Video files with frame-accurate playback |
-| **Solid** | Solid color rectangles |
-| **Text** | Animated text with 1000+ Google Fonts |
-| **Spline** | Bezier curves with stroke/fill |
-| **Shape** | Vector shapes with boolean operations |
-| **Particle** | Deterministic particle emitters |
-| **Camera** | 3D cameras with depth-of-field |
-| **Light** | Point, spot, directional lights |
-| **Null/Control** | Invisible parent for grouping |
-| **Precomp** | Nested compositions |
-| **Adjustment/Effect** | Effect-only layers |
-| **Procedural Matte** | Generated masks |
-| **Depth** | Depth map visualization |
-| **Normal** | Normal map visualization |
-| **Generated** | AI-generated content layers |
-| **Group** | Layer grouping with blend modes |
-
-### Animation System
-
-- **35 Easing Functions** — Linear, ease-in/out, spring, elastic, bounce, back, and custom bezier
-- **Expression Language** — `wiggle()`, `repeatAfter()`, `bounce()`, `inertia()`, `elastic()`
-- **Curve Editor** — Fine-tune animation curves with bezier handles
-- **Property Linking** — Connect any property to any other property
-- **16 Semantic Keyframe Shapes** — Visual encoding of easing type
-
-### Particle System
-
-- **24 Built-in Presets** — Fire, smoke, snow, rain, confetti, magic, and more
-- **Deterministic Simulation** — Scrub-safe with checkpoint system
-- **7 Emitter Shapes** — Point, line, circle, box, sphere, ring, spline
-- **Physics Forces** — Gravity, wind, turbulence, attractors, vortices
-- **Sub-emitters** — Particles that spawn particles
-- **Collision Detection** — Bounce, slide, stick behaviors
-
-### 3D Camera System
-
-- **22 Camera Presets** — Orbit, dolly, crane, reveal, spiral, and more
-- **Depth of Field** — Realistic focus with bokeh
-- **Camera Shake** — Handheld, earthquake, subtle variations
-- **Trajectory Export** — MotionCtrl, CameraCtrl, Uni3C formats
-
-### Audio Reactivity
-
-- **Beat Detection** — Sync animations to music
-- **Frequency Bands** — React to bass, mid, high frequencies
-- **Stem Separation** — React to drums, vocals, instruments
-- **Audio-to-Property Mapping** — Drive any parameter with audio
-- **Audio Path Animation** — Animate objects along paths driven by audio
-
-### Effect Pipeline (22+ Effects)
-
-| Category | Effects |
-|----------|---------|
-| **Blur** | Gaussian, Directional, Radial, Box, Sharpen |
-| **Color** | Brightness/Contrast, Hue/Saturation, Levels, Curves, Glow, Drop Shadow, Color Balance, Exposure, Vibrance, Invert, Posterize, Threshold |
-| **Distort** | Transform, Warp, Displacement Map |
-| **Generate** | Fill, Gradient Ramp, Fractal Noise |
-
-### AI Integration
-
-- **Natural Language Agent** — Describe animations: *"fade in the title over 1 second"*
-- **GPT-4o & Claude Support** — Choose your preferred model
-- **30+ Tool Actions** — Create layers, add keyframes, apply effects
-- **Conversation Memory** — Iterative refinement: *"make it faster"*
-
-### Export Formats
-
-| Format | Use Case |
-|--------|----------|
-| **Matte Sequences** | IP Adapter attention masks |
-| **Wan Trajectories** | Point-based motion control |
-| **MotionCtrl Poses** | Camera animation data |
-| **CameraCtrl JSON** | AnimateDiff camera control |
-| **Time-to-Move** | Cut-and-drag motion |
-| **VACE Control** | Video AI Composer Engine |
-| **PNG/WebM/MP4** | Standard video export |
-
----
-
-## Installation
-
-### ComfyUI Extension (Recommended)
-
-```bash
-# Navigate to your ComfyUI custom_nodes folder
-cd ComfyUI/custom_nodes
-
-# Clone the repository
-git clone https://github.com/justinfleek/ComfyUI-Lattice-Compositor.git
-
-# Install Python dependencies
-pip install -r ComfyUI-Lattice-Compositor/requirements.txt
-```
-
-**Restart ComfyUI.** The Lattice icon will appear in your sidebar. **No build step required** — pre-built JavaScript files are included.
-
-### Windows with Portable/Embedded Python
-
-If you're using ComfyUI's portable distribution with embedded Python:
-
-```powershell
-# Navigate to custom_nodes
-cd "C:\ComfyUI_windows_portable\ComfyUI\custom_nodes"
-
-# Clone
-git clone https://github.com/justinfleek/ComfyUI-Lattice-Compositor.git
-
-# Install with embedded Python
-& "C:\ComfyUI_windows_portable\python_embeded\python.exe" -m pip install -r ComfyUI-Lattice-Compositor/requirements.txt
-```
-
-### Requirements
-
-The `requirements.txt` includes minimal dependencies since most are already in ComfyUI:
+Lattice is a **motion graphics compositor** for AI video generation workflows, built with **formal verification** at its core. Types are extracted from Lean4 proofs, not generated from schemas. When the proof compiles, the code is correct by construction.
 
 ```
-numpy
-Pillow
-scipy  # For depth-to-normal conversion
+Lean4 Proofs  ──►  PureScript Types  ──►  Haskell Types  ──►  C Types
+     │
+     └──►  decode(encode(x)) = x  (proven, not tested)
 ```
 
-### Development Setup
+______________________________________________________________________
 
-For contributors or those wanting to modify the source:
+## Stack
 
-```bash
-# Navigate to the UI source
-cd lattice-compositor/ui
+| Layer | Technology | Purpose |
+|-------|------------|---------|
+| **Frontend** | PureScript + Halogen | Type-safe UI components |
+| **Backend** | Haskell | Animation engine, effects, export |
+| **Proofs** | Lean4 | Type extraction, correctness guarantees |
+| **Build** | Nix | Reproducible builds, dev environments |
+| **Bindings** | C, Python | FFI for external integrations |
 
-# Install Node.js dependencies
-npm install
-
-# Start development server (hot reload)
-npm run dev
-# Opens at http://localhost:5173
-
-# Run test suite
-npm test
-
-# Build for production (outputs to web/js/)
-npm run build
-```
-
----
+______________________________________________________________________
 
 ## Quick Start
 
-### Basic Workflow
+```bash
+# Enter development environment
+nix develop
 
-1. **Open Compositor** — Click the Lattice icon in the ComfyUI sidebar
-2. **Add a Layer** — Right-click canvas → Add Layer → Text/Shape/Particles
-3. **Animate** — Click the keyframe icon (◆) next to any property
-4. **Preview** — Press Space to play, drag the playhead to scrub
-5. **Export** — Click Export button → Select format → Export
+# Build everything
+cabal build                              # Haskell backend
+cd lattice-core/purescript && spago build  # PureScript frontend
+cd lattice-core/lean && lake build         # Verify proofs
 
-<!-- TODO: Add quick start GIF -->
-<!-- ![Quick Start Demo](screenshots/quick-start.gif) -->
-
-### Using the AI Agent
-
-1. Open the **AI** tab in the right panel
-2. Type: *"Create a title that fades in and slides up"*
-3. The agent creates layers, keyframes, and effects automatically
-4. Refine: *"add a glow effect"*, *"make it bounce"*
-
-**Requires:** Set `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` environment variable before starting ComfyUI.
-
-### Frame Count Formula (4n+1 Pattern)
-
-AI video models require frame counts following `frames = (seconds × 16) + 1`:
-
-| Duration | Frames |
-|----------|--------|
-| 1 second | 17 |
-| 2 seconds | 33 |
-| 3 seconds | 49 |
-| 5 seconds | **81 (default)** |
-| 10 seconds | 161 |
-
----
-
-## Architecture
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  PRESENTATION LAYER (Vue 3.5 + TypeScript)                      │
-│  ├── 146 Vue Components                                         │
-│  ├── PrimeVue UI Library                                        │
-│  ├── 6 Theme Gradients (Violet, Ocean, Sunset, Forest, Ember)   │
-│  └── Design Tokens System                                       │
-├─────────────────────────────────────────────────────────────────┤
-│  STATE LAYER (Pinia 2.2)                                        │
-│  ├── compositorStore - Main project state                       │
-│  ├── playbackStore - Timeline playback                          │
-│  ├── historyStore - Undo/redo (50 snapshots)                    │
-│  ├── audioStore - Audio analysis & reactivity                   │
-│  └── assetStore - Asset management                              │
-├─────────────────────────────────────────────────────────────────┤
-│  ENGINE LAYER (Three.js r170)                                   │
-│  ├── LatticeEngine - Main rendering facade                         │
-│  ├── MotionEngine - Deterministic frame evaluation              │
-│  ├── LayerManager - 17 layer implementations                    │
-│  ├── ParticleSystem - Checkpoint-based simulation               │
-│  └── EffectProcessor - Canvas-based effect pipeline             │
-├─────────────────────────────────────────────────────────────────┤
-│  SERVICE LAYER (80+ Services)                                   │
-│  ├── Animation: interpolation, easing, expressions              │
-│  ├── Audio: FFT analysis, beat detection, mapping               │
-│  ├── Particles: CPU simulation, GPU rendering                   │
-│  ├── 3D: camera trajectories, depth parallax                    │
-│  ├── Effects: blur, color, distort, generate                    │
-│  └── Export: mattes, trajectories, video                        │
-├─────────────────────────────────────────────────────────────────┤
-│  BACKEND (Python + ComfyUI)                                     │
-│  ├── AI Inference: DepthAnything, SAM, NormalCrafter            │
-│  ├── Export: Frame sequences, trajectories                      │
-│  └── API Routes: /lattice/* endpoints                              │
-└─────────────────────────────────────────────────────────────────┘
+# Run tests
+cabal test
+cd lattice-core/purescript && spago test
 ```
 
-### The Determinism Rule
+______________________________________________________________________
 
-For AI video generation, every frame must be **reproducible**. Lattice guarantees:
+## Project Structure
 
-> **`evaluate(frame, project)` always returns identical results for identical inputs.**
+```
+LATTICE/
+├── lattice-core/             # Core type-safe implementations
+│   ├── purescript/           #   PureScript frontend (Halogen)
+│   ├── haskell/              #   Haskell services
+│   ├── lean/                 #   Lean4 proofs + type extraction
+│   ├── c/                    #   C FFI bindings
+│   └── python/               #   Python bindings
+│
+├── src/                      # Main Haskell library
+│   ├── haskell/              #   Core modules
+│   ├── armitage/             #   Build system (DICE, CAS)
+│   ├── inference/            #   AI inference integration
+│   └── server/               #   WebSocket server
+│
+├── hydrogen/                 # PureScript schema definitions
+├── proofs/                   # Additional Lean4 proofs
+├── nix/                      # Nix modules, overlays, packages
+├── tests/                    # Property-based tests
+├── bench/                    # Benchmarks
+├── e2e/                      # End-to-end tests
+│
+├── newfeatures/              # Research integration staging
+│   ├── MonarchRT/            #   Real-time video DiT (16 FPS)
+│   ├── ACE-Step/             #   Music generation
+│   ├── YUME/                 #   World model
+│   ├── SAM3/                 #   Open-vocab segmentation
+│   └── RESEARCH_PAPERS.md    #   190+ paper survey
+│
+├── comfyui-extension/        # [LEGACY] TypeScript/Vue edition
+│   ├── ui/                   #   Vue 3 + TypeScript frontend
+│   ├── src/                  #   Python ComfyUI nodes
+│   └── ...                   #   All legacy TS/Vue/Python code
+│
+└── docs/                     # Documentation
+    ├── INDEX.md              #   Documentation map
+    ├── rfc/                  #   Technical specifications
+    └── decisions/            #   Architecture Decision Records
+```
 
-- **Seeded RNG** — Mulberry32 algorithm for deterministic randomness
-- **Checkpoint System** — Particles restore state on scrub
-- **Pure Evaluation** — No `Math.random()`, no `Date.now()`, no accumulation
+______________________________________________________________________
 
----
+## Key Principles
 
-## Keyboard Shortcuts
+### 1. Types from Proofs
 
-| Key | Action |
-|-----|--------|
-| **Space** | Play/Pause |
-| **Home/End** | Go to start/end |
-| **←/→** | Previous/Next frame |
-| **Shift+←/→** | Jump 10 frames |
-| **Ctrl+Z** | Undo |
-| **Ctrl+Shift+Z** | Redo |
-| **Delete** | Delete selected |
-| **V** | Selection tool |
-| **P** | Pen tool |
-| **T** | Text tool |
-| **H** | Hand (pan) tool |
-| **Z** | Zoom tool |
-| **\`** (backtick) | HD Preview window |
-| **Ctrl+S** | Save project |
-| **Ctrl+E** | Export |
-| **Ctrl+D** | Duplicate layer |
-| **Ctrl+Shift+D** | Split layer at playhead |
+Every type definition requires a roundtrip proof in Lean4:
 
----
+```lean
+theorem Color_roundtrip (c : Color) : decode (encode c) = c := rfl
+```
+
+No proof, no type. Change the type, proof breaks, code won't compile.
+
+### 2. Zero JavaScript FFI
+
+The PureScript frontend creates pure request types. All browser operations go through Haskell via WebSocket. No `foreign import`, no escape hatches.
+
+### 3. Deterministic by Design
+
+For AI video generation, every frame must be reproducible:
+
+- **Seeded RNG** — Mulberry32 algorithm
+- **Checkpoint system** — Particles restore state on scrub  
+- **Pure evaluation** — No `random`, no `now` without explicit time
+
+### 4. No Technical Debt
+
+Production-grade System F Omega code only:
+
+- No `TODO` comments
+- No placeholder implementations
+- No stubs that throw
+- No "coming soon" text
+
+______________________________________________________________________
+
+## Research Integration
+
+Lattice integrates cutting-edge research for AI video acceleration. See [docs/decisions/0001-research-integration-roadmap.md](docs/decisions/0001-research-integration-roadmap.md) for the full plan.
+
+### Active Research Areas
+
+| Area | Key Papers | Status |
+|------|------------|--------|
+| **Real-time Diffusion** | Consistency Models, LCM-LoRA, MonarchRT | Planning |
+| **Type-Safe Animation** | Granule, NumFuzz, graded monads | Planning |
+| **Segmentation** | SAM 3 (270K concepts) | Staging |
+| **World Models** | GameNGen, YUME, DIAMOND | Staging |
+| **Voice Control** | F5-TTS, MinMo | Planning |
+| **3D Neural** | 3D/4D Gaussian Splatting | Planning |
+
+______________________________________________________________________
+
+## ComfyUI Extension
+
+The legacy TypeScript/Vue edition is maintained in `comfyui-extension/` for ComfyUI integration. See [comfyui-extension/README.md](comfyui-extension/README.md).
+
+```bash
+cd comfyui-extension
+npm install
+npm run build
+```
+
+______________________________________________________________________
 
 ## Documentation
 
 | Document | Description |
 |----------|-------------|
+| [ARCHITECTURE.md](ARCHITECTURE.md) | System design and data flow |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Contribution guidelines |
+| [docs/INDEX.md](docs/INDEX.md) | Full documentation map |
+| [docs/QUICK_START.md](docs/QUICK_START.md) | Getting started |
+| [docs/BUILDING.md](docs/BUILDING.md) | Build instructions |
+| [docs/rfc/](docs/rfc/) | Technical specifications |
+| [docs/decisions/](docs/decisions/) | Architecture decisions |
 | [PRD.md](PRD.md) | Product requirements |
-| [PROJECT_STATUS.md](PROJECT_STATUS.md) | Current status and roadmap |
-| [INSTALL.md](INSTALL.md) | Detailed installation guide |
-| [SECURITY_ASSESSMENT.md](SECURITY_ASSESSMENT.md) | Security analysis |
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | System architecture |
-| [docs/SERVICE_API_REFERENCE.md](docs/SERVICE_API_REFERENCE.md) | Service API reference |
-| [docs/EFFECT_PARAMETERS.md](docs/EFFECT_PARAMETERS.md) | Effect parameters reference |
 
-See `docs/` folder for technical documents and `_archived/` for historical documentation.
-
----
-
-## Known Limitations
-
-### Requires External Setup
-
-| Feature | Requirement |
-|---------|-------------|
-| AI Agent | `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` env var |
-| Depth Estimation | Python backend with DepthAnything model |
-| Pose Estimation | Python backend with Sapiens model |
-| Stem Separation | Python backend with Demucs model |
-
-See [FEATURE_AUDIT.md](FEATURE_AUDIT.md) for complete feature-to-UI mapping.
-
----
-
-## Terminology
-
-Lattice uses clear, descriptive terminology:
-
-| Concept | Lattice Term |
-|---------|--------------|
-| Property linking | PropertyLink |
-| Animation curves | CurveEditor |
-| Transform origin | Origin |
-| Sub-composition | NestedComp |
-| View single layer | Isolate |
-| Loop animation | repeatAfter |
-
----
-
-## Acknowledgments
-
-Lattice incorporates techniques and inspiration from these outstanding projects:
-
-### Audio Reactive
-- **[ATI_AudioReactive](https://github.com/Alter-AI/ATI_AudioReactive)** — Beat detection, amplitude curves
-- **[Yvann-Nodes](https://github.com/yvann-ba/ComfyUI-YVANN)** — Stem separation, IPAdapter scheduling
-- **[RyanOnTheInside](https://github.com/ryanontheinside/ComfyUI_RyanOnTheInside)** — Flex Features paradigm
-
-### Depth & Parallax
-- **[ComfyUI-Depthflow-Nodes](https://github.com/akatz-ai/ComfyUI-Depthflow-Nodes)** — 2.5D parallax
-- **[DepthAnything](https://github.com/LiheYoung/Depth-Anything)** — Depth estimation
-
-### Export Formats
-- **[Wan-Move](https://github.com/WanMove/ComfyUI-WanMove)** — Point trajectories
-- **[Time-to-Move](https://time-to-move.github.io/)** — Cut-and-drag motion
-- **[MotionCtrl](https://github.com/TencentARC/MotionCtrl)** — Camera trajectories
-- **[AnimateDiff CameraCtrl](https://github.com/Kosinkadink/ComfyUI-AnimateDiff-Evolved)** — Camera control
-
-### AI Models
-- **[SAM2](https://github.com/facebookresearch/segment-anything-2)** — Segmentation
-- **[Sapiens](https://github.com/facebookresearch/sapiens)** — Human pose estimation
-
----
-
-## Contributing
-
-Contributions are welcome! Please read [CLAUDE.md](CLAUDE.md) for architecture details and coding conventions.
-
-```bash
-# Clone
-git clone https://github.com/justinfleek/ComfyUI-Lattice-Compositor.git
-cd ComfyUI-Lattice-Compositor/ui
-
-# Install dependencies
-npm install
-
-# Development server
-npm run dev
-
-# Run tests
-npm test
-
-# Build
-npm run build
-```
-
-### Contribution Ideas
-- Additional particle presets
-- New effect implementations
-- Export format support (new AI video models)
-- UI/UX improvements
-- Documentation and tutorials
-
----
+______________________________________________________________________
 
 ## License
 
-MIT License — see [LICENSE](LICENSE) for details.
+MIT — see [LICENSE](LICENSE)
 
----
+______________________________________________________________________
 
 <div align="center">
 
-**Built for the open-source ComfyUI community**
-
-*Professional motion graphics accessible to everyone*
-
-[Report Bug](https://github.com/justinfleek/ComfyUI-Lattice-Compositor/issues) · [Request Feature](https://github.com/justinfleek/ComfyUI-Lattice-Compositor/issues) · [Discussions](https://github.com/justinfleek/ComfyUI-Lattice-Compositor/discussions)
+*Types are theorems. Proofs are programs.*
 
 </div>

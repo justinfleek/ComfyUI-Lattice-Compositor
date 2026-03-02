@@ -1,0 +1,15 @@
+{
+  "name": "posix-types",
+  "version": "6.0.0",
+  "license": "MIT",
+  "location": {
+    "githubOwner": "purescript-node",
+    "githubRepo": "purescript-posix-types"
+  },
+  "ref": "v6.0.0",
+  "dependencies": {
+    "maybe": ">=6.0.0 <7.0.0",
+    "newtype": ">=5.0.0 <6.0.0",
+    "prelude": ">=6.0.0 <7.0.0"
+  }
+}

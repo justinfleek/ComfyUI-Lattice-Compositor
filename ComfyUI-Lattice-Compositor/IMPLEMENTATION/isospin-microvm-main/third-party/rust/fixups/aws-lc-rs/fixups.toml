@@ -1,2 +1,0 @@
-# aws-lc-rs wrapper around aws-lc-sys
-buildscript.run = false

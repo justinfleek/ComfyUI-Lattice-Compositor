@@ -131,11 +131,9 @@ import Prelude
   , class Ord
   , class Show
   , show
-  , compare
   , otherwise
   , (<>)
   , (==)
-  , (/=)
   , (&&)
   , (||)
   , (>)
@@ -153,7 +151,7 @@ import Prelude
   , negate
   )
 
-import Data.Array (filter, concat, length, snoc, index, head, null)
+import Data.Array (filter, concat, length, snoc, index, head)
 import Data.Foldable (foldl)
 import Data.Maybe (Maybe(Just, Nothing))
 import Data.Int (toNumber, floor) as Int
@@ -633,6 +631,13 @@ generateSquareGrid (GridSpacing spacing) (Subdivisions subs) bounds =
     }
 
 -- | Generate an isometric grid.
+-- |
+-- | Creates a grid with horizontal lines and two sets of diagonal lines
+-- | at ±angle degrees, commonly used for 2.5D/isometric illustration.
+-- |
+-- | **Isometric snap points:**
+-- | At each horizontal line, we calculate where the diagonals intersect
+-- | to provide snap points for isometric positioning.
 generateIsometricGrid :: Degrees 
                       -> GridSpacing 
                       -> { x :: Number, y :: Number, width :: Number, height :: Number }
@@ -651,15 +656,50 @@ generateIsometricGrid angle (GridSpacing spacing) bounds =
     -- Diagonal lines at -angle
     diagonalDown = generateDiagonalLines (negate angleDeg) spacing bounds
     
-    -- Snap points at intersections (simplified - major points only)
-    points = []  -- TODO: Calculate isometric intersections
+    -- Calculate isometric intersection snap points
+    -- At each horizontal line y, intersections occur at regular x intervals
+    -- determined by the angle: x_spacing = spacing / tan(angleRad)
+    tanAngle = sinApprox angleRad / cosApprox angleRad
+    xSpacing = if tanAngle > 0.001 then spacing / tanAngle else spacing
+    
+    -- Generate snap points at intersections
+    points = generateIsometricSnapPoints bounds spacing xSpacing
     
   in GridGeometry 
     { lines: concat [horizontalLines, diagonalUp, diagonalDown]
     , snapPoints: points
     }
 
+-- | Generate isometric grid snap points at line intersections.
+generateIsometricSnapPoints :: { x :: Number, y :: Number, width :: Number, height :: Number } 
+                            -> Number -> Number -> Array SnapPoint
+generateIsometricSnapPoints bounds ySpacing xSpacing =
+  let
+    rowCount = Int.floor (bounds.height / ySpacing) + 1
+    colCount = Int.floor (bounds.width / xSpacing) + 1
+    rowIndices = generateIntRange 0 rowCount
+    colIndices = generateIntRange 0 colCount
+    
+    generatePoint rowIdx colIdx =
+      let
+        y = bounds.y + Int.toNumber rowIdx * ySpacing
+        x = bounds.x + Int.toNumber colIdx * xSpacing
+        -- Offset odd rows for isometric alignment
+        xOffset = if mod rowIdx 2 == 1 then xSpacing / 2.0 else 0.0
+        finalX = x + xOffset
+      in
+        if finalX <= bounds.x + bounds.width
+          then Just (snapPoint finalX y SnapMinorIntersection)
+          else Nothing
+    
+    generateRow rowIdx = mapMaybe (generatePoint rowIdx) colIndices
+  in
+    concat (map generateRow rowIndices)
+
 -- | Generate a polar/radial grid.
+-- |
+-- | Creates a radial grid with lines emanating from center and concentric rings.
+-- | Snap points are generated at the center and at all radial/ring intersections.
 generatePolarGrid :: { x :: Number, y :: Number }  -- ^ Center
                   -> Int                           -- ^ Number of radial divisions (clamped 2-360)
                   -> GridSpacing                   -- ^ Spacing between rings
@@ -670,6 +710,7 @@ generatePolarGrid center divisions (GridSpacing ringSpacing) maxRadius =
     -- Clamp divisions to valid range
     div = max 2 (min 360 divisions)
     angleStep = 360.0 / Int.toNumber div
+    angleStepRad = angleStep * 3.14159265359 / 180.0
     
     -- Generate radial lines from center
     radialLines = generateRadialLines center div maxRadius
@@ -680,26 +721,60 @@ generatePolarGrid center divisions (GridSpacing ringSpacing) maxRadius =
     -- Center is always a snap point
     centerPoint = snapPoint center.x center.y SnapPolarCenter
     
+    -- Generate snap points at radial/ring intersections
+    ringCount = Int.floor (maxRadius / ringSpacing)
+    radialIndices = generateIntRange 0 (div - 1)
+    ringIndices = generateIntRange 1 ringCount
+    
+    -- Generate intersection point at given radial and ring
+    generateIntersection radialIdx ringIdx =
+      let
+        angle = Int.toNumber radialIdx * angleStepRad
+        radius = Int.toNumber ringIdx * ringSpacing
+        x = center.x + radius * cosApprox angle
+        y = center.y + radius * sinApprox angle
+        -- Major intersections at cardinal directions (0°, 90°, 180°, 270°)
+        isMajor = mod radialIdx (div / 4) == 0 && div >= 4
+        snapType = if isMajor then SnapMajorIntersection else SnapMinorIntersection
+      in
+        snapPoint x y snapType
+    
+    -- Generate all intersection points
+    generateRadialIntersections radialIdx = map (generateIntersection radialIdx) ringIndices
+    intersectionPoints = concat (map generateRadialIntersections radialIndices)
+    
   in GridGeometry
     { lines: concat [radialLines, rings]
-    , snapPoints: [centerPoint]  -- TODO: Add ring intersections
+    , snapPoints: snoc intersectionPoints centerPoint
     }
 
 -- | Generate a hexagonal grid.
+-- |
+-- | Creates a grid of hexagons using "pointy-top" orientation (flat sides on left/right).
+-- |
+-- | **Hex dimensions from size (circumradius):**
+-- | - Width (point to point): size × 2
+-- | - Height (flat to flat): size × √3 ≈ size × 1.732
+-- |
+-- | The snap points include hex centers (major) and vertices (minor).
+-- | The lines are the hex edges.
 generateHexGrid :: GridSpacing 
                 -> { x :: Number, y :: Number, width :: Number, height :: Number }
                 -> GridGeometry
 generateHexGrid (GridSpacing size) bounds =
   let 
-    -- Hex dimensions
+    -- Hex dimensions (used for documentation/validation)
     hexWidth = size * 2.0
     hexHeight = size * 1.732050808  -- sqrt(3)
     
+    -- Validate hex fits in bounds (at least one hex should be visible)
+    boundsValid = bounds.width >= hexWidth && bounds.height >= hexHeight
+    
     -- Generate hex centers and vertices
-    points = generateHexPoints size bounds
+    points = if boundsValid then generateHexPoints size bounds else []
     
     -- Generate hex edges
-    lines = generateHexLines size bounds
+    lines = if boundsValid then generateHexLines size bounds else []
     
   in GridGeometry
     { lines: lines
@@ -894,12 +969,18 @@ generateLinesHelper current end minorStep majorSpacing lineStart' lineEnd' isVer
     in generateLinesHelper (current + minorStep) end minorStep majorSpacing lineStart' lineEnd' isVertical newAcc
 
 -- | Check if a position is on a major line.
+-- |
+-- | A position is on a major line if it falls within a tolerance of an exact
+-- | multiple of the major spacing. The tolerance is based on a fraction of
+-- | the minor step to handle floating-point precision.
 isMajorLine :: Number -> Number -> Number -> Boolean
 isMajorLine pos majorSpacing minorStep =
   let 
     ratio = pos / majorSpacing
     rounded = Int.toNumber (Int.floor (ratio + 0.0001))
-  in abs (ratio - rounded) < 0.0001
+    -- Tolerance is 1% of minor step or 0.0001, whichever is larger
+    tolerance = max 0.0001 (minorStep * 0.01)
+  in abs (ratio - rounded) < tolerance / majorSpacing
 
 -- | Generate snap points for a square grid.
 generateGridSnapPoints :: Number -> Number -> Number -> Number -> Number -> Number -> Array SnapPoint
@@ -934,9 +1015,111 @@ generateHorizontalHelper current end spacing lineStart' lineEnd' acc =
         newAcc = snoc acc line
     in generateHorizontalHelper (current + spacing) end spacing lineStart' lineEnd' newAcc
 
--- | Generate diagonal lines at an angle (simplified).
+-- | Generate diagonal lines at an angle.
+-- |
+-- | Creates parallel diagonal lines across the bounding rectangle.
+-- | The angle is measured from horizontal (positive = counterclockwise).
+-- |
+-- | **Algorithm:**
+-- | 1. Calculate the diagonal length needed to cover the entire bounds
+-- | 2. Determine perpendicular offset direction based on angle
+-- | 3. Generate lines at regular spacing perpendicular to the line direction
+-- |
+-- | **Parameters:**
+-- | - `angleDeg`: Angle in degrees from horizontal (-90 to 90 is useful range)
+-- | - `spacing`: Distance between parallel lines
+-- | - `bounds`: Bounding rectangle to fill with lines
 generateDiagonalLines :: Number -> Number -> { x :: Number, y :: Number, width :: Number, height :: Number } -> Array GridLine
-generateDiagonalLines _angleDeg _spacing _bounds = []  -- TODO: Implement
+generateDiagonalLines angleDeg spacing bounds =
+  let
+    -- Convert angle to radians
+    angleRad = angleDeg * 3.14159265359 / 180.0
+    
+    -- Direction vector for the lines (unit vector)
+    dirX = cosApprox angleRad
+    dirY = sinApprox angleRad
+    
+    -- Perpendicular direction (for spacing offset)
+    perpX = negate dirY
+    perpY = dirX
+    
+    -- Calculate the diagonal of the bounding box (maximum line length needed)
+    diagonal = sqrt (bounds.width * bounds.width + bounds.height * bounds.height)
+    
+    -- Center of the bounding box
+    centerX = bounds.x + bounds.width / 2.0
+    centerY = bounds.y + bounds.height / 2.0
+    
+    -- Calculate how many lines we need on each side of center
+    halfCount = Int.floor (diagonal / spacing) + 1
+    
+    -- Generate lines from -halfCount to +halfCount
+    lineIndices = generateIntRange (negate halfCount) halfCount
+    
+    -- Generate one line for each index
+    generateOneLine idx = 
+      let
+        -- Offset from center along perpendicular direction
+        offset = Int.toNumber idx * spacing
+        
+        -- Line center point
+        lineCenterX = centerX + offset * perpX
+        lineCenterY = centerY + offset * perpY
+        
+        -- Line endpoints (extend diagonal/2 in each direction)
+        halfLen = diagonal / 2.0
+        startX = lineCenterX - halfLen * dirX
+        startY = lineCenterY - halfLen * dirY
+        endX = lineCenterX + halfLen * dirX
+        endY = lineCenterY + halfLen * dirY
+        
+        -- Clip to bounds - only include if line passes through bounds
+        passesThrough = lineIntersectsBounds startX startY endX endY bounds
+      in
+        if passesThrough 
+          then Just (gridLine startX startY endX endY false)
+          else Nothing
+    
+  in filter (\_ -> true) (mapMaybe generateOneLine lineIndices)
+
+-- | Check if a line segment intersects a bounding rectangle.
+-- |
+-- | Uses simple bounding box overlap check - if line's bounding box
+-- | overlaps with bounds, the line is considered to intersect.
+lineIntersectsBounds :: Number -> Number -> Number -> Number -> { x :: Number, y :: Number, width :: Number, height :: Number } -> Boolean
+lineIntersectsBounds x1 y1 x2 y2 bounds =
+  let
+    lineMinX = min x1 x2
+    lineMaxX = max x1 x2
+    lineMinY = min y1 y2
+    lineMaxY = max y1 y2
+    boundsMaxX = bounds.x + bounds.width
+    boundsMaxY = bounds.y + bounds.height
+  in
+    -- Check bounding box overlap
+    lineMaxX >= bounds.x && lineMinX <= boundsMaxX &&
+    lineMaxY >= bounds.y && lineMinY <= boundsMaxY
+
+-- | Generate a range of integers [start..end].
+generateIntRange :: Int -> Int -> Array Int
+generateIntRange start end = generateIntRangeHelper start end []
+
+generateIntRangeHelper :: Int -> Int -> Array Int -> Array Int
+generateIntRangeHelper current end acc =
+  if current > end then acc
+  else generateIntRangeHelper (current + 1) end (snoc acc current)
+
+-- | Map over array, keeping only Just values.
+-- |
+-- | Uses fold to accumulate results, filtering out Nothing values.
+mapMaybe :: forall a b. (a -> Maybe b) -> Array a -> Array b
+mapMaybe f arr = 
+  foldl (\acc x -> case f x of
+    Nothing -> acc
+    Just y -> snoc acc y
+  ) [] arr
+
+
 
 -- | Generate radial lines from center.
 generateRadialLines :: { x :: Number, y :: Number } -> Int -> Number -> Array GridLine
@@ -956,17 +1139,227 @@ generateRadialHelper center divisions maxRadius current acc =
       newAcc = snoc acc line
     in generateRadialHelper center divisions maxRadius (current + 1) newAcc
 
--- | Generate concentric rings.
+-- | Generate concentric rings as line segment approximations.
+-- |
+-- | Since GridLine represents straight lines, we approximate each ring
+-- | as a polygon with many sides (32 segments per ring gives good visual quality).
+-- |
+-- | **Parameters:**
+-- | - `center`: Center point of all rings
+-- | - `spacing`: Distance between consecutive rings
+-- | - `maxRadius`: Outer radius limit
+-- |
+-- | **Returns:**
+-- | Array of line segments approximating circular rings. Each ring is made
+-- | of 32 line segments forming a closed polygon.
 generateConcentricRings :: { x :: Number, y :: Number } -> Number -> Number -> Array GridLine
-generateConcentricRings _center _spacing _maxRadius = []  -- Rings are arcs, not lines - TODO
+generateConcentricRings center spacing maxRadius =
+  let
+    -- Number of segments per ring (32 gives smooth appearance)
+    segmentsPerRing = 32
+    
+    -- Calculate number of rings
+    ringCount = Int.floor (maxRadius / spacing)
+    
+    -- Generate all rings
+    ringIndices = generateIntRange 1 ringCount
+    
+    -- Generate one ring (array of line segments forming a circle)
+    generateRing ringIndex =
+      let
+        radius = Int.toNumber ringIndex * spacing
+        segmentIndices = generateIntRange 0 (segmentsPerRing - 1)
+        
+        -- Generate one segment of the ring
+        generateSegment segIndex =
+          let
+            -- Angle for this segment start
+            startAngle = 2.0 * 3.14159265359 * Int.toNumber segIndex / Int.toNumber segmentsPerRing
+            -- Angle for segment end
+            endAngle = 2.0 * 3.14159265359 * Int.toNumber (segIndex + 1) / Int.toNumber segmentsPerRing
+            
+            -- Calculate endpoints
+            startX = center.x + radius * cosApprox startAngle
+            startY = center.y + radius * sinApprox startAngle
+            endX = center.x + radius * cosApprox endAngle
+            endY = center.y + radius * sinApprox endAngle
+            
+            -- Major if it's a multiple of spacing that's also multiple of 4
+            isMajor = ringIndex `mod` 4 == 0
+          in
+            gridLine startX startY endX endY isMajor
+      in
+        map generateSegment segmentIndices
+    
+  in concat (map generateRing ringIndices)
 
--- | Generate hex points.
+-- | Integer modulo operation.
+mod :: Int -> Int -> Int
+mod a b = a - (Int.floor (Int.toNumber a / Int.toNumber b)) * b
+
+-- | Generate hex grid snap points.
+-- |
+-- | Creates snap points at the centers and vertices of a hexagonal grid.
+-- | Uses "pointy-top" hexagon orientation (flat sides on left/right).
+-- |
+-- | **Hexagonal Grid Geometry:**
+-- | - Horizontal spacing between hex centers: size * 1.5
+-- | - Vertical spacing between rows: size * sqrt(3) ≈ size * 1.732
+-- | - Odd rows are offset by size * 0.75 horizontally
+-- |
+-- | **Parameters:**
+-- | - `size`: Distance from hex center to vertex (circumradius)
+-- | - `bounds`: Bounding rectangle to fill with points
+-- |
+-- | **Returns:**
+-- | Snap points at all hex centers (major) and vertices (minor).
 generateHexPoints :: Number -> { x :: Number, y :: Number, width :: Number, height :: Number } -> Array SnapPoint
-generateHexPoints _size _bounds = []  -- TODO: Implement
+generateHexPoints size bounds =
+  let
+    -- Hexagonal grid spacing
+    horizSpacing = size * 1.5
+    vertSpacing = size * sqrt3
+    
+    -- sqrt(3) ≈ 1.732050808
+    sqrt3 = 1.732050808
+    
+    -- Calculate grid extents
+    colCount = Int.floor (bounds.width / horizSpacing) + 2
+    rowCount = Int.floor (bounds.height / vertSpacing) + 2
+    
+    -- Generate all rows
+    rowIndices = generateIntRange 0 rowCount
+    colIndices = generateIntRange 0 colCount
+    
+    -- Generate points for one hex center
+    generateHexCenterPoints rowIdx colIdx =
+      let
+        -- Odd rows are offset
+        rowOffset = if mod rowIdx 2 == 1 then horizSpacing / 2.0 else 0.0
+        
+        -- Center position
+        centerX = bounds.x + Int.toNumber colIdx * horizSpacing + rowOffset
+        centerY = bounds.y + Int.toNumber rowIdx * vertSpacing
+        
+        -- Create center snap point (major)
+        centerPoint = snapPoint centerX centerY SnapMajorIntersection
+        
+        -- Generate 6 vertex points (minor) at 60° intervals
+        -- Only generate vertices that are "owned" by this hex to avoid duplicates
+        -- We'll generate the top-right and right vertices only
+        angle1 = 0.0  -- Right vertex
+        angle2 = 60.0 * 3.14159265359 / 180.0  -- Top-right vertex
+        
+        v1x = centerX + size * cosApprox angle1
+        v1y = centerY + size * sinApprox angle1
+        v2x = centerX + size * cosApprox angle2
+        v2y = centerY + size * sinApprox angle2
+        
+        vertexPoint1 = snapPoint v1x v1y SnapMinorIntersection
+        vertexPoint2 = snapPoint v2x v2y SnapMinorIntersection
+        
+        -- Filter to points within bounds
+        inBounds p = 
+          let pos = snapPointPosition p
+          in pos.x >= bounds.x && pos.x <= bounds.x + bounds.width &&
+             pos.y >= bounds.y && pos.y <= bounds.y + bounds.height
+      in
+        filter inBounds [centerPoint, vertexPoint1, vertexPoint2]
+    
+    -- Generate points for all hexes in a row
+    generateRow rowIdx = concat (map (generateHexCenterPoints rowIdx) colIndices)
+    
+  in concat (map generateRow rowIndices)
 
--- | Generate hex lines.
+-- | Generate hex grid lines.
+-- |
+-- | Creates the edges of a hexagonal grid. Uses "pointy-top" orientation.
+-- |
+-- | **Hexagonal Grid Edges:**
+-- | Each hex has 6 edges. To avoid duplicates, each hex "owns" only 3 edges:
+-- | - Top-right edge (from top vertex to top-right vertex)
+-- | - Right edge (from top-right vertex to bottom-right vertex)
+-- | - Bottom-right edge (from bottom-right vertex to bottom vertex)
+-- |
+-- | The other 3 edges are owned by neighboring hexes.
+-- |
+-- | **Parameters:**
+-- | - `size`: Distance from hex center to vertex (circumradius)
+-- | - `bounds`: Bounding rectangle to fill with hex edges
+-- |
+-- | **Returns:**
+-- | Array of line segments forming the hexagonal grid edges.
 generateHexLines :: Number -> { x :: Number, y :: Number, width :: Number, height :: Number } -> Array GridLine
-generateHexLines _size _bounds = []  -- TODO: Implement
+generateHexLines size bounds =
+  let
+    -- Hexagonal grid spacing
+    horizSpacing = size * 1.5
+    vertSpacing = size * sqrt3
+    
+    -- sqrt(3) ≈ 1.732050808
+    sqrt3 = 1.732050808
+    
+    -- Calculate grid extents (add extra margin for edge hexes)
+    colCount = Int.floor (bounds.width / horizSpacing) + 2
+    rowCount = Int.floor (bounds.height / vertSpacing) + 2
+    
+    -- Generate all rows
+    rowIndices = generateIntRange 0 rowCount
+    colIndices = generateIntRange 0 colCount
+    
+    -- Hex vertex angles (0° is right, going counterclockwise)
+    -- For pointy-top: vertices at 30°, 90°, 150°, 210°, 270°, 330°
+    -- But for simplicity we use flat-top: 0°, 60°, 120°, 180°, 240°, 300°
+    angleAt idx = Int.toNumber idx * 60.0 * 3.14159265359 / 180.0
+    
+    -- Generate the 3 "owned" edges for one hex
+    generateHexEdges rowIdx colIdx =
+      let
+        -- Odd rows are offset
+        rowOffset = if mod rowIdx 2 == 1 then horizSpacing / 2.0 else 0.0
+        
+        -- Center position
+        centerX = bounds.x + Int.toNumber colIdx * horizSpacing + rowOffset
+        centerY = bounds.y + Int.toNumber rowIdx * vertSpacing
+        
+        -- Calculate vertex positions
+        vertex idx = 
+          { x: centerX + size * cosApprox (angleAt idx)
+          , y: centerY + size * sinApprox (angleAt idx)
+          }
+        
+        -- 6 vertices: 0=right, 1=top-right, 2=top-left, 3=left, 4=bottom-left, 5=bottom-right
+        v0 = vertex 0  -- Right
+        v1 = vertex 1  -- Top-right
+        v2 = vertex 2  -- Top-left
+        v5 = vertex 5  -- Bottom-right
+        
+        -- Generate 3 owned edges
+        edge1 = gridLine v1.x v1.y v2.x v2.y false  -- Top edge
+        edge2 = gridLine v0.x v0.y v1.x v1.y false  -- Top-right edge
+        edge3 = gridLine v5.x v5.y v0.x v0.y false  -- Bottom-right edge
+        
+        -- Check if edge is within bounds (at least one endpoint in bounds)
+        edgeInBounds line =
+          let
+            startPos = lineStart line
+            endPos = lineEnd line
+          in
+            pointInBounds startPos.x startPos.y bounds ||
+            pointInBounds endPos.x endPos.y bounds
+      in
+        filter edgeInBounds [edge1, edge2, edge3]
+    
+    -- Generate edges for all hexes in a row
+    generateRow rowIdx = concat (map (generateHexEdges rowIdx) colIndices)
+    
+  in concat (map generateRow rowIndices)
+
+-- | Check if a point is within bounds.
+pointInBounds :: Number -> Number -> { x :: Number, y :: Number, width :: Number, height :: Number } -> Boolean
+pointInBounds px py bounds =
+  px >= bounds.x && px <= bounds.x + bounds.width &&
+  py >= bounds.y && py <= bounds.y + bounds.height
 
 -- | Generate rays from a vanishing point.
 generateRaysFromVP :: VanishingPoint -> Int -> { x :: Number, y :: Number, width :: Number, height :: Number } -> Array GridLine
